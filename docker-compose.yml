@@ -1,0 +1,146 @@
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+services:
+  mariadb:
+    image: mariadb:11.4
+    container_name: cvproject-mariadb
+    restart: unless-stopped
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --default-time-zone=+07:00
+      - --skip-name-resolve
+    environment:
+      TZ: ${TZ:-Asia/Ho_Chi_Minh}
+      MARIADB_DATABASE: ${MARIADB_DATABASE:-cvproject}
+      MARIADB_USER: ${MARIADB_USER:-cvproject}
+      MARIADB_PASSWORD: ${MARIADB_PASSWORD}
+      MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD}
+      MARIADB_AUTO_UPGRADE: "1"
+    volumes:
+      - mariadb_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+    logging: *default-logging
+    networks: [cvproject]
+
+  minio:
+    image: minio/minio:latest
+    container_name: cvproject-minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      TZ: ${TZ:-Asia/Ho_Chi_Minh}
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+    logging: *default-logging
+    networks: [cvproject]
+
+  minio-init:
+    image: minio/mc:latest
+    container_name: cvproject-minio-init
+    restart: "no"
+    depends_on:
+      minio:
+        condition: service_healthy
+    environment:
+      MINIO_INTERNAL_ENDPOINT: ${MINIO_INTERNAL_ENDPOINT:-http://minio:9000}
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+      MINIO_BUCKET: ${MINIO_BUCKET:-cv-avatars}
+    entrypoint: ["/bin/sh", "/init/init.sh"]
+    volumes:
+      - ./docker/minio-init:/init:ro
+    logging: *default-logging
+    networks: [cvproject]
+
+  # ------------------------------------------------------------------
+  # Spring Boot + Flyway.
+  # ------------------------------------------------------------------
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    image: cvproject-backend:local
+    container_name: cvproject-backend
+    restart: unless-stopped
+    depends_on:
+      mariadb:
+        condition: service_healthy
+      minio-init:
+        condition: service_completed_successfully
+    environment:
+      TZ: ${TZ:-Asia/Ho_Chi_Minh}
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
+
+      SPRING_DATASOURCE_URL: "jdbc:mariadb://mariadb:3306/${MARIADB_DATABASE:-cvproject}?useUnicode=true&characterEncoding=UTF-8&connectionTimeZone=Asia/Ho_Chi_Minh&forceConnectionTimeZoneToSession=true"
+      SPRING_DATASOURCE_USERNAME: ${MARIADB_USER:-cvproject}
+      SPRING_DATASOURCE_PASSWORD: ${MARIADB_PASSWORD}
+
+      MINIO_INTERNAL_ENDPOINT: ${MINIO_INTERNAL_ENDPOINT:-http://minio:9000}
+      MINIO_PUBLIC_ENDPOINT: ${MINIO_PUBLIC_ENDPOINT:-http://localhost}
+      MINIO_BUCKET: ${MINIO_BUCKET:-cv-avatars}
+      MINIO_ACCESS_KEY: ${MINIO_ROOT_USER}
+      MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD}
+      MINIO_PRESIGNED_TTL_SECONDS: ${MINIO_PRESIGNED_TTL_SECONDS:-900}
+
+      # --- Security
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRATION_MINUTES: ${JWT_EXPIRATION_MINUTES:-480}
+
+      # --- Email
+      MAIL_HOST: ${MAIL_HOST:-mailhog}
+      MAIL_PORT: ${MAIL_PORT:-1025}
+      MAIL_USERNAME: ${MAIL_USERNAME}
+      MAIL_PASSWORD: ${MAIL_PASSWORD}
+      MAIL_FROM: ${MAIL_FROM:-no-reply@cvproject.local}
+
+      APP_PUBLIC_URL: ${APP_PUBLIC_URL:-http://localhost}
+    logging: *default-logging
+    networks: [cvproject]
+
+  # ------------------------------------------------------------------
+  # Nginx
+  # ------------------------------------------------------------------
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    image: cvproject-frontend:local
+    container_name: cvproject-frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    environment:
+      TZ: ${TZ:-Asia/Ho_Chi_Minh}
+    ports:
+      - "${HTTP_PORT:-8000}:8000"
+    logging: *default-logging
+    networks: [cvproject]
+
+volumes:
+  mariadb_data:
+    name: cvproject_mariadb_data
+  minio_data:
+    name: cvproject_minio_data
+
+networks:
+  cvproject:
+    name: cvproject_net
+    driver: bridge

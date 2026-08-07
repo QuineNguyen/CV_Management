@@ -1,0 +1,31 @@
+# UPDATE SAU
+services:
+  mariadb:
+    restart: always
+    deploy:
+      resources:
+        limits:
+          memory: 1g
+
+  minio:
+    restart: always
+
+  backend:
+    restart: always
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      MAIL_HOST: ${MAIL_HOST:-smtp.gmail.com}
+      MAIL_PORT: ${MAIL_PORT:-587}
+      MAIL_USERNAME: ${MAIL_USERNAME:?thieu MAIL_USERNAME trong .env}
+      MAIL_PASSWORD: ${MAIL_PASSWORD:?thieu MAIL_PASSWORD (Gmail App Password) trong .env}
+      MAIL_FROM: ${MAIL_FROM:?thieu MAIL_FROM trong .env}
+      MINIO_PUBLIC_ENDPOINT: ${MINIO_PUBLIC_ENDPOINT:?thieu MINIO_PUBLIC_ENDPOINT trong .env}
+    deploy:
+      resources:
+        limits:
+          memory: 1g
+
+  frontend:
+    restart: always
+    ports:
+      - "${HTTP_PORT:-8000}:8000"

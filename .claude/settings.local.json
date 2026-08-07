@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(grep -vE '^\\\\s*\\(%%|$\\)')",
+      "Bash(grep -vE '^\\\\s*erDiagram\\\\s*$')",
+      "Bash(grep -vcE '^\\\\s*[a-z_]+\\\\s+[|}][|o]--[|o][|{]\\\\s+[a-z_]+\\\\s+:\\\\s+\"[^\"]+\"\\\\s*$')",
+      "Bash(python -c \"import pypdf; print\\('pypdf ok'\\)\")",
+      "Bash(pdfinfo \"Technical document.pdf\")",
+      "Bash(pdftotext -layout -enc UTF-8 \"Technical document.pdf\" \"/c/Users/ADMIN/AppData/Local/Temp/claude/E--PTIT-CVProject/8fc0926e-8238-4d68-a598-703d61f6431a/scratchpad/tech.txt\")",
+      "Read(//c/Users/ADMIN/AppData/Local/Temp/claude/E--PTIT-CVProject/8fc0926e-8238-4d68-a598-703d61f6431a/scratchpad/**)",
+      "Bash(python -c ' *)",
+      "Bash(grep -n \"^#\\\\{1,3\\\\} \" docs/02_MoTaHoatDongNghiepVu.md)",
+      "Bash(grep -o \"[0-9]*b\\\\?$\")",
+      "Bash(awk NR==241 {print substr\\($0, length\\($0\\)-119\\)} *)"
+    ]
+  }
+}
