@@ -1,5 +1,6 @@
 docs/*
-.claude\
+.claude/*
+CLAUDE.md
 
 .env
 *.env.local
