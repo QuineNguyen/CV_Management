@@ -1,0 +1,87 @@
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+services:
+  mariadb-local:
+    image: mariadb:11.4
+    container_name: cvproject-mariadb-local
+    restart: unless-stopped
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --default-time-zone=+07:00
+      - --skip-name-resolve
+    environment:
+      TZ: Asia/Ho_Chi_Minh
+      MARIADB_DATABASE: cvproject_local
+      MARIADB_USER: cvproject
+      MARIADB_PASSWORD: 123456
+      MARIADB_ROOT_PASSWORD: 123456
+      MARIADB_AUTO_UPGRADE: "1"
+    ports:
+      - "3306:3306"
+    volumes:
+      - mariadb_local_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+    logging: *default-logging
+    networks: [cvproject-local-net]
+
+  minio-local:
+    image: minio/minio:latest
+    container_name: cvproject-minio-local
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      TZ: Asia/Ho_Chi_Minh
+      MINIO_ROOT_USER: cvproject_minio
+      MINIO_ROOT_PASSWORD: 12345678
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio_local_data:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+    logging: *default-logging
+    networks: [cvproject-local-net]
+
+  minio-init-local:
+    image: minio/mc:latest
+    container_name: cvproject-minio-init-local
+    restart: "no"
+    depends_on:
+      minio-local:
+        condition: service_healthy
+    environment:
+      MINIO_INTERNAL_ENDPOINT: http://minio-local:9000
+      MINIO_ROOT_USER: cvproject_minio
+      MINIO_ROOT_PASSWORD: 12345678
+      MINIO_BUCKET: cv-avatars
+    entrypoint: ["/bin/sh", "/init/init.sh"]
+    volumes:
+      - ./docker/minio-init:/init:ro
+    logging: *default-logging
+    networks: [cvproject-local-net]
+
+volumes:
+  mariadb_local_data:
+    name: cvproject_mariadb_local_data
+  minio_local_data:
+    name: cvproject_minio_local_data
+
+networks:
+  cvproject-local-net:
+    name: cvproject_local_net
+    driver: bridge

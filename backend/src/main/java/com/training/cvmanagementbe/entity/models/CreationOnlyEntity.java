@@ -16,7 +16,7 @@ import java.util.UUID;
 @EntityListeners(AuditingEntityListener.class)
 public abstract class CreationOnlyEntity {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
     @CreatedBy

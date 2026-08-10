@@ -60,7 +60,7 @@ public class GlobalExceptionHandler {
         List<ApiError.FieldError> fieldErrors = ex.getBindingResult().getFieldErrors().stream()
                 .map(fe -> new ApiError.FieldError(fe.getField(), fe.getDefaultMessage()))
                 .toList();
-        ApiError body = new ApiError(OffsetDateTime.now(), 400, "BAD_REQUEST",
+        ApiError body = new ApiError(OffsetDateTime.now(), HttpStatus.BAD_REQUEST.value(), HttpStatus.BAD_REQUEST.name(),
                 ErrorCode.VALIDATION_FAILED.code(), ErrorCode.VALIDATION_FAILED.message(),
                 req.getRequestURI(), fieldErrors);
         return ResponseEntity.badRequest().body(body);

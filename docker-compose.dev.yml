@@ -1,28 +1,42 @@
 services:
   mariadb:
+    container_name: cvproject-mariadb-dev
+    environment:
+      MARIADB_DATABASE: ${MARIADB_DATABASE}
+      MARIADB_USER: ${MARIADB_USER}
+      MARIADB_PASSWORD: ${MARIADB_PASSWORD}
+      MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD}
     ports:
-      - "3306:3306"
+      - "3307:3306"
+    volumes:
+      - mariadb_dev_data:/var/lib/mysql
 
   minio:
-    ports:
-      - "9000:9000"
-      - "9001:9001"
-
-  mailhog:
-    image: mailhog/mailhog:v1.0.1
-    container_name: cvproject-mailhog
-    restart: unless-stopped
+    container_name: cvproject-minio-dev
     environment:
-      TZ: ${TZ:-Asia/Ho_Chi_Minh}
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
     ports:
-      - "8025:8025"
-    networks: [cvproject]
+      - "9002:9000" # Port API MinIO Dev
+      - "9003:9001" # Port Web Console MinIO Dev (http://localhost:9003)
+    volumes:
+      - minio_dev_data:/data
 
   backend:
+    container_name: cvproject-backend-dev
     environment:
       SPRING_PROFILES_ACTIVE: dev
-      MAIL_HOST: mailhog
-      MAIL_PORT: "1025"
-      MINIO_PUBLIC_ENDPOINT: ${MINIO_PUBLIC_ENDPOINT:-http://localhost}
+      SPRING_DATASOURCE_URL: "jdbc:mariadb://mariadb:3306/${MARIADB_DATABASE}:useUnicode=true&characterEncoding=UTF-8&connectionTimeZone=Asia/Ho_Chi_Minh&forceConnectionTimeZoneToSession=true"
+      SPRING_DATASOURCE_USERNAME: ${MARIADB_USER}
+      SPRING_DATASOURCE_PASSWORD: ${MARIADB_PASSWORD}
+      MAIL_HOST: ${MAIL_HOST}
+      MAIL_PORT: ${MAIL_PORT}
+      MINIO_PUBLIC_ENDPOINT: ${MINIO_PUBLIC_ENDPOINT}
     ports:
       - "8080:8080"
+
+volumes:
+  mariadb_dev_data:
+    name: cvproject_mariadb_dev_data
+  minio_dev_data:
+    name: cvproject_minio_dev_data
