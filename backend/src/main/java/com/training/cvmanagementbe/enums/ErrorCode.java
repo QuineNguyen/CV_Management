@@ -21,6 +21,21 @@ public enum ErrorCode {
     LAST_ACTIVE_ADMIN("The system must keep at least one active administrator"),
     TECH_LEAD_STILL_ASSIGNED("This person still leads a team; assign a replacement lead first"),
 
+    // ---------- Authentication ----------
+    INVALID_CREDENTIALS("The username or password is incorrect"),
+    ACCOUNT_LOCKED("Your account is temporarily locked. Please try again later"),
+    ACCOUNT_INACTIVE("This account has been deactivated"),
+    INVALID_TOKEN("The authentication token is invalid or has expired"),
+    GOOGLE_TOKEN_INVALID("The Google sign-in token could not be verified"),
+    GOOGLE_EMAIL_NOT_REGISTERED("This Google email is not registered in the system. Please contact your administrator"),
+    GOOGLE_ACCOUNT_MISMATCH("This Google account is already linked to a different user"),
+    INVALID_CURRENT_PASSWORD("The current password is incorrect"),
+    PASSWORD_TOO_WEAK("Password must be at least 8 characters with uppercase, lowercase, number and special character"),
+    PASSWORD_CONFIRMATION_MISMATCH("The confirmation password does not match the new password"),
+    PASSWORD_SAME_AS_OLD("The new password must be different from the current password"),
+    MUST_CHANGE_PASSWORD("You must change your password before continuing"),
+    USER_NOT_FOUND("User not found"),
+
     // ---------- CV profiles and CVs ----------
     PROFILE_NAME_TAKEN("Another active profile of this employee already uses that name"),
     PRIMARY_PROFILE_EXISTS("This employee already has a primary profile"),

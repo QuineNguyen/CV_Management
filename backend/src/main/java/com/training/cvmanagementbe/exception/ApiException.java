@@ -35,6 +35,9 @@ public abstract class ApiException extends RuntimeException {
         public UnauthorizedException(String message) {
             super(HttpStatus.UNAUTHORIZED, ErrorCode.UNAUTHENTICATED.code(), message);
         }
+        public UnauthorizedException(ErrorCode error) {
+            super(HttpStatus.UNAUTHORIZED, error);
+        }
     }
 
     /**

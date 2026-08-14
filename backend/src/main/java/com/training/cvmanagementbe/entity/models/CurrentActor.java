@@ -5,6 +5,7 @@ import com.training.cvmanagementbe.enums.Role;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.Callable;
+import java.util.function.Supplier;
 
 /**
  * Manages thread-local context for the currently authenticated user (actor).
@@ -55,11 +56,29 @@ public final class CurrentActor {
         try {
             return work.call();
         } finally {
-            if (previous == null) {
-                clear();
-            } else {
-                CURRENT.set(previous);
-            }
+            restore(previous);
+        }
+    }
+
+    /**
+     * Unchecked variant for request-scoped work, which only throws runtime exceptions.
+     * Keeps ApiException intact instead of forcing callers to wrap it and lose its status.
+    */
+    public static <T> T supplyAs(UUID userId, Role role, Supplier<T> work) {
+        Actor previous = CURRENT.get();
+        set(userId, role);
+        try {
+            return work.get();
+        } finally {
+            restore(previous);
+        }
+    }
+
+    private static void restore(Actor previous) {
+        if (previous == null) {
+            clear();
+        } else {
+            CURRENT.set(previous);
         }
     }
 }

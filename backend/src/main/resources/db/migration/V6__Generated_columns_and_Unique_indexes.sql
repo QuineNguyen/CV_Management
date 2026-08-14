@@ -5,7 +5,7 @@
 -- 1. One primary profile per employee.
 --    Zero is also valid - an employee who has not created a profile yet.
 ALTER TABLE cv_profiles
-    ADD COLUMN uk_active_primary BIGINT UNSIGNED
+    ADD COLUMN uk_active_primary UUID
         AS (CASE WHEN is_primary = TRUE AND lifecycle_status = 'ACTIVE'
                      THEN employee_id END) PERSISTENT,
     ADD UNIQUE KEY uk_cv_profiles_active_primary (uk_active_primary);
@@ -31,7 +31,7 @@ ALTER TABLE cvs
 --    "Master" means having no parent CV. Because mastership is derived rather than stored in a
 --    separate flag, there is no second column that could disagree with this one.
 ALTER TABLE cvs
-    ADD COLUMN uk_active_master BIGINT UNSIGNED
+    ADD COLUMN uk_active_master UUID
         AS (CASE WHEN master_cv_id IS NULL AND lifecycle_status = 'ACTIVE'
                      THEN profile_id END) PERSISTENT,
     ADD UNIQUE KEY uk_cvs_active_master (uk_active_master);
@@ -40,7 +40,7 @@ ALTER TABLE cvs
 --    Published and cancelled are terminal and deliberately excluded, so an owner who cancels a
 --    draft can immediately start another.
 ALTER TABLE cv_drafts
-    ADD COLUMN uk_open_draft BIGINT UNSIGNED
+    ADD COLUMN uk_open_draft UUID
         AS (CASE WHEN status IN ('DRAFT','PENDING_TECH_LEAD','PENDING_HR','REJECTED')
                      THEN cv_id END) PERSISTENT,
     ADD UNIQUE KEY uk_cv_drafts_open (uk_open_draft);
@@ -49,7 +49,7 @@ ALTER TABLE cv_drafts
 --    This is what makes the handover chain reconstructable from assignment times alone, and so
 --    what removes the need for a "next assignment" pointer.
 ALTER TABLE approval_assignments
-    ADD COLUMN uk_assigned_draft BIGINT UNSIGNED
+    ADD COLUMN uk_assigned_draft UUID
         AS (CASE WHEN status = 'ASSIGNED' THEN draft_id END) PERSISTENT,
     ADD UNIQUE KEY uk_approval_assignments_assigned (uk_assigned_draft);
 
@@ -57,12 +57,12 @@ ALTER TABLE approval_assignments
 --    COALESCE is the whole point here. A request that does not yet target a profile has a NULL
 --    profile_id, and NULLs do not collide in a unique index - without the coalesce, the same
 --    request could be created any number of times and the employee would receive repeated
---    emails demanding the same thing. Zero is safe as the sentinel because profile ids are
---    generated and start at one.
+--    emails demanding the same thing. Zero UUID is safe as the sentinel because profile ids are
+--    generated UUIDs.
 ALTER TABLE update_requests
-    ADD COLUMN uk_pending_key VARCHAR(80)
+    ADD COLUMN uk_pending_key VARCHAR(120)
         AS (CASE WHEN status = 'PENDING'
-                     THEN CONCAT(employee_id, ':', COALESCE(profile_id, 0), ':', language) END) PERSISTENT,
+                     THEN CONCAT(employee_id, ':', COALESCE(profile_id, '00000000-0000-0000-0000-000000000000'), ':', language) END) PERSISTENT,
     ADD UNIQUE KEY uk_update_requests_pending (uk_pending_key);
 
 -- 8. One reminder per target, recipient and day.

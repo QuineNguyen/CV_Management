@@ -11,6 +11,7 @@ import java.sql.Statement;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -27,6 +28,8 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 @DisplayName("Environment: character set and time zone")
 class CharsetAndTimezoneTest extends MariaDBTestBase {
+
+    private static final String ADMIN = "018f2f5c-8d1e-7b3a-9c4d-1e2f3a4b5c02";
 
     @AfterEach
     void cleanUp() throws Exception {
@@ -77,25 +80,25 @@ class CharsetAndTimezoneTest extends MariaDBTestBase {
 
         try (Connection c = connect()) {
             for (String sample : samples) {
-                long id;
+                String id = UUID.randomUUID().toString();
                 try (PreparedStatement ps = c.prepareStatement("""
-                        INSERT INTO update_requests (employee_id, profile_id, language, reason,
+                        INSERT INTO update_requests (id, employee_id, profile_id, language, reason,
                             deadline, status, notification_failed,
                             created_by, created_at, updated_by, updated_at)
-                        VALUES (1, NULL, 'JA', ?, '2026-12-31 23:59:59', 'COMPLETED', FALSE,
-                                1, NOW(), 1, NOW())
-                        """, Statement.RETURN_GENERATED_KEYS)) {
-                    ps.setString(1, sample);
+                        VALUES (?, ?, NULL, 'JA', ?, '2026-12-31 23:59:59', 'COMPLETED', FALSE,
+                                ?, NOW(), ?, NOW())
+                        """)) {
+                    ps.setString(1, id);
+                    ps.setString(2, ADMIN);
+                    ps.setString(3, sample);
+                    ps.setString(4, ADMIN);
+                    ps.setString(5, ADMIN);
                     ps.executeUpdate();
-                    try (ResultSet keys = ps.getGeneratedKeys()) {
-                        keys.next();
-                        id = keys.getLong(1);
-                    }
                 }
 
                 try (PreparedStatement ps = c.prepareStatement(
                         "SELECT reason, CHAR_LENGTH(reason) FROM update_requests WHERE id = ?")) {
-                    ps.setLong(1, id);
+                    ps.setString(1, id);
                     try (ResultSet rs = ps.executeQuery()) {
                         rs.next();
                         assertThat(rs.getString(1))
@@ -126,25 +129,25 @@ class CharsetAndTimezoneTest extends MariaDBTestBase {
                 assertThat(rs.getString(1)).isEqualTo("+07:00");
             }
 
-            long id;
+            String id = UUID.randomUUID().toString();
             try (PreparedStatement ps = c.prepareStatement("""
-                    INSERT INTO update_requests (employee_id, profile_id, language, reason,
+                    INSERT INTO update_requests (id, employee_id, profile_id, language, reason,
                         deadline, status, notification_failed,
                         created_by, created_at, updated_by, updated_at)
-                    VALUES (1, NULL, 'VI', 'Deadline check', ?, 'COMPLETED', FALSE,
-                            1, NOW(), 1, NOW())
-                    """, Statement.RETURN_GENERATED_KEYS)) {
-                ps.setObject(1, deadline);
+                    VALUES (?, ?, NULL, 'VI', 'Deadline check', ?, 'COMPLETED', FALSE,
+                            ?, NOW(), ?, NOW())
+                    """)) {
+                ps.setString(1, id);
+                ps.setString(2, ADMIN);
+                ps.setObject(3, deadline);
+                ps.setString(4, ADMIN);
+                ps.setString(5, ADMIN);
                 ps.executeUpdate();
-                try (ResultSet keys = ps.getGeneratedKeys()) {
-                    keys.next();
-                    id = keys.getLong(1);
-                }
             }
 
             try (PreparedStatement ps = c.prepareStatement(
                     "SELECT deadline, HOUR(deadline), DATE(deadline) FROM update_requests WHERE id = ?")) {
-                ps.setLong(1, id);
+                ps.setString(1, id);
                 try (ResultSet rs = ps.executeQuery()) {
                     rs.next();
                     assertThat(rs.getObject(1, LocalDateTime.class))

@@ -5,6 +5,7 @@ import org.junit.jupiter.api.*;
 import java.sql.Connection;
 import java.sql.SQLIntegrityConstraintViolationException;
 import java.sql.Statement;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -23,8 +24,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 @DisplayName("Schema: constraint behaviour")
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class V6ConstraintBehaviourTest extends MariaDBTestBase {
-    private static final long ADMIN = 1L;   // seeded root administrator
-    private static final long TEAM = 1L;
+    private static final String ADMIN = "018f2f5c-8d1e-7b3a-9c4d-1e2f3a4b5c02";   // seeded root administrator
+    private static final String TEAM = "018f2f5c-8d1e-7b3a-9c4d-1e2f3a4b5c04";
 
     @AfterEach
     void cleanUp() throws Exception {
@@ -80,9 +81,9 @@ public class V6ConstraintBehaviourTest extends MariaDBTestBase {
     @DisplayName("One active CV per language, and one master per profile")
     void cvUniquenessRules() throws Exception {
         try (Connection c = connect()) {
-            long profile = addProfile(c, "CV profile", true, "ACTIVE");
+            String profile = addProfile(c, "CV profile", true, "ACTIVE");
 
-            long master = addCv(c, profile, "VI", null, "ACTIVE");
+            String master = addCv(c, profile, "VI", null, "ACTIVE");
             assertThatThrownBy(() -> addCv(c, profile, "VI", master, "ACTIVE"))
                     .hasMessageContaining("uk_cvs_active_profile_lang");
 
@@ -93,7 +94,7 @@ public class V6ConstraintBehaviourTest extends MariaDBTestBase {
 
             // Deleting the Vietnamese CV frees that language slot again.
             try (Statement st = c.createStatement()) {
-                st.executeUpdate("UPDATE cvs SET lifecycle_status = 'DELETED' WHERE id = " + master);
+                st.executeUpdate("UPDATE cvs SET lifecycle_status = 'DELETED' WHERE id = '" + master + "'");
             }
             assertThatNoException().isThrownBy(() -> addCv(c, profile, "VI", null, "ACTIVE"));
         }
@@ -123,57 +124,59 @@ public class V6ConstraintBehaviourTest extends MariaDBTestBase {
     @DisplayName("A CV from another profile cannot be linked to a request")
     void compositeKeyBlocksMismatch() throws Exception {
         try (Connection c = connect()) {
-            long profileA = addProfile(c, "Profile A", true, "ACTIVE");
-            long profileB = addProfile(c, "Profile B", false, "ACTIVE");
-            long cvOfB = addCv(c, profileB, "VI", null, "ACTIVE");
+            String profileA = addProfile(c, "Profile A", true, "ACTIVE");
+            String profileB = addProfile(c, "Profile B", false, "ACTIVE");
+            String cvOfB = addCv(c, profileB, "VI", null, "ACTIVE");
 
-            long request = addRequest(c, profileA, "VI", "PENDING");
+            String request = addRequest(c, profileA, "VI", "PENDING");
             try (Statement st = c.createStatement()) {
                 assertThatThrownBy(() -> st.executeUpdate(
-                        "UPDATE update_requests SET cv_id = " + cvOfB + " WHERE id = " + request))
+                        "UPDATE update_requests SET cv_id = '" + cvOfB + "' WHERE id = '" + request + "'"))
                         .hasMessageContaining("fk_ur_cv_profile");
             }
         }
     }
 
     // ------------------------------------------------------------------ helpers
-    private long addProfile(Connection c, String name, boolean primary, String status)
+    private String addProfile(Connection c, String name, boolean primary, String status)
             throws Exception {
-        return insert(c, """
-                INSERT INTO cv_profiles (employee_id, name, is_primary, linked_team_id,
+        String id = UUID.randomUUID().toString();
+        insert(c, """
+                INSERT INTO cv_profiles (id, employee_id, name, is_primary, linked_team_id,
                     lifecycle_status, created_by, created_at, updated_by, updated_at)
-                VALUES (%d, '%s', %b, %d, '%s', %d, NOW(), %d, NOW())
-                """.formatted(ADMIN, name, primary, TEAM, status, ADMIN, ADMIN));
+                VALUES ('%s', '%s', '%s', %b, '%s', '%s', '%s', NOW(), '%s', NOW())
+                """.formatted(id, ADMIN, name, primary, TEAM, status, ADMIN, ADMIN));
+        return id;
     }
 
-    private long addCv(Connection c, long profile, String language, Long master, String status)
+    private String addCv(Connection c, String profile, String language, String master, String status)
             throws Exception {
-        return insert(c, """
-                INSERT INTO cvs (profile_id, language, master_cv_id, lifecycle_status,
+        String id = UUID.randomUUID().toString();
+        insert(c, """
+                INSERT INTO cvs (id, profile_id, language, master_cv_id, lifecycle_status,
                     created_by, created_at, updated_by, updated_at)
-                VALUES (%d, '%s', %s, '%s', %d, NOW(), %d, NOW())
-                """.formatted(profile, language, master == null ? "NULL" : master.toString(),
+                VALUES ('%s', '%s', '%s', %s, '%s', '%s', NOW(), '%s', NOW())
+                """.formatted(id, profile, language, master == null ? "NULL" : "'" + master + "'",
                 status, ADMIN, ADMIN));
+        return id;
     }
 
-    private long addRequest(Connection c, Long profile, String language, String status)
+    private String addRequest(Connection c, String profile, String language, String status)
             throws Exception {
-        return insert(c, """
-                INSERT INTO update_requests (employee_id, profile_id, language, reason,
+        String id = UUID.randomUUID().toString();
+        insert(c, """
+                INSERT INTO update_requests (id, employee_id, profile_id, language, reason,
                     deadline, status, notification_failed, created_by, created_at, updated_by, updated_at)
-                VALUES (%d, %s, '%s', 'Test reason', '2026-12-31 23:59:59', '%s', FALSE,
-                        %d, NOW(), %d, NOW())
-                """.formatted(ADMIN, profile == null ? "NULL" : profile.toString(), language,
+                VALUES ('%s', '%s', %s, '%s', 'Test reason', '2026-12-31 23:59:59', '%s', FALSE,
+                        '%s', NOW(), '%s', NOW())
+                """.formatted(id, ADMIN, profile == null ? "NULL" : "'" + profile + "'", language,
                 status, ADMIN, ADMIN));
+        return id;
     }
 
-    private long insert(Connection c, String sql) throws Exception {
+    private void insert(Connection c, String sql) throws Exception {
         try (Statement st = c.createStatement()) {
-            st.executeUpdate(sql, Statement.RETURN_GENERATED_KEYS);
-            try (var keys = st.getGeneratedKeys()) {
-                keys.next();
-                return keys.getLong(1);
-            }
+            st.executeUpdate(sql);
         }
     }
 }
