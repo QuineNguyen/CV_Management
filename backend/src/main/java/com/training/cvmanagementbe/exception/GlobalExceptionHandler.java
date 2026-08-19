@@ -39,21 +39,23 @@ public class GlobalExceptionHandler {
      */
     private static final Map<String, ErrorCode> CODE_BY_INDEX = Map.ofEntries(
             // The eight "at most one row matching a condition" constraints.
-            Map.entry("uk_cv_profiles_active_primary",    ErrorCode.PRIMARY_PROFILE_EXISTS),
-            Map.entry("uk_cv_profiles_active_name",       ErrorCode.PROFILE_NAME_TAKEN),
-            Map.entry("uk_cvs_active_profile_lang",       ErrorCode.CV_LANGUAGE_EXISTS),
-            Map.entry("uk_cvs_active_master",             ErrorCode.MASTER_CV_EXISTS),
-            Map.entry("uk_cv_drafts_open",                ErrorCode.OPEN_DRAFT_EXISTS),
-            Map.entry("uk_approval_assignments_assigned", ErrorCode.APPROVAL_ALREADY_ASSIGNED),
-            Map.entry("uk_update_requests_pending",       ErrorCode.PENDING_REQUEST_EXISTS),
-            Map.entry("uk_reminder_logs_daily",           ErrorCode.REMINDER_ALREADY_SENT),
+            Map.entry(DbConstraint.UK_CV_PROFILES_ACTIVE_PRIMARY.getIndexName(),   ErrorCode.PRIMARY_PROFILE_EXISTS),
+            Map.entry(DbConstraint.UK_CV_PROFILES_ACTIVE_NAME.getIndexName(),      ErrorCode.PROFILE_NAME_TAKEN),
+            Map.entry(DbConstraint.UK_CVS_ACTIVE_PROFILE_LANG.getIndexName(),      ErrorCode.CV_LANGUAGE_EXISTS),
+            Map.entry(DbConstraint.UK_CVS_ACTIVE_MASTER.getIndexName(),            ErrorCode.MASTER_CV_EXISTS),
+            Map.entry(DbConstraint.UK_CV_DRAFTS_OPEN.getIndexName(),               ErrorCode.OPEN_DRAFT_EXISTS),
+            Map.entry(DbConstraint.UK_APPROVAL_ASSIGNMENTS_ASSIGNED.getIndexName(),ErrorCode.APPROVAL_ALREADY_ASSIGNED),
+            Map.entry(DbConstraint.UK_UPDATE_REQUESTS_PENDING.getIndexName(),      ErrorCode.PENDING_REQUEST_EXISTS),
+            Map.entry(DbConstraint.UK_REMINDER_LOGS_DAILY.getIndexName(),          ErrorCode.REMINDER_ALREADY_SENT),
             // Plain unique keys and the composite foreign key.
-            Map.entry("uk_users_email",                   ErrorCode.DUPLICATE_EMAIL),
-            Map.entry("uk_users_username",                ErrorCode.DUPLICATE_USERNAME),
-            Map.entry("uk_cv_versions_number",            ErrorCode.VERSION_NUMBER_TAKEN),
-            Map.entry("uk_skills_code",                   ErrorCode.DUPLICATE_SKILL_CODE),
-            Map.entry("uk_skills_name",                   ErrorCode.DUPLICATE_SKILL_NAME),
-            Map.entry("fk_ur_cv_profile",                 ErrorCode.CV_PROFILE_MISMATCH)
+            Map.entry(DbConstraint.UK_USERS_EMAIL.getIndexName(),                  ErrorCode.DUPLICATE_EMAIL),
+            Map.entry(DbConstraint.UK_USERS_USERNAME.getIndexName(),               ErrorCode.DUPLICATE_USERNAME),
+            Map.entry(DbConstraint.UK_CV_VERSIONS_NUMBER.getIndexName(),           ErrorCode.VERSION_NUMBER_TAKEN),
+            Map.entry(DbConstraint.UK_SKILLS_CODE.getIndexName(),                  ErrorCode.DUPLICATE_SKILL_CODE),
+            Map.entry(DbConstraint.UK_SKILLS_NAME.getIndexName(),                  ErrorCode.DUPLICATE_SKILL_NAME),
+            Map.entry(DbConstraint.FK_UR_CV_PROFILE.getIndexName(),                ErrorCode.CV_PROFILE_MISMATCH),
+            Map.entry(DbConstraint.UK_DEPARTMENT_CODE.getIndexName(),              ErrorCode.DUPLICATE_DEPARTMENT_CODE),
+            Map.entry(DbConstraint.UK_DEPARTMENT_NAME.getIndexName(),              ErrorCode.DUPLICATE_DEPARTMENT_NAME)
     );
 
     // --------- 400 ---------

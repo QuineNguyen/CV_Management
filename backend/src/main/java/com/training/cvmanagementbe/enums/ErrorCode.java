@@ -34,7 +34,6 @@ public enum ErrorCode {
     PASSWORD_CONFIRMATION_MISMATCH("The confirmation password does not match the new password"),
     PASSWORD_SAME_AS_OLD("The new password must be different from the current password"),
     MUST_CHANGE_PASSWORD("You must change your password before continuing"),
-    USER_NOT_FOUND("User not found"),
 
     // ---------- CV profiles and CVs ----------
     PROFILE_NAME_TAKEN("Another active profile of this employee already uses that name"),
@@ -59,6 +58,15 @@ public enum ErrorCode {
 
     // ---------- Reminders ----------
     REMINDER_ALREADY_SENT("A reminder for this target and recipient was already sent today"),
+
+    // ---------- Department ----------
+    DUPLICATE_DEPARTMENT_CODE("Another department already uses that code"),
+    DUPLICATE_DEPARTMENT_NAME("Another department already uses that name"),
+    DEPARTMENT_HAS_CHILDREN("Cannot delete a department that still has sub-departments"),
+    DEPARTMENT_HAS_EMPLOYEES("Cannot delete a department that still has employees assigned to it"),
+    DEPARTMENT_HAS_TEAMS("Cannot delete a department that still has teams"),
+    DEPARTMENT_CIRCULAR_REFERENCE("Moving this department here would create a circular reference"),
+    DEPARTMENT_INVALID_REORDER("The reorder payload must contain exactly the direct children of that parent"),
 
     // ---------- Generic ----------
     /** Returned as 403 whenever the caller's role does not cover the requested data. */

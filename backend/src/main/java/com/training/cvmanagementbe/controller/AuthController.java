@@ -1,6 +1,6 @@
 package com.training.cvmanagementbe.controller;
 
-import com.training.cvmanagementbe.config.auth.AuthRoutes;
+import com.training.cvmanagementbe.constant.AuthPath;
 import com.training.cvmanagementbe.dto.*;
 import com.training.cvmanagementbe.entity.models.CurrentActor;
 import com.training.cvmanagementbe.service.AuthService;
@@ -23,31 +23,31 @@ public class AuthController {
         this.authService = authService;
     }
 
-    @PostMapping(AuthRoutes.LOGIN)
+    @PostMapping(AuthPath.LOGIN)
     public LoginResponse login(@Valid @RequestBody LoginRequest request) {
         return authService.login(request);
     }
 
-    @PostMapping(AuthRoutes.GOOGLE_LOGIN)
+    @PostMapping(AuthPath.GOOGLE_LOGIN)
     public LoginResponse loginWithGoogle(@Valid @RequestBody GoogleLoginRequest request) {
         return authService.loginWithGoogle(request);
     }
 
-    @PostMapping(AuthRoutes.LOGOUT)
+    @PostMapping(AuthPath.LOGOUT)
     public ResponseEntity<Void> logout() {
         authService.logout(CurrentActor.requireUserId());
         return ResponseEntity.noContent().build();
     }
 
     // All sessions are revoked, so the frontend must force a re-login afterwards.
-    @PostMapping(AuthRoutes.CHANGE_PASSWORD)
+    @PostMapping(AuthPath.CHANGE_PASSWORD)
     public ResponseEntity<Void> changePassword(@Valid @RequestBody ChangePasswordRequest request) {
         authService.changePassword(request, CurrentActor.requireUserId());
         return ResponseEntity.noContent().build();
     }
 
     // Returns the temporary password once for the admin dialog; email is sent in parallel
-    @PostMapping(AuthRoutes.ADMIN_RESET_PASSWORD)
+    @PostMapping(AuthPath.ADMIN_RESET_PASSWORD)
     @PreAuthorize("hasRole('ADMIN')")
     public ResetPasswordResponse resetPassword(@PathVariable UUID userId) {
         return authService.resetPassword(userId);
