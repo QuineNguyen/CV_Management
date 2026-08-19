@@ -1,0 +1,60 @@
+<mat-sidenav-container class="shell-container">
+  <mat-sidenav
+    #drawer
+    class="shell-sidenav"
+    [mode]="isCompact() ? 'over' : 'side'"
+    [opened]="!isCompact() && navOpen()"
+  >
+    <div class="shell-brand">
+      <span class="material-symbols-outlined">description</span>
+      <span>CV Management</span>
+    </div>
+
+    <mat-nav-list>
+      @for (item of visibleNavItems(); track item.route) {
+        <a mat-list-item
+          class="shell-nav-link"
+          [routerLink]="item.route"
+          routerLinkActive="active"
+          (click)="isCompact() && drawer.close()">
+          <span matListItemIcon class="material-symbols-outlined">{{ item.icon }}</span>
+          <span matListItemTitle>{{ item.label }}</span>
+        </a>
+      }
+    </mat-nav-list>
+  </mat-sidenav>
+
+  <mat-sidenav-content>
+    <mat-toolbar class="shell-toolbar">
+      <button mat-icon-button (click)="toggleNav(drawer)" aria-label="Toggle navigation">
+        <span class="material-symbols-outlined">menu</span>
+      </button>
+
+      <span class="shell-spacer"></span>
+
+      <button mat-button [matMenuTriggerFor]="accountMenu">
+        <div class="shell-user">
+          <span class="material-symbols-outlined">account_circle</span>
+          <span class="shell-user-name">{{ user()?.fullName }}</span>
+        </div>
+      </button>
+
+      <mat-menu #accountMenu="matMenu">
+        <div class="shell-account-head">
+          <strong>{{ user()?.fullName }}</strong>
+          <small>{{ user()?.email }}</small>
+          <small>{{ roleLabel() }}</small>
+        </div>
+        <mat-divider />
+        <button mat-menu-item (click)="signOut()">
+          <span class="material-symbols-outlined">logout</span>
+          <span>Sign out</span>
+        </button>
+      </mat-menu>
+    </mat-toolbar>
+
+    <main class="shell-content">
+      <router-outlet />
+    </main>
+  </mat-sidenav-content>
+</mat-sidenav-container>

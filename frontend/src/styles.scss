@@ -1,0 +1,91 @@
+@use '@angular/material' as mat;
+
+$vt-theme: mat.define-theme((
+  color: (
+    theme-type: light,
+    primary: mat.$red-palette,
+    tertiary: mat.$rose-palette,
+  ),
+  typography: (
+    brand-family: 'Noto Sans, Noto Sans JP, sans-serif',
+    plain-family: 'Noto Sans, Noto Sans JP, sans-serif',
+  ),
+  density: (
+    scale: 0,
+  ),
+));
+
+html {
+  @include mat.all-component-themes($vt-theme);
+  @include mat.system-level-colors($vt-theme);
+  @include mat.system-level-typography($vt-theme);
+}
+
+:root {
+  /* Brand */
+  --vt-red: #ee0033;
+  --vt-red-dark: #c4002a;
+  --vt-red-light: #ff4d6d;
+  --vt-red-surface: #fff5f7;   /* tinted background for selected states */
+
+  /* Neutrals */
+  --vt-ink: #1a1a1a;
+  --vt-ink-muted: #5a5a5a;
+  --vt-line: #e0e0e0;
+  --vt-surface: #ffffff;
+  --vt-canvas: #f5f6f8;
+
+  /* Semantic */
+  --vt-success: #2e7d32;
+  --vt-warning: #ed6c02;
+  --vt-danger: var(--vt-red);
+
+  /* Layout */
+  --vt-radius: clamp(8px, 1.2vw, 12px);
+  --vt-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+  --vt-sidenav-width: clamp(220px, 20vw, 264px);
+
+  /* Minimum touch target on tablets and phones (WCAG 2.5.5) */
+  --vt-touch-target: 2.75rem; /* ~44px */
+}
+
+html, body {
+  height: 100%;
+  margin: 0;
+  background: var(--vt-canvas);
+  color: var(--vt-ink);
+}
+
+/* Prevent iOS Safari from zooming when a text field gains focus.
+   It triggers below 16px (1rem), and the zoom does not reverse on blur. */
+input, select, textarea {
+  font-size: 1rem;
+}
+
+/* Light theme configuration. */
+html {
+  color-scheme: light;
+}
+
+/* Base body typography and material system colors. */
+body {
+  margin: 0;
+  font-family: 'Noto Sans', 'Noto Sans JP', system-ui, sans-serif;
+  background: var(--mat-sys-surface);
+  color: var(--mat-sys-on-surface);
+}
+
+.material-symbols-outlined {
+  font-family: 'Material Symbols Outlined';
+  font-variation-settings: 'FILL' 0, 'wght' 400;
+}
+
+/* Shared empty-state layout styling. */
+.empty-state {
+  display: grid;
+  place-items: center;
+  gap: 0.5rem;
+  padding: 3rem 1rem;
+  color: var(--mat-sys-on-surface-variant);
+  text-align: center;
+}

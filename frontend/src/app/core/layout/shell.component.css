@@ -1,0 +1,123 @@
+.shell-container {
+  height: 100dvh;
+}
+
+.shell-toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: var(--vt-red);
+  color: #fff;
+  padding-top: env(safe-area-inset-top);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.16);
+}
+
+.shell-toolbar button {
+  color: #fff;
+}
+
+.shell-title {
+  font-size: clamp(1rem, 2vw, 1.125rem);
+  font-weight: 600;
+  margin-left: 0.5rem;
+}
+
+.shell-spacer {
+  flex: 1;
+}
+
+.shell-user {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.shell-user-name {
+  font-size: 0.875rem;
+  line-height: 1.2;
+}
+
+.shell-user-role {
+  font-size: 0.75rem;
+  opacity: 0.85;
+}
+
+.shell-sidenav {
+  width: var(--vt-sidenav-width);
+  max-width: 85vw;
+  border-right: 1px solid var(--vt-line);
+  background: var(--vt-surface);
+}
+
+.shell-nav-link {
+  border-radius: var(--vt-radius);
+  margin: 0.25rem 3%;
+  min-height: var(--vt-touch-target);
+}
+
+.shell-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: clamp(1rem, 2.5vh, 1.25rem) clamp(0.75rem, 2vw, 1rem);
+  font-weight: 700;
+  font-size: clamp(1rem, 2vw, 1.125rem);
+  color: var(--vt-red);
+}
+
+.shell-account-head {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: clamp(0.5rem, 1.5vh, 0.75rem) clamp(0.75rem, 2vw, 1rem);
+}
+
+.shell-nav-link.active {
+  background: var(--vt-red-surface);
+  color: var(--vt-red);
+  font-weight: 600;
+}
+
+.shell-nav-link.active mat-icon,
+.shell-nav-link.active .material-symbols-outlined {
+  color: var(--vt-red);
+}
+
+.shell-content {
+  padding: clamp(1rem, 2.5vw, 1.5rem);
+  background: var(--vt-canvas);
+  min-height: 100%;
+}
+
+@media (min-width: 600px) and (max-width: 1024px) {
+  .shell-sidenav {
+    width: clamp(200px, 24vw, 240px);
+  }
+
+  .shell-content {
+    padding: clamp(1rem, 2vw, 1.25rem) clamp(0.75rem, 1.5vw, 1rem);
+  }
+
+  .shell-user-name {
+    display: none;
+  }
+}
+
+@media (max-width: 599px) {
+  .shell-sidenav {
+    width: min(80vw, 300px);
+  }
+
+  .shell-content {
+    padding: clamp(0.75rem, 3vw, 1rem) clamp(0.5rem, 2vw, 0.75rem) calc(clamp(0.75rem, 3vw, 1rem) + env(safe-area-inset-bottom));
+  }
+
+  .shell-title {
+    font-size: 1rem;
+  }
+
+  .shell-user-name,
+  .shell-user-role {
+    display: none;
+  }
+}

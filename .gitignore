@@ -4,16 +4,17 @@ CLAUDE.md
 
 .env
 *.env.local
+.env.dev
 
 backend/target/
 *.jar
 *.class
-backend/src/main/resources/application.properties
-backend/src/main/resources/application-*.properties
+backend/src/main/resources/*.properties
 
 frontend/node_modules/
 frontend/dist/
 frontend/.angular/
+frontend/public/env.js
 
 .idea/
 *.iml

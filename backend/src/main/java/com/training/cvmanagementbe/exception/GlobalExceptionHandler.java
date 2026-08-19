@@ -9,9 +9,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.OptimisticLockingFailureException;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.authorization.AuthorizationDeniedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -77,6 +80,24 @@ public class GlobalExceptionHandler {
     ResponseEntity<ApiError> handleMalformedRequest(Exception ex, HttpServletRequest req) {
         log.debug("400 at {}: {}", req.getRequestURI(), ex.getMessage());
         return respond(HttpStatus.BAD_REQUEST, ErrorCode.BAD_REQUEST, req);
+    }
+
+    // Locked account: carry the wait time in the standard Retry-After header.
+    @ExceptionHandler(ApiException.AccountLockedException.class)
+    ResponseEntity<ApiError> handleAccountLocked(ApiException.AccountLockedException ex, HttpServletRequest req) {
+        log.info("{} {} at {} - retry after {} seconds", ex.status().value(), ex.code(),
+                req.getRequestURI(), ex.retryAfterSeconds());
+        return ResponseEntity.status(ex.status())
+                .header(HttpHeaders.RETRY_AFTER, String.valueOf(ex.retryAfterSeconds()))
+                .body(ApiError.of(ex.status().value(), ex.status().name(), ex.code(),
+                        ex.getMessage(), req.getRequestURI()));
+    }
+
+    // --------- 403 ---------
+    @ExceptionHandler({AuthorizationDeniedException.class, AccessDeniedException.class})
+    ResponseEntity<ApiError> handleAccessDenied(Exception ex, HttpServletRequest req) {
+        log.info("403 at {} - {}", req.getRequestURI(), ex.getMessage());
+        return respond(HttpStatus.FORBIDDEN, ErrorCode.OUT_OF_SCOPE, req);
     }
 
     // --------- 404 ---------

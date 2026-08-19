@@ -25,7 +25,7 @@ public class OpenApiConfig {
     OpenAPI openApi() {
         return new OpenAPI()
                 .info(new Info()
-                        .title("CV Manager API")
+                        .title("CV Management API")
                         .version("0.1.0")
                         .description("""
                                 Internal system for maintaining employee CVs.

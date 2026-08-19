@@ -1,6 +1,7 @@
+name: cvproject-dev
+
 services:
   mariadb:
-    container_name: cvproject-mariadb-dev
     environment:
       MARIADB_DATABASE: ${MARIADB_DATABASE}
       MARIADB_USER: ${MARIADB_USER}
@@ -8,35 +9,21 @@ services:
       MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD}
     ports:
       - "3307:3306"
-    volumes:
-      - mariadb_dev_data:/var/lib/mysql
 
   minio:
-    container_name: cvproject-minio-dev
     environment:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
     ports:
       - "9002:9000" # Port API MinIO Dev
       - "9003:9001" # Port Web Console MinIO Dev (http://localhost:9003)
-    volumes:
-      - minio_dev_data:/data
 
   backend:
-    container_name: cvproject-backend-dev
     environment:
       SPRING_PROFILES_ACTIVE: dev
-      SPRING_DATASOURCE_URL: "jdbc:mariadb://mariadb:3306/${MARIADB_DATABASE}:useUnicode=true&characterEncoding=UTF-8&connectionTimeZone=Asia/Ho_Chi_Minh&forceConnectionTimeZoneToSession=true"
+      SPRING_DATASOURCE_URL: "jdbc:mariadb://mariadb:3306/${MARIADB_DATABASE}?useUnicode=true&characterEncoding=UTF-8&connectionTimeZone=Asia/Ho_Chi_Minh&forceConnectionTimeZoneToSession=true"
       SPRING_DATASOURCE_USERNAME: ${MARIADB_USER}
       SPRING_DATASOURCE_PASSWORD: ${MARIADB_PASSWORD}
-      MAIL_HOST: ${MAIL_HOST}
-      MAIL_PORT: ${MAIL_PORT}
       MINIO_PUBLIC_ENDPOINT: ${MINIO_PUBLIC_ENDPOINT}
     ports:
-      - "8080:8080"
-
-volumes:
-  mariadb_dev_data:
-    name: cvproject_mariadb_dev_data
-  minio_dev_data:
-    name: cvproject_minio_dev_data
+      - "${BACKEND_DEBUG_PORT:-8081}:8080"

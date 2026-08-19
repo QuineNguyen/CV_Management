@@ -37,8 +37,8 @@ public class AuditLogger {
 
     private static final String SQL = """
             INSERT INTO audit_logs
-              (actor_id, actor_role, action, target_type, target_id, old_value, new_value, created_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+              (id, actor_id, actor_role, action, target_type, target_id, old_value, new_value, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
             """;
 
     private final JdbcTemplate jdbc;
@@ -58,6 +58,7 @@ public class AuditLogger {
                         + "CurrentActor.runAs with the person who triggered it. action=" + action));
 
         jdbc.update(SQL,
+                UUID.randomUUID(),
                 actor.userId(),
                 actor.role().name(),
                 action.name(),

@@ -1,3 +1,5 @@
+name: cvproject
+
 x-logging: &default-logging
   driver: json-file
   options:
@@ -7,7 +9,7 @@ x-logging: &default-logging
 services:
   mariadb:
     image: mariadb:11.4
-    container_name: cvproject-mariadb
+    container_name: ${STACK_PREFIX:-cvproject}-mariadb
     restart: unless-stopped
     command:
       - --character-set-server=utf8mb4
@@ -34,7 +36,7 @@ services:
 
   minio:
     image: minio/minio:latest
-    container_name: cvproject-minio
+    container_name: ${STACK_PREFIX:-cvproject}-minio
     restart: unless-stopped
     command: server /data --console-address ":9001"
     environment:
@@ -54,7 +56,7 @@ services:
 
   minio-init:
     image: minio/mc:latest
-    container_name: cvproject-minio-init
+    container_name: ${STACK_PREFIX:-cvproject}-minio-init
     restart: "no"
     depends_on:
       minio:
@@ -77,8 +79,8 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    image: cvproject-backend:local
-    container_name: cvproject-backend
+    image: cvproject-backend:${IMAGE_TAG:-latest}
+    container_name: ${STACK_PREFIX:-cvproject}-backend
     restart: unless-stopped
     depends_on:
       mariadb:
@@ -95,10 +97,13 @@ services:
 
       MINIO_INTERNAL_ENDPOINT: ${MINIO_INTERNAL_ENDPOINT:-http://minio:9000}
       MINIO_PUBLIC_ENDPOINT: ${MINIO_PUBLIC_ENDPOINT:-http://localhost}
+      MINIO_PUBLIC_PATH_PREFIX: ${MINIO_PUBLIC_PATH_PREFIX:-/storage}
       MINIO_BUCKET: ${MINIO_BUCKET:-cv-avatars}
       MINIO_ACCESS_KEY: ${MINIO_ROOT_USER}
       MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD}
       MINIO_PRESIGNED_TTL_SECONDS: ${MINIO_PRESIGNED_TTL_SECONDS:-900}
+
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
 
       # --- Security
       JWT_SECRET: ${JWT_SECRET}
@@ -122,13 +127,14 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-    image: cvproject-frontend:local
-    container_name: cvproject-frontend
+    image: cvproject-frontend:${IMAGE_TAG:-latest}
+    container_name: ${STACK_PREFIX:-cvproject}-frontend
     restart: unless-stopped
     depends_on:
       - backend
     environment:
       TZ: ${TZ:-Asia/Ho_Chi_Minh}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
     ports:
       - "${HTTP_PORT:-8000}:8000"
     logging: *default-logging
@@ -136,11 +142,8 @@ services:
 
 volumes:
   mariadb_data:
-    name: cvproject_mariadb_data
   minio_data:
-    name: cvproject_minio_data
 
 networks:
   cvproject:
-    name: cvproject_net
     driver: bridge

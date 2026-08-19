@@ -5,10 +5,6 @@ import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
 import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.gson.GsonFactory;
 import com.training.cvmanagementbe.common.AuditLogger;
-import com.training.cvmanagementbe.config.auth.GoogleTokenVerifier;
-import com.training.cvmanagementbe.config.auth.PasswordGenerator;
-import com.training.cvmanagementbe.config.auth.PasswordValidator;
-import com.training.cvmanagementbe.config.auth.UserPrincipal;
 import com.training.cvmanagementbe.dto.*;
 import com.training.cvmanagementbe.entity.models.CurrentActor;
 import com.training.cvmanagementbe.entity.models.ExternalAccountLink;
@@ -17,14 +13,13 @@ import com.training.cvmanagementbe.enums.*;
 import com.training.cvmanagementbe.exception.ApiException;
 import com.training.cvmanagementbe.repository.ExternalAccountLinkRepository;
 import com.training.cvmanagementbe.repository.UserRepository;
-import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.security.SecureRandom;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
@@ -78,7 +73,6 @@ public class AuthService {
     }
 
     // ---------- Password sign-in ----------
-    @Transactional
     public LoginResponse login(LoginRequest request) {
         User user = userRepository.findByUsername(request.username())
                 .orElseThrow(() -> new ApiException.UnauthorizedException(ErrorCode.INVALID_CREDENTIALS));
@@ -89,12 +83,16 @@ public class AuthService {
             requireActive(user);
 
             if (checkLock(user) == LockStatus.LOCKED) {
-                throw new ApiException.UnauthorizedException(ErrorCode.ACCOUNT_LOCKED);
+                throw new ApiException.AccountLockedException(remainingLockSeconds(user));
             }
 
             if (!passwordEncoder.matches(request.password(), user.getPasswordHash())) {
                 recordFailedAttempt(user);
-                throw new ApiException.UnauthorizedException(ErrorCode.INVALID_CREDENTIALS);
+                // If this attempt just triggered the lock, tell the client immediately.
+                ErrorCode credential = user.getLockedUntil() != null
+                        ? ErrorCode.ACCOUNT_LOCKED
+                        : ErrorCode.INVALID_CREDENTIALS;
+                throw new ApiException.UnauthorizedException(credential);
             }
 
             recordSuccess(user);
@@ -114,7 +112,7 @@ public class AuthService {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new ApiException.UnauthorizedException(ErrorCode.GOOGLE_EMAIL_NOT_REGISTERED));
 
-        return CurrentActor.supplyAs(user.getId(), user.getRole(), () -> {
+        return asActor(user, () -> {
             requireActive(user);
             linkOrVerifyGoogleAccount(user, providerUserId, email);
 
@@ -205,8 +203,8 @@ public class AuthService {
 
     // ---------- Admin resets another user's password ----------
     @Transactional
-    public ResetPasswordResponse resetPassword(UUID targerUserId) {
-        User target = requireUser(targerUserId);
+    public ResetPasswordResponse resetPassword(UUID targetUserId) {
+        User target = requireUser(targetUserId);
         if (!target.isActive()) {
             throw new ApiException.BusinessRuleException(ErrorCode.ACCOUNT_INACTIVE);
         }
@@ -244,11 +242,16 @@ public class AuthService {
         return LockStatus.NOT_LOCKED;
     }
 
+    private long remainingLockSeconds(User user) {
+        return Math.max(1, Duration.between(Instant.now(), user.getLockedUntil()).toSeconds() + 1);
+    }
+
     private void recordFailedAttempt(User user) {
         user.setFailedLoginCount(user.getFailedLoginCount() + 1);
         if (user.getFailedLoginCount() >= maxFailedAttempts) {
             user.setLockedUntil(Instant.now().plus(lockDurationMinutes, ChronoUnit.MINUTES));
         }
+        userRepository.save(user);
     }
 
     private void recordSuccess(User user) {
@@ -304,11 +307,6 @@ public class AuthService {
 
     private LoginResponse issueToken(User user) {
         return new LoginResponse(jwtService.generateToken(user), AuthenticatedUser.from(user));
-    }
-
-    // Pushes the revocation mark forward, killing every live token at once
-    private void revokeTokens(User user) {
-        user.setTokenValidFrom(jwtService.revocationMark());
     }
 
     private void requireActive(User user) {

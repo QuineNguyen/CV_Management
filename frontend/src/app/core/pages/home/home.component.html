@@ -1,0 +1,103 @@
+<h1>Welcome, {{ user()?.fullName }}</h1>
+<p class="home-lead">
+  No CV screens exist yet. The panel below verifies that the platform underneath them is
+  configured correctly.
+</p>
+
+<!-- Check 1: migrations and database configuration -->
+<mat-card appearance="outlined" class="home-card">
+  <mat-card-header>
+    <mat-card-title>Platform status</mat-card-title>
+  </mat-card-header>
+  <mat-card-content>
+    @if (health(); as h) {
+      <dl class="home-facts">
+        <dt>Schema version</dt><dd>{{ h.schemaVersion }}</dd>
+        <dt>Server time</dt><dd>{{ h.serverTime | date: 'medium' }}</dd>
+        <dt>Application time zone</dt><dd>{{ h.jvmTimeZone }}</dd>
+        <dt>Database time zone</dt><dd>{{ h.dbTimeZone }}</dd>
+        <dt>Database character set</dt><dd>{{ h.dbCharset }} / {{ h.dbCollation }}</dd>
+      </dl>
+    } @else if (loadingHealth()) {
+      <mat-spinner diameter="28" />
+    } @else {
+      <p class="empty-state">Status unavailable.</p>
+    }
+  </mat-card-content>
+  <mat-card-actions>
+    <button mat-button (click)="loadHealth()">Refresh</button>
+  </mat-card-actions>
+</mat-card>
+
+<!-- Checks 2 and 4: non-Latin text and deadline handling, in one real write -->
+<mat-card appearance="outlined" class="home-card">
+  <mat-card-header>
+    <mat-card-title>Text and deadline round trip</mat-card-title>
+    <mat-card-subtitle>
+      Writes a row through the API and reads it back from the database.
+    </mat-card-subtitle>
+  </mat-card-header>
+  <mat-card-content>
+    <div class="home-row">
+      <mat-form-field appearance="outline" class="home-grow">
+        <mat-label>Text to store</mat-label>
+        <input matInput [(ngModel)]="sampleText" name="sampleText" />
+        <mat-hint>Mix scripts freely: Japanese, Vietnamese diacritics, emoji.</mat-hint>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Deadline date</mat-label>
+        <input matInput [matDatepicker]="picker" [(ngModel)]="deadlineDate" name="deadline" />
+        <mat-datepicker-toggle matIconSuffix [for]="picker" />
+        <mat-datepicker #picker />
+      </mat-form-field>
+    </div>
+
+    @if (roundTrip(); as r) {
+      <div class="home-result">
+        <mat-chip-set>
+          <mat-chip [highlighted]="r.textMatches">
+            {{ r.textMatches ? 'Text preserved' : 'Text corrupted' }}
+          </mat-chip>
+          <mat-chip [highlighted]="r.deadlineInLocalTime">
+            {{ r.deadlineInLocalTime ? 'Deadline correct' : 'Deadline shifted' }}
+          </mat-chip>
+        </mat-chip-set>
+        <p class="home-echo">{{ r.reasonReadBack }}</p>
+        <small>Stored deadline: {{ r.deadlineReadBack }}</small>
+      </div>
+    }
+  </mat-card-content>
+  <mat-card-actions>
+    <button mat-flat-button [disabled]="busyRoundTrip()" (click)="runRoundTrip()">
+      Run round trip
+    </button>
+    <button mat-button (click)="clearRoundTrip()">Clear test rows</button>
+  </mat-card-actions>
+</mat-card>
+
+<!-- Check 3: presigned URL loads in the browser -->
+<mat-card appearance="outlined" class="home-card">
+  <mat-card-header>
+    <mat-card-title>Image delivery</mat-card-title>
+    <mat-card-subtitle>
+      Uploads through the internal endpoint, then displays the image from a signed public URL.
+    </mat-card-subtitle>
+  </mat-card-header>
+  <mat-card-content>
+    <input type="file" accept="image/*" (change)="uploadImage($event)" />
+
+    @if (upload(); as u) {
+      <div class="home-result">
+        <mat-chip-set>
+          <mat-chip [highlighted]="u.signedWithPublicEndpoint">
+            {{ u.signedWithPublicEndpoint ? 'Signed for the browser' : 'Signed with internal host' }}
+          </mat-chip>
+        </mat-chip-set>
+        <!-- If this renders, the signature, the proxy route and the host header all agree. -->
+        <img class="home-preview" [src]="u.presignedUrl" alt="Uploaded preview" />
+        <code class="home-url">{{ u.presignedUrl }}</code>
+      </div>
+    }
+  </mat-card-content>
+</mat-card>

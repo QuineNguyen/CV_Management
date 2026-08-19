@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.InputStream;
+import java.net.URI;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -82,5 +83,19 @@ public class ImageStorageService {
 
     public String bucket() {
         return props.bucket();
+    }
+
+    /**
+     * Inserts the nginx path prefix that the MinIO SDK cannot carry in its endpoint.
+     * Raw path and query are used so the SigV4 signature is never re-encoded.
+     */
+    private String withPublicPrefix(String signedUrl) {
+        String prefix = props.publicPathPrefix();
+        if (prefix == null || prefix.isBlank()) {
+            return signedUrl;
+        }
+        URI uri = URI.create(signedUrl);
+        String query = uri.getRawQuery() == null ? "" : "?" + uri.getRawQuery();
+        return uri.getScheme() + "://" + uri.getAuthority() + prefix + uri.getRawPath() + query;
     }
 }

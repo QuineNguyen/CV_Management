@@ -23,6 +23,7 @@ public class MinioConfig {
             String internalEndpoint,
             /** Address the browser can reach, including the storage path prefix. */
             String publicEndpoint,
+            String publicPathPrefix,
             String accessKey,
             String secretKey,
             String bucket,

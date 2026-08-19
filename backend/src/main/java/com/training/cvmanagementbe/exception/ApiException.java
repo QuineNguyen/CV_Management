@@ -40,6 +40,21 @@ public abstract class ApiException extends RuntimeException {
         }
     }
 
+    /*
+     * 401 with a wait time. The frontend needs the remaining seconds; without it the countdown
+     * restarts from the full duration on evert attempt.
+     */
+    public static class AccountLockedException extends ApiException {
+        private final long retryAfterSeconds;
+
+        public AccountLockedException(long retryAfterSeconds) {
+            super(HttpStatus.UNAUTHORIZED, ErrorCode.ACCOUNT_LOCKED);
+            this.retryAfterSeconds = retryAfterSeconds;
+        }
+
+        public long retryAfterSeconds() { return retryAfterSeconds; }
+    }
+
     /**
      * 403 — the caller is authenticated but the row is outside the data scope their role grants.
      * Data scoping happens in the query, never in the UI, so this is the last line of defence.

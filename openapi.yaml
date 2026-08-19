@@ -14,7 +14,7 @@ openapi: 3.0.3
 # =============================================================================================
 
 info:
-  title: CV Manager API
+  title: CV Management API
   version: 0.1.0
   description: |
     Internal system for maintaining employee CVs.
@@ -117,6 +117,79 @@ paths:
           description: Signed out
         '401':
           $ref: '#/components/responses/Unauthorized'
+
+  /auth/google:
+    post:
+      tags: [Authentication]
+      summary: Sign in with Google
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [idToken]
+              properties:
+                idToken:
+                  type: string
+                  description: Google ID token issued to the frontend by Google Identity Services
+      responses:
+        '200':
+          description: Signed in via Google
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /auth/change-password:
+    post:
+      tags: [Authentication]
+      summary: Change own password
+      description: Revokes every live token for the account; the caller must sign in again.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangePasswordRequest'
+      responses:
+        '204':
+          description: Password changed; all sessions revoked
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+
+  /admin/users/{userId}/reset-password:
+    post:
+      tags: [Users]
+      summary: Admin resets a user's password
+      description: >
+        Returns the temporary password for one-time display in the admin dialog and
+        sends it to the user by email. The audit entry never records the password.
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Password reset
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResetPasswordResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
 
 components:
   securitySchemes:
@@ -331,3 +404,27 @@ components:
           description: |
             True for seeded accounts and after an administrator resets a password. The client must
             route to the password-change screen before anything else.
+
+    ChangePasswordRequest:
+      type: object
+      required: [currentPassword, newPassword, confirmPassword]
+      properties:
+        currentPassword:
+          type: string
+          format: password
+        newPassword:
+          type: string
+          format: password
+          minLength: 8
+          description: At least 8 characters with uppercase, lowercase, digit and special character
+        confirmPassword:
+          type: string
+          format: password
+
+    ResetPasswordResponse:
+      type: object
+      required: [temporaryPassword]
+      properties:
+        temporaryPassword:
+          type: string
+          description: Shown once in the admin dialog; also delivered by email
