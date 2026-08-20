@@ -1,6 +1,6 @@
 package com.training.cvmanagementbe.enums;
 
-import com.training.cvmanagementbe.config.auth.AuthRoutes;
+import com.training.cvmanagementbe.constant.AuthPath;
 
 import java.util.Arrays;
 
@@ -8,8 +8,8 @@ import java.util.Arrays;
 public enum PublicEndpoint {
 
     HEALTH("/health"),
-    LOGIN(AuthRoutes.LOGIN),
-    GOOGLE_LOGIN(AuthRoutes.GOOGLE_LOGIN),
+    LOGIN(AuthPath.LOGIN),
+    GOOGLE_LOGIN(AuthPath.GOOGLE_LOGIN),
     SMOKE("/smoke/**"),
     DOCS("/docs"),
     SWAGGER_UI("/swagger-ui/**"),
