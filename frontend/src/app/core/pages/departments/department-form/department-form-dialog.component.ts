@@ -1,8 +1,11 @@
-import { ChangeDetectionStrategy, Component, computed, inject, input, OnInit, output } from "@angular/core";
-import { FormBuilder, ReactiveFormsModule, Validators } from "@angular/forms";
-import { DepartmentDialogState, FlatDepartment } from "../../../models/department.model";
-import { DepartmentRequest } from "../../../dtos/department.dto";
+import { ChangeDetectionStrategy, Component, computed, DestroyRef, inject, input, OnInit, output, signal } from "@angular/core";
+import { FormBuilder, FormControl, ReactiveFormsModule, Validators } from "@angular/forms";
+import { DepartmentDialogState } from "../../../models/department.model";
+import { DepartmentNode, DepartmentRequest } from "../../../dtos/department.dto";
 import { DepartmentDialogMode } from "../../../enums/department-dialog-mode.enum";
+import { DepartmentService } from "../../../services/department.service";
+import { takeUntilDestroyed, toSignal } from "@angular/core/rxjs-interop";
+import { catchError, debounceTime, distinctUntilChanged, EMPTY, map, merge, startWith, Subject, switchMap, tap } from "rxjs";
 
 @Component({
     selector: 'app-department-form-dialog',
@@ -14,11 +17,16 @@ import { DepartmentDialogMode } from "../../../enums/department-dialog-mode.enum
 })
 export class DepartmentFormDialogComponent implements OnInit {
 
+    // One page of suggestions is enough for a picker; typing narrows it further.
+    private static readonly LOOKUP_SIZE = 20;
+
+    private static readonly SEARCH_DEBOUNCE_MS = 250;
+    
     private readonly fb = inject(FormBuilder);
+    private readonly departmentService = inject(DepartmentService);
+    private readonly destroyRef = inject(DestroyRef);
 
     readonly state = input.required<DepartmentDialogState>();
-    readonly allDepartments = input.required<FlatDepartment[]>();
-    readonly serverError = input<string | null>(null);
     readonly submitting = input(false);
 
     readonly submitted = output<DepartmentRequest>();
@@ -27,35 +35,71 @@ export class DepartmentFormDialogComponent implements OnInit {
     readonly form = this.fb.nonNullable.group({
         code: ['', [Validators.required, Validators.maxLength(50)]],
         name: ['', [Validators.required, Validators.maxLength(255)]],
-        parentDepartmentId: [''],
     });
+
+    readonly parentKeyword = new FormControl('', { nonNullable: true });
+    readonly selectedParent = signal<DepartmentNode | null>(null);
+    readonly pickerOpen = signal(false);
+    readonly parentOptions = signal<DepartmentNode[]>([]);
+    readonly lookupLoading = signal(false);
+    readonly lookupTotal = signal(0);
 
     readonly isEdit = computed(() => this.state().mode === DepartmentDialogMode.Edit);
 
     readonly title = computed(() => (this.isEdit() ? 'Edit department' : 'Add department'));
 
-    // Own id and every descendant are removed so the UI cannot build a loop
-    readonly parentOptions = computed<FlatDepartment[]>(() => {
-        const editingId = this.state().department?.id;
-        if (!editingId) {
-            return this.allDepartments();
-        }
-        const blocked = this.collectDescendantIds(editingId);
-        return this.allDepartments().filter(item => !blocked.has(item.id));
-    })
+    readonly hasMoreMatches = computed(() => this.lookupTotal() > this.parentOptions().length);
+
+    // Fires the first lookup when the picker opens, so a closed picker costs nothing.
+    private readonly reload$ = new Subject<void>();
+
+    private lookupStarted = false;
+
+    // Server includes the edited node and its descendants, so no loop can be picked.
+    readonly suggestions = toSignal(
+        this.parentKeyword.valueChanges.pipe(
+            startWith(''),
+            debounceTime(250),
+            distinctUntilChanged(),
+            switchMap(keyword => {
+                this.lookupLoading.set(true);
+                return this.departmentService.search({
+                    keyword: keyword.trim() || undefined,
+                    excludeSubtreeOf: this.state().department?.id,
+                    page: 0,
+                    size: DepartmentFormDialogComponent.LOOKUP_SIZE,
+                });
+            }),
+            takeUntilDestroyed(),
+        ),
+        { initialValue: null },
+    )
 
     ngOnInit(): void {
         const { department, parentId } = this.state();
+
         this.form.patchValue({
             code: department?.code ?? '',
             name: department?.name ?? '',
-            parentDepartmentId: department?.parentDepartmentId ?? parentId ?? '',
         });
+
+        this.loadInitialParent(department?.parentDepartmentId ?? parentId);
+        this.watchKeyword();
     }
-    
-    // Used in options to visually indent and prefix the line leading to the parent.
-    indent(depth: number): string {
-        return depth === 0 ? '' : `${'\u00A0\u00A0'.repeat(depth)}└`;
+
+    togglePicker(): void {
+        const opening = !this.pickerOpen();
+        this.pickerOpen.set(opening);
+
+        if (opening && !this.lookupStarted) {
+            this.lookupStarted = true;
+            this.reload$.next();
+        }
+    }
+
+    selectParent(parent: DepartmentNode | null): void {
+        this.selectedParent.set(parent);
+        this.pickerOpen.set(false);
     }
 
     hasError(control: 'code' | 'name', error: string): boolean {
@@ -73,7 +117,7 @@ export class DepartmentFormDialogComponent implements OnInit {
         this.submitted.emit({
             code: raw.code.trim(),
             name: raw.name.trim(),
-            parentDepartmentId: raw.parentDepartmentId || null, // empty option means root
+            parentDepartmentId: this.selectedParent()?.id ?? null, // empty option means root
         })
     }
 
@@ -81,23 +125,46 @@ export class DepartmentFormDialogComponent implements OnInit {
         this.cancelled.emit();
     }
 
+    // ---------- Internals ----------
 
-    // Descendants are contiguous rows with a deeper depth in the flattened list.
-    private collectDescendantIds(rootId: string): Set<string> {
-        const list = this.allDepartments();
-        const startIndex = list.findIndex(item => item.id === rootId);
-        const blocked = new Set<string>();
-
-        if (startIndex < 0) {
-            return blocked;
+    private loadInitialParent(parentId: string | null): void {
+        if (!parentId) {
+            return;
         }
 
-        const rootDepth = list[startIndex].depth;
-        blocked.add(rootId);
+        this.departmentService.getById(parentId)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({ next: parent => this.selectedParent.set(parent) });
+    }
 
-        for (let i = startIndex + 1; i < list.length && list[i].depth > rootDepth; i++) {
-            blocked.add(list[i].id);
-        }
-        return blocked;
+    private watchKeyword(): void {
+        const excludeSubtreeOf = this.state().department?.id;
+
+        merge(
+            // Manual trigger reuses whatever is already typed.
+            this.reload$.pipe(map(() => this.parentKeyword.value)),
+            this.parentKeyword.valueChanges.pipe(
+                debounceTime(DepartmentFormDialogComponent.SEARCH_DEBOUNCE_MS),
+                distinctUntilChanged(),
+            ),
+        ).pipe(
+            tap(() => this.lookupLoading.set(true)),
+            switchMap(keyword => this.departmentService.search({
+                keyword: keyword.trim() || undefined,
+                excludeSubtreeOf,
+                page: 0,
+                size: DepartmentFormDialogComponent.LOOKUP_SIZE,
+            }).pipe(
+                catchError(() => {
+                    this.lookupLoading.set(false);
+                    return EMPTY;
+                }),
+            )),
+            takeUntilDestroyed(this.destroyRef),
+        ).subscribe(page => {
+            this.parentOptions.set(page.content);
+            this.lookupTotal.set(page.totalElements);
+            this.lookupLoading.set(false);
+        })
     }
 }

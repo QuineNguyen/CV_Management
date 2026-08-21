@@ -5,23 +5,18 @@
     <div class="dept-heading">
       <h1 class="dept-title">Department Management</h1>
       <p class="dept-subtitle">
-        Organizational tree structure · {{ totalCount() }} {{ totalCount() === 1 ? 'department' : 'departments' }}
+        Organisation tree · {{ pageState().total }} root departments
       </p>
     </div>
 
     <div class="dept-toolbar-actions">
-      <button type="button" class="btn btn--ghost" (click)="expandAll()">Expand All</button>
-      <button type="button" class="btn btn--ghost" (click)="collapseAll()">Collapse All</button>
-      <button type="button" class="btn btn--primary" (click)="openCreate(null)">
+      <button type="button" class="btn btn-ghost" (click)="expandAll()">Expand All</button>
+      <button type="button" class="btn btn-ghost" (click)="collapseAll()">Collapse All</button>
+      <button type="button" class="btn btn-primary" (click)="openCreate(null)">
         <span aria-hidden="true">＋</span> Add Root Department
       </button>
     </div>
   </header>
-
-  <!-- Page level error -->
-  @if (pageError()) {
-    <p class="alert alert--error" role="alert">{{ pageError() }}</p>
-  }
 
   <!-- Body -->
   @if (loading()) {
@@ -34,7 +29,7 @@
     <div class="empty-state">
       <p class="empty-state-title">No departments yet</p>
       <p class="empty-state-hint">Create the first root department to start building the organization tree.</p>
-      <button type="button" class="btn btn--primary" (click)="openCreate(null)">Add Root Department</button>
+      <button type="button" class="btn btn-primary" (click)="openCreate(null)">Add root department</button>
     </div>
   } @else {
     <div class="dept-tree">
@@ -42,7 +37,16 @@
         *ngTemplateOutlet="nodeList; context: { $implicit: tree(), parentId: null, level: 1 }">
       </ng-container>
     </div>
-    <p class="dept-hint">Drag the ⠿ handle to reorder sibling departments.</p>
+    <mat-paginator
+      class="dept-paginator"
+      [length]="pageState().total"
+      [pageIndex]="pageState().index"
+      [pageSize]="pageState().size"
+      [pageSizeOptions]="pageSizeOptions"
+      [hidePageSize]="false"
+      showFirstLastButtons
+      (page)="onPageChange($event)" />
+    <p class="dept-hint">Drag the ⠿ handle to reorder departments under the same parent.</p>
   }
 </section>
 
@@ -63,7 +67,7 @@
           <button
             type="button"
             class="node-toggle"
-            [class.node-toggle--hidden]="!node.children.length"
+            [class.node-toggle-hidden]="!node.children.length"
             [attr.aria-expanded]="isExpanded(node.id)"
             [attr.aria-label]="isExpanded(node.id) ? 'Collapse' : 'Expand'"
             (click)="toggle(node.id)">
@@ -82,7 +86,7 @@
                     (click)="openCreate(node.id)">＋</button>
             <button type="button" class="icon-btn" title="Edit"
                     (click)="openEdit(node)">✎</button>
-            <button type="button" class="icon-btn icon-btn--danger" title="Delete"
+            <button type="button" class="icon-btn icon-btn-danger" title="Delete"
                     (click)="askDelete(node)">🗑</button>
           </div>
         </div>
@@ -101,8 +105,6 @@
 @if (dialogState(); as state) {
   <app-department-form-dialog
     [state]="state"
-    [allDepartments]="flatDepartments()"
-    [serverError]="dialogError()"
     [submitting]="saving()"
     (submitted)="submitDialog($event)"
     (cancelled)="closeDialog()" />
@@ -111,14 +113,14 @@
 <!-- Delete confirmation -->
 @if (deleteTarget(); as target) {
   <div class="modal-backdrop" (click)="cancelDelete()">
-    <div class="modal modal--sm" role="alertdialog" aria-modal="true" (click)="$event.stopPropagation()">
-      <h2 class="modal-title">Delete Department</h2>
+    <div class="modal modal-sm" role="alertdialog" aria-modal="true" (click)="$event.stopPropagation()">
+      <h2 class="modal-title">Delete department</h2>
       <p class="modal-body">
         Delete <strong>{{ target.code }} — {{ target.name }}</strong>? This action cannot be undone.
       </p>
       <div class="modal-footer">
-        <button type="button" class="btn btn--ghost" (click)="cancelDelete()" [disabled]="deleting()">Cancel</button>
-        <button type="button" class="btn btn--danger" (click)="confirmDelete()" [disabled]="deleting()">
+        <button type="button" class="btn btn-ghost" (click)="cancelDelete()" [disabled]="deleting()">Cancel</button>
+        <button type="button" class="btn btn-danger" (click)="confirmDelete()" [disabled]="deleting()">
           {{ deleting() ? 'Deleting...' : 'Delete' }}
         </button>
       </div>

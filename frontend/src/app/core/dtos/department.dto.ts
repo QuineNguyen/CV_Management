@@ -13,6 +13,15 @@ export interface DepartmentRequest {
     parentDepartmentId: string | null;
 }
 
-export interface ReorderRequest {
-    orderedIds: string[];
+export interface MoveDepartmentRequest {
+    parentDepartmentId: string | null;
+    afterDepartmentId: string | null;
+    beforeDepartmentId: string | null;
+}
+
+export interface DepartmentSearchQuery {
+    keyword?: string;
+    excludeSubtreeOf?: string;
+    page: number;
+    size: number;
 }

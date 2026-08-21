@@ -1,19 +1,18 @@
 import { CdkDragDrop, DragDropModule, moveItemInArray } from '@angular/cdk/drag-drop';
 import { NgTemplateOutlet } from "@angular/common";
-import { ChangeDetectionStrategy, Component, computed, inject, OnInit, signal } from "@angular/core";
+import { ChangeDetectionStrategy, Component, inject, OnInit, signal } from "@angular/core";
+import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { DepartmentService } from '../../services/department.service';
 import { DepartmentDialogMode } from '../../enums/department-dialog-mode.enum';
 import { DepartmentNode, DepartmentRequest } from '../../dtos/department.dto';
-import { DepartmentDialogState, DepartmentDropList, FlatDepartment } from '../../models/department.model';
-import { HttpErrorResponse } from '@angular/common/http';
-import { ERROR_MESSAGES } from '../../error-messages';
-import { ClientErrorCode } from '../../models/error-code.model';
+import { DepartmentDialogState, DepartmentDropList, DepartmentPageState } from '../../models/department.model';
 import { DepartmentFormDialogComponent } from './department-form/department-form-dialog.component';
+import { ToastService } from '../../services/toast.service';
 
 @Component({
     selector: 'app-departments',
     standalone: true,
-    imports: [NgTemplateOutlet, DragDropModule, DepartmentFormDialogComponent],
+    imports: [MatPaginatorModule, NgTemplateOutlet, DragDropModule, DepartmentFormDialogComponent],
     templateUrl: './departments.component.html',
     styleUrl: './departments.component.css',
     changeDetection: ChangeDetectionStrategy.OnPush,
@@ -21,26 +20,27 @@ import { DepartmentFormDialogComponent } from './department-form/department-form
 export class DepartmentsComponent implements OnInit {
 
     private readonly departmentService = inject(DepartmentService);
+    private readonly toast = inject(ToastService);
+    private static readonly DEFAULT_PAGE_SIZE = 20;
 
-    readonly DialogMode = DepartmentDialogMode;
+    readonly pageSizeOptions = [5, 10, 20, 50];
+
+    readonly pageState = signal<DepartmentPageState>({
+        index: 0,
+        size: DepartmentsComponent.DEFAULT_PAGE_SIZE,
+        total: 0,
+    });
 
     readonly tree = signal<DepartmentNode[]>([]);
     readonly loading = signal(false);
-    readonly pageError = signal<string | null>(null);
 
     readonly expandedIds = signal<ReadonlySet<string>>(new Set<string>());
 
     readonly dialogState = signal<DepartmentDialogState | null>(null);
-    readonly dialogError = signal<string | null>(null);
     readonly saving = signal(false);
 
     readonly deleteTarget = signal<DepartmentNode | null>(null);
     readonly deleting = signal(false);
-
-    // Parent dropdown source, indented by depth.
-    readonly flatDepartments = computed(() => this.flatten(this.tree(), 0));
-
-    readonly totalCount = computed(() => this.flatDepartments().length);
 
     ngOnInit(): void {
         this.loadTree(true);
@@ -52,19 +52,23 @@ export class DepartmentsComponent implements OnInit {
         if (showSpinner) {
             this.loading.set(true);
         }
-        this.pageError.set(null);
 
-        this.departmentService.getTree().subscribe({
-            next: nodes => {
-                this.tree.set(nodes);
-                this.expandAllByDefault(nodes);
+        const { index, size } = this.pageState();
+
+        this.departmentService.getTree({ page: index, size }).subscribe({
+            next: result => {
+                this.tree.set(result.content);
+                this.pageState.update(state => ({ ...state, total: result.totalElements }));
+                this.expandAllByDefault(result.content);
                 this.loading.set(false);
             },
-            error: (error: HttpErrorResponse) => {
-                this.pageError.set(this.toMessage(error));
-                this.loading.set(false);
-            }
-        })
+            error: () => this.loading.set(false),
+        });
+    }
+
+    onPageChange(event: PageEvent): void {
+        this.pageState.update(state => ({ ...state, index: event.pageIndex, size: event.pageSize }));
+        this.loadTree(true);
     }
 
     // ---------- Expand / collapse ----------
@@ -90,7 +94,6 @@ export class DepartmentsComponent implements OnInit {
     // ---------- Dialog ----------
 
     openCreate(parentId: string | null): void {
-        this.dialogError.set(null);
         this.dialogState.set({
             mode: DepartmentDialogMode.Create,
             department: null,
@@ -99,7 +102,6 @@ export class DepartmentsComponent implements OnInit {
     }
 
     openEdit(department: DepartmentNode): void {
-        this.dialogError.set(null);
         this.dialogState.set({
             mode: DepartmentDialogMode.Edit,
             department,
@@ -109,7 +111,6 @@ export class DepartmentsComponent implements OnInit {
 
     closeDialog(): void {
         this.dialogState.set(null);
-        this.dialogError.set(null);
         this.saving.set(false);
     }
 
@@ -119,31 +120,33 @@ export class DepartmentsComponent implements OnInit {
             return;
         }
         this.saving.set(true);
-        this.dialogError.set(null);
+        const isEdit = state.mode === DepartmentDialogMode.Edit && state.department;
 
         // The '$' suffix (Finnish Notation) signifies that this variable holds an RxJS Observable stream
         // rather than a plain synchronous value, indicating it needs to be subscribed to.
-        const request$ = state.mode === DepartmentDialogMode.Edit && state.department
-            ? this.departmentService.update(state.department.id, body)
+        const request$ = isEdit
+            ? this.departmentService.update(state.department!.id, body)
             : this.departmentService.create(body);
 
         request$.subscribe({
-            next: () => {
+            next: saved => {
                 this.saving.set(false);
                 this.closeDialog();
+                this.toast.success(
+                    isEdit
+                        ? `Department ${saved.code} updated.`
+                        : `Department ${saved.code} created.`
+                );
+
                 this.loadTree(false);
             },
-            error: (error: HttpErrorResponse) => {
-                this.saving.set(false);
-                this.dialogError.set(this.toMessage(error));
-            },
+            error: () => this.saving.set(false),
         });
     }
 
     // ---------- Delete ----------
 
     askDelete(department: DepartmentNode): void {
-        this.pageError.set(null);
         this.deleteTarget.set(department);
     }
 
@@ -161,11 +164,12 @@ export class DepartmentsComponent implements OnInit {
         this.departmentService.delete(target.id).subscribe({
             next: () => {
                 this.cancelDelete();
+                this.toast.success(`Deleted department ${target.code}.`);
                 this.loadTree(false);
             },
-            error: (error: HttpErrorResponse) => {
-                this.saving.set(false);
-                this.dialogError.set(this.toMessage(error));
+            error: () => {
+                this.deleting.set(false);
+                this.deleteTarget.set(null);
             },
         });
     }
@@ -182,21 +186,19 @@ export class DepartmentsComponent implements OnInit {
         moveItemInArray(nodes, event.previousIndex, event.currentIndex);
         this.tree.update(current => [...current]); // Repaint the mutated branch
 
-        const orderedIds = nodes.map(node => node.id);
-        this.departmentService.reorder(parentId, { orderedIds }).subscribe({
-            error: (error: HttpErrorResponse) => {
-                this.pageError.set(this.toMessage(error));
-                this.loadTree(false); // Roll back to the server state
-            }
+        const index = event.currentIndex;
+        const moved = nodes[index];
+
+        this.departmentService.move(moved.id, {
+            parentDepartmentId: parentId,
+            afterDepartmentId: index > 0 ? nodes[index - 1].id : null,
+            beforeDepartmentId: index < nodes.length - 1 ? nodes[index + 1].id : null,
+        }).subscribe({
+            error: () => this.loadTree(false),
         })
     }
 
     // ---------- Helpers ----------
-
-    trackById(_: number, node: DepartmentNode): string {
-        return node.id;
-    }
-
     private expandAllByDefault(nodes: DepartmentNode[]): void {
         const ids = new Set<string>();
         const walk = (list: DepartmentNode[]): void => {
@@ -209,17 +211,5 @@ export class DepartmentsComponent implements OnInit {
         }
         walk(nodes);
         this.expandedIds.set(ids);
-    }
-
-    private flatten(nodes: DepartmentNode[], depth: number): FlatDepartment[] {
-        return nodes.flatMap(node => [
-            { id: node.id, code: node.code, name: node.name, depth },
-            ...this.flatten(node.children, depth + 1),
-        ]);
-    }
-
-    private toMessage(error: HttpErrorResponse): string {
-        const code = error?.error?.code as ClientErrorCode | undefined;
-        return (code && code in ERROR_MESSAGES && ERROR_MESSAGES[code]) || 'An error occured, please try again.';
     }
 }

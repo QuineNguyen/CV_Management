@@ -1,13 +1,6 @@
 import { DepartmentNode } from "../dtos/department.dto";
 import { DepartmentDialogMode } from "../enums/department-dialog-mode.enum";
 
-export interface FlatDepartment {
-    id: string;
-    code: string;
-    name: string;
-    depth: number;
-}
-
 export interface DepartmentDialogState {
     mode: DepartmentDialogMode;
     department: DepartmentNode | null;
@@ -17,4 +10,10 @@ export interface DepartmentDialogState {
 export interface DepartmentDropList {
     parentId: string | null;
     nodes: DepartmentNode[];
+}
+
+export interface DepartmentPageState {
+    index: number;
+    size: number;
+    total: number;
 }
