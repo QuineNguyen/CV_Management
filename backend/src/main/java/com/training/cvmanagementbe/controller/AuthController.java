@@ -2,9 +2,13 @@ package com.training.cvmanagementbe.controller;
 
 import com.training.cvmanagementbe.constant.AuthPath;
 import com.training.cvmanagementbe.constant.AuthorityExpression;
-import com.training.cvmanagementbe.dto.*;
+import com.training.cvmanagementbe.dto.request.ChangePasswordRequest;
+import com.training.cvmanagementbe.dto.request.GoogleLoginRequest;
+import com.training.cvmanagementbe.dto.request.LoginRequest;
+import com.training.cvmanagementbe.dto.response.LoginResponse;
+import com.training.cvmanagementbe.dto.response.ResetPasswordResponse;
 import com.training.cvmanagementbe.entity.models.CurrentActor;
-import com.training.cvmanagementbe.service.AuthService;
+import com.training.cvmanagementbe.service.impl.AuthService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;

@@ -1,11 +1,16 @@
-package com.training.cvmanagementbe.service;
+package com.training.cvmanagementbe.service.impl;
 
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
 import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.gson.GsonFactory;
 import com.training.cvmanagementbe.common.AuditLogger;
-import com.training.cvmanagementbe.dto.*;
+import com.training.cvmanagementbe.dto.request.ChangePasswordRequest;
+import com.training.cvmanagementbe.dto.request.GoogleLoginRequest;
+import com.training.cvmanagementbe.dto.request.LoginRequest;
+import com.training.cvmanagementbe.dto.response.AuthenticatedUser;
+import com.training.cvmanagementbe.dto.response.LoginResponse;
+import com.training.cvmanagementbe.dto.response.ResetPasswordResponse;
 import com.training.cvmanagementbe.entity.models.CurrentActor;
 import com.training.cvmanagementbe.entity.models.ExternalAccountLink;
 import com.training.cvmanagementbe.entity.models.User;

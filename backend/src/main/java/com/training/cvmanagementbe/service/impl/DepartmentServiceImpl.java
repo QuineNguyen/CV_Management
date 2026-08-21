@@ -1,9 +1,10 @@
 package com.training.cvmanagementbe.service.impl;
 
 import com.training.cvmanagementbe.common.AuditLogger;
-import com.training.cvmanagementbe.dto.DepartmentRequest;
-import com.training.cvmanagementbe.dto.DepartmentResponse;
-import com.training.cvmanagementbe.dto.ReorderRequest;
+import com.training.cvmanagementbe.dto.request.DepartmentRequest;
+import com.training.cvmanagementbe.dto.response.DepartmentResponse;
+import com.training.cvmanagementbe.dto.request.MoveDepartmentRequest;
+import com.training.cvmanagementbe.dto.response.PagedResponse;
 import com.training.cvmanagementbe.entity.models.Department;
 import com.training.cvmanagementbe.enums.Action;
 import com.training.cvmanagementbe.enums.ErrorCode;
@@ -14,11 +15,12 @@ import com.training.cvmanagementbe.repository.TeamRepository;
 import com.training.cvmanagementbe.repository.UserRepository;
 import com.training.cvmanagementbe.service.DepartmentService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Service
@@ -41,17 +43,35 @@ public class DepartmentServiceImpl implements DepartmentService {
     private final AuditLogger auditLogger;
 
     @Override
-    public List<DepartmentResponse> getTree() {
-        List<Department> all = departmentRepository.findAllByOrderByDisplayOrderAscNameAsc();
+    public PagedResponse<DepartmentResponse> getTree(Pageable pageable) {
+        Page<Department> roots = departmentRepository.findByParentDepartmentIdIsNull(pageable);
+        if (roots.isEmpty()) {
+            return PagedResponse.of(roots, List.of());
+        }
 
-        // One pass grouping, then an in-memory walk. Avoids N+1 on deep trees.
-        Map<UUID, List<Department>> childrenByParent = all.stream()
-                .collect(Collectors.groupingBy(
-                        this::parentKeyOf,
-                        LinkedHashMap::new,
-                        Collectors.toList()));
+        // Second query loads the rest of the tree once; subtrees are attached in memory.
+        Map<UUID, List<Department>> childrenByParent = groupByParent(
+                departmentRepository.findAllByOrderByDisplayOrderAscNameAsc());
 
-        return buildBranch(childrenByParent, ROOT_KEY, 0);
+        List<DepartmentResponse> content = roots.getContent().stream()
+                .map(root -> toResponse(root, buildBranch(childrenByParent, root.getId(), 1)))
+                .toList();
+
+        return PagedResponse.of(roots, content);
+    }
+
+    @Override
+    public PagedResponse<DepartmentResponse> search(String keyword, UUID excludeSubtreeOf, Pageable pageable) {
+        String pattern = (keyword == null || keyword.isBlank())
+                ? null
+                : "%" + keyword.trim().toLowerCase() + "%";
+
+        Set<UUID> excluded = excludeSubtreeOf == null
+                ? Set.of(ROOT_KEY)
+                : collectSubtreeIds(excludeSubtreeOf);
+
+        Page<Department> page = departmentRepository.search(pattern, excluded, pageable);
+        return PagedResponse.of(page, page.getContent().stream().map(this::toFlatResponse).toList());
     }
 
     @Override
@@ -113,26 +133,31 @@ public class DepartmentServiceImpl implements DepartmentService {
 
     @Override
     @Transactional
-    public void reorder(UUID parentId, ReorderRequest request) {
-        if (parentId != null) {
-            requireDepartment(parentId);
-        }
+    public void move(UUID id, MoveDepartmentRequest request) {
+        Department moving = requireDepartment(id);
+        UUID targetParentId = request.parentDepartmentId();
 
-        List<Department> siblings = findChildren(parentId);
-        Map<UUID, Department> byId = siblings.stream()
-                .collect(Collectors.toMap(Department::getId, Function.identity()));
+        requireParentExists(targetParentId);
+        validateNoCircularReference(id, targetParentId);
 
-        validateReorderPayload(request.orderedIds(), byId.keySet());
+        // Sibling list without the moving node, so anchor indexes are unambiguous.
+        List<Department> siblings = new ArrayList<>(findChildren(targetParentId));
+        siblings.removeIf(sibling -> sibling.getId().equals(id));
 
+        int insertIndex = resolveInsertIndex(siblings, request);
+        moving.setParentDepartmentId(targetParentId);
+        siblings.add(insertIndex, moving);
+
+        // Renumbering the whole group keeps the step clean; sibling groups stay small.
         int order = ORDER_STEP;
-        for (UUID id : request.orderedIds()) {
-            byId.get(id).setDisplayOrder(order);
+        for (Department sibling : siblings) {
+            sibling.setDisplayOrder(order);
             order += ORDER_STEP;
         }
 
         departmentRepository.saveAll(siblings);
         auditLogger.record(Action.UPDATE_DEPARTMENT, TargetType.DEPARTMENT,
-                parentId, null, new ReorderRequest(request.orderedIds()));
+                id, null, toFlatResponse(moving));
     }
 
     // ---------- Validation ----------
@@ -167,15 +192,34 @@ public class DepartmentServiceImpl implements DepartmentService {
         }
     }
 
-    // The payload must be a permutation of the current siblings, no more and no less
-    private void validateReorderPayload(List<UUID> orderedIds, Set<UUID> siblingIds) {
-        Set<UUID> distinct = new HashSet<>(orderedIds);
-        if (distinct.size() != orderedIds.size() || !distinct.equals(siblingIds)) {
-            throw new ApiException.BusinessRuleException(ErrorCode.DEPARTMENT_INVALID_REORDER);
+    // afterDepartmentId wins; beforeDepartmentId covers a drop at the top of a page.
+    private int resolveInsertIndex(List<Department> siblings, MoveDepartmentRequest request) {
+        if (request.afterDepartmentId() != null) {
+            return indexOfAnchor(siblings, request.afterDepartmentId()) + 1;
         }
+        if (request.beforeDepartmentId() != null) {
+            return indexOfAnchor(siblings, request.beforeDepartmentId());
+        }
+        return 0;
     }
 
+    private int indexOfAnchor(List<Department> siblings, UUID anchorId) {
+        for (int i = 0; i < siblings.size(); i++) {
+            if (siblings.get(i).getId().equals(anchorId)) {
+                return i;
+            }
+        }
+        throw new ApiException.BusinessRuleException(ErrorCode.DEPARTMENT_INVALID_MOVE_TARGET);
+    }
+
+
     // ---------- Private helpers ----------
+
+    private Map<UUID, List<Department>> groupByParent(List<Department> all) {
+        return all.stream().collect(Collectors.groupingBy(
+                this::parentKeyOf, LinkedHashMap::new, Collectors.toList()
+        ));
+    }
 
     private List<DepartmentResponse> buildBranch(Map<UUID, List<Department>> childrenByParent,
                                                  UUID parentKey,
@@ -192,6 +236,28 @@ public class DepartmentServiceImpl implements DepartmentService {
         return result;
     }
 
+    // The node itself plus every descendant, used to keep the parent picker loop free
+    private Set<UUID> collectSubtreeIds(UUID rootId) {
+        Map<UUID, List<Department>> childrenByParent = groupByParent(
+                departmentRepository.findAllByOrderByDisplayOrderAscNameAsc());
+
+        Set<UUID> collected = new HashSet<>();
+        Deque<UUID> pending = new ArrayDeque<>();
+        pending.push(rootId);
+
+        while (!pending.isEmpty()) {
+            UUID current = pending.pop();
+            if (!collected.add(current)) {
+                continue;
+            }
+            for (Department child : childrenByParent.getOrDefault(current, List.of())) {
+                pending.push(child.getId());
+            }
+        }
+
+        return collected;
+    }
+
     private List<Department> findChildren(UUID parentId) {
         return parentId == null
                 ? departmentRepository.findByParentDepartmentIdIsNullOrderByDisplayOrderAscNameAsc()
@@ -199,12 +265,10 @@ public class DepartmentServiceImpl implements DepartmentService {
     }
 
     private int nextDisplayOrder(UUID parentId) {
-        int max = (parentId == null
-                ? departmentRepository.findTopByParentDepartmentIdIsNullOrderByDisplayOrderDesc()
-                : departmentRepository.findTopByParentDepartmentIdOrderByDisplayOrderDesc(parentId))
-                .map(Department::getDisplayOrder)
-                .orElse(0);
-        return max + ORDER_STEP;
+        List<Department> siblings = findChildren(parentId);
+        return siblings.isEmpty()
+                ? ORDER_STEP
+                : siblings.get(siblings.size() - 1).getDisplayOrder() + ORDER_STEP;
     }
 
     private void applyRequest(Department target, DepartmentRequest request) {

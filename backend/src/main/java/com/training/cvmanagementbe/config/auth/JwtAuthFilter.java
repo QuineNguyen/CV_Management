@@ -4,7 +4,7 @@ import com.training.cvmanagementbe.entity.models.CurrentActor;
 import com.training.cvmanagementbe.entity.models.User;
 import com.training.cvmanagementbe.enums.PublicEndpoint;
 import com.training.cvmanagementbe.repository.UserRepository;
-import com.training.cvmanagementbe.service.JwtService;
+import com.training.cvmanagementbe.service.impl.JwtService;
 import io.jsonwebtoken.Claims;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;

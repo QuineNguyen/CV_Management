@@ -1,4 +1,4 @@
-package com.training.cvmanagementbe.dto;
+package com.training.cvmanagementbe.dto.response;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 

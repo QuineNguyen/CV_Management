@@ -1,4 +1,4 @@
-package com.training.cvmanagementbe.dto;
+package com.training.cvmanagementbe.dto.response;
 
 import com.training.cvmanagementbe.entity.models.User;
 import com.training.cvmanagementbe.enums.Role;

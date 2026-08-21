@@ -5,7 +5,7 @@ import com.training.cvmanagementbe.enums.AccountStatus;
 import com.training.cvmanagementbe.enums.Language;
 import com.training.cvmanagementbe.enums.Role;
 import com.training.cvmanagementbe.exception.ApiException;
-import com.training.cvmanagementbe.service.ImageStorageService;
+import com.training.cvmanagementbe.service.impl.ImageStorageService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirements;
 import io.swagger.v3.oas.annotations.tags.Tag;
