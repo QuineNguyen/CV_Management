@@ -47,11 +47,13 @@
   max-width: 85vw;
   border-right: 1px solid var(--vt-line);
   background: var(--vt-surface);
+  overflow-x: hidden;
 }
 
 .shell-nav-link {
+  width: auto;
   border-radius: var(--vt-radius);
-  margin: 0.25rem 3%;
+  margin: 0.25rem 0.5rem;
   min-height: var(--vt-touch-target);
 }
 
