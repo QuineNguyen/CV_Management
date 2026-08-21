@@ -6,7 +6,7 @@ import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from "@angular/material/input";
 import { AuthService } from "../../services/auth.service";
 import { Router } from "@angular/router";
-import { MatSnackBar } from "@angular/material/snack-bar";
+import { ToastService } from "../../services/toast.service";
 import { firstValueFrom } from "rxjs";
 import { HttpErrorResponse } from "@angular/common/http";
 import { changePasswordGroupValidator, evaluatePassword, passwordPolicyValidator, PasswordRule } from "../../validators/password.validator";
@@ -31,7 +31,7 @@ export class ChangePasswordComponent {
     private readonly formBuilder = inject(FormBuilder);
     private readonly auth = inject(AuthService);
     private readonly router = inject(Router);
-    private readonly snackBar = inject(MatSnackBar);
+    private readonly toast = inject(ToastService);
 
     readonly rules = PasswordRule;
     readonly submitting = signal(false);
@@ -68,12 +68,10 @@ export class ChangePasswordComponent {
             await firstValueFrom(this.auth.changePassword(this.form.getRawValue()));
             // The server revoked every token, so the current one is already dead.
             this.auth.clearSession();
-            this.snackBar.open('Password changed successfully. Please sign in again.', 'Close', {
-                duration: 5000,
-            });
+            this.toast.success('Password changed successfully. Please sign in again.');
             await this.router.navigate([AppRoute.Login]);
         } catch (error) {
-            this.snackBar.open(this.extractErrorMessage(error), 'Close', { duration: 5000 });
+            this.toast.error(this.extractErrorMessage(error));
         } finally {
             this.submitting.set(false);
         }
