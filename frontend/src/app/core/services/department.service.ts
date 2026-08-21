@@ -1,9 +1,10 @@
-import { HttpClient } from "@angular/common/http";
+import { HttpClient, HttpParams } from "@angular/common/http";
 import { inject, Injectable } from "@angular/core";
 import { Observable } from "rxjs";
 import { environment } from "../../../environments/environment";
-import { DepartmentNode, DepartmentRequest, ReorderRequest } from "../dtos/department.dto";
+import { DepartmentNode, DepartmentRequest, DepartmentSearchQuery, MoveDepartmentRequest } from "../dtos/department.dto";
 import { ApiEndpoint } from "../enums/api-endpoint.enum";
+import { PagedResponse, PageQuery } from "../dtos/page.dto";
 
 @Injectable({ providedIn: 'root' })
 export class DepartmentService {
@@ -14,8 +15,26 @@ export class DepartmentService {
         return `${environment.apiBaseUrl}${endpoint}`;
     }
 
-    getTree(): Observable<DepartmentNode[]> {
-        return this.http.get<DepartmentNode[]>(this.url(ApiEndpoint.DepartmentTree));
+    getTree(query: PageQuery): Observable<PagedResponse<DepartmentNode>> {
+        const params = new HttpParams()
+            .set('page', query.page)
+            .set('size', query.size);
+        return this.http.get<PagedResponse<DepartmentNode>>(this.url(ApiEndpoint.DepartmentTree), { params });
+    }
+
+    search(query: DepartmentSearchQuery): Observable<PagedResponse<DepartmentNode>> {
+        let params = new HttpParams()
+            .set('page', query.page)
+            .set('size', query.size);
+
+        if (query.keyword) {
+            params = params.set('keyword', query.keyword);
+        }
+        if (query.excludeSubtreeOf) {
+            params = params.set('excludeSubtreeOf', query.excludeSubtreeOf);
+        }
+
+        return this.http.get<PagedResponse<DepartmentNode>>(this.url(ApiEndpoint.Departments), { params });
     }
 
     getById(id: string): Observable<DepartmentNode> {
@@ -34,10 +53,7 @@ export class DepartmentService {
         return this.http.delete<void>(this.url(`${ApiEndpoint.Departments}/${id}`));
     }
 
-    reorder(parentId: string | null, body: ReorderRequest): Observable<void> {
-        const endpoint = parentId === null
-            ? ApiEndpoint.DepartmentRootReorder
-            : `${ApiEndpoint.Departments}/${parentId}/reorder`;
-        return this.http.post<void>(this.url(endpoint), body);
+    move(id: string, body: MoveDepartmentRequest): Observable<void> {
+        return this.http.put<void>(this.url(`${ApiEndpoint.Departments}/${id}/move`), body);
     }
 }

@@ -6,6 +6,7 @@ import { catchError, throwError } from 'rxjs';
 import { AuthService } from '../services/auth.service';
 import { ERROR_MESSAGES, messageFor } from '../error-messages';
 import { ApiError } from '../dtos/api-error.dto';
+import { ToastService } from '../services/toast.service';
 
 /**
  * Turns every failed request into one visible, consistent outcome.
@@ -33,12 +34,11 @@ import { ApiError } from '../dtos/api-error.dto';
  * forever, since neither `next` nor `error` would ever arrive.
  */
 export const errorInterceptor: HttpInterceptorFn = (req, next) => {
-  const snackBar = inject(MatSnackBar);
+  const toast = inject(ToastService);
   const auth = inject(AuthService);
   const router = inject(Router);
 
-  const notify = (message: string, action = 'Dismiss') =>
-    snackBar.open(message, action, { duration: 6000, politeness: 'assertive' });
+  const notify = (message: string) => toast.error(message);
 
   return next(req).pipe(
     catchError((error: HttpErrorResponse) => {
@@ -78,7 +78,9 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
           break;
 
         case 409:
-          notify(message, 'Reload');
+          toast.error(message, 'Reload')
+            .onAction()
+            .subscribe(() => window.location.reload());
           break;
 
         case 422:

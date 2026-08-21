@@ -60,6 +60,12 @@
   color: var(--vt-ink-muted);
 }
 
+.dept-paginator {
+  background: transparent;
+  border: 0.0625rem solid var(--vt-line);
+  border-radius: var(--vt-radius-md);
+}
+
 /* ---------- Buttons ---------- */
 .btn {
   min-height: var(--vt-tap);
@@ -72,27 +78,27 @@
   transition: background-color 0.15s ease, color 0.15s ease;
 }
 
-.btn--primary {
+.btn-primary {
   background: var(--vt-red);
   color: #fff;
 }
 
-.btn--primary:hover:not(:disabled) {
+.btn-primary:hover:not(:disabled) {
   background: var(--vt-red-dark);
 }
 
-.btn--ghost {
+.btn-ghost {
   background: transparent;
   border-color: var(--vt-line);
   color: var(--vt-ink);
 }
 
-.btn--ghost:hover:not(:disabled) {
+.btn-ghost:hover:not(:disabled) {
   border-color: var(--vt-red);
   color: var(--vt-red);
 }
 
-.btn--danger {
+.btn-danger {
   background: var(--vt-red);
   color: #fff;
 }
@@ -253,19 +259,6 @@
 }
 
 /* ---------- States ---------- */
-.alert {
-  margin: 0;
-  padding: calc(var(--vt-gap) * 0.75);
-  border-radius: var(--vt-radius-sm);
-  font-size: var(--vt-fs-md);
-}
-
-.alert--error {
-  background: var(--vt-red-tint);
-  color: var(--vt-red-dark);
-  border-inline-start: 0.1875rem solid var(--vt-red);
-}
-
 .skeleton-stack {
   display: flex;
   flex-direction: column;
@@ -330,7 +323,7 @@
   box-shadow: 0 1rem 2.5rem rgba(31, 41, 51, 0.24);
 }
 
-.modal--sm {
+.modal-sm {
   width: min(26rem, 100%);
 }
 
@@ -371,6 +364,15 @@
 
   .dept-toolbar-actions .btn {
     flex: 1 1 45%;
+  }
+
+  .dept-paginator {
+    font-size: var(--vt-fs-sm);
+  }
+
+  /* Range label eats the width on narrow screens; arrows are enough. */
+  .dept-paginator ::ng-deep .mat-mdc-paginator-page-size-label {
+    display: none;
   }
 
   .node-card {

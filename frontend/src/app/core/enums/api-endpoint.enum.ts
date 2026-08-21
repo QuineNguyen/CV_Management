@@ -9,5 +9,4 @@ export enum ApiEndpoint {
     // Department routes
     Departments = '/departments',
     DepartmentTree = '/departments/tree',
-    DepartmentRootReorder = '/departments/reorder',
 }

@@ -7,12 +7,12 @@
 
       <div class="field">
         <label class="field-label" for="dept-code">
-          Department Code <span class="field-required">*</span>
+          Code <span class="field-required">*</span>
         </label>
         <input id="dept-code" class="field-input" type="text" formControlName="code"
                placeholder="e.g. TECH" autocomplete="off" />
         @if (hasError('code', 'required')) {
-          <span class="field-error">Department code is required.</span>
+          <span class="field-error">Code is required.</span>
         }
         @if (hasError('code', 'maxlength')) {
           <span class="field-error">Code must be at most 50 characters.</span>
@@ -21,12 +21,12 @@
 
       <div class="field">
         <label class="field-label" for="dept-name">
-          Department Name <span class="field-required">*</span>
+          Name <span class="field-required">*</span>
         </label>
         <input id="dept-name" class="field-input" type="text" formControlName="name"
                placeholder="e.g. Technology Division" autocomplete="off" />
         @if (hasError('name', 'required')) {
-          <span class="field-error">Department name is required.</span>
+          <span class="field-error">Name is required.</span>
         }
         @if (hasError('name', 'maxlength')) {
           <span class="field-error">Name must be at most 255 characters.</span>
@@ -34,23 +34,58 @@
       </div>
 
       <div class="field">
-        <label class="field-label" for="dept-parent">Parent Department</label>
-        <select id="dept-parent" class="field-input" formControlName="parentDepartmentId">
-          <option value="">— Root level —</option>
-          @for (item of parentOptions(); track item.id) {
-            <option [value]="item.id">{{ indent(item.depth) }}{{ item.code }} — {{ item.name }}</option>
+        <label class="field-label" for="dept-parent-search">Parent Department</label>
+        <button type="button" class="field-input picker-trigger" (click)="togglePicker()">
+          @if (selectedParent(); as parent) {
+            <span class="picker-value">{{ parent.code }} — {{ parent.name }}</span>
+          } @else {
+            <span class="picker-value picker-value-empty">— Root level —</span>
           }
-        </select>
+          <span class="picker-caret" aria-hidden="true">▾</span>
+        </button>
+
+        @if (pickerOpen()) {
+          <div class="picker-panel">
+            <input id="dept-parent-search" class="field-input" type="search"
+                   [formControl]="parentKeyword" placeholder="Search by code or name..."
+                   autocomplete="off" />
+
+            <ul class="picker-list" role="listbox">
+              <li>
+                <button type="button" class="picker-option" (click)="selectParent(null)">
+                  — Root level —
+                </button>
+              </li>
+
+              @if (lookupLoading()) {
+                <li class="picker-status">Loading...</li>
+              } @else if (!parentOptions().length) {
+                <li class="picker-status">No suitable department found.</li>
+              }
+
+              @for (item of parentOptions(); track item.id) {
+                <li>
+                  <button type="button" class="picker-option" (click)="selectParent(item)">
+                    <span class="picker-option-code">{{ item.code }}</span>
+                    <span class="picker-option-name">{{ item.name }}</span>
+                  </button>
+                </li>
+              }
+            </ul>
+
+            @if (hasMoreMatches()) {
+              <p class="picker-status">
+                Showing {{ parentOptions().length }} / {{ lookupTotal() }} results — type more to narrow them.
+              </p>
+            }
+          </div>
+        }
         <span class="field-hint">Leave empty if this is a root-level department.</span>
       </div>
 
-      @if (serverError()) {
-        <p class="alert alert--error" role="alert">{{ serverError() }}</p>
-      }
-
       <div class="modal-footer">
-        <button type="button" class="btn btn--ghost" (click)="onCancel()" [disabled]="submitting()">Cancel</button>
-        <button type="submit" class="btn btn--primary" [disabled]="submitting()">
+        <button type="button" class="btn btn-ghost" (click)="onCancel()" [disabled]="submitting()">Cancel</button>
+        <button type="submit" class="btn btn-primary" [disabled]="submitting()">
           {{ submitting() ? 'Saving...' : 'Save' }}
         </button>
       </div>
