@@ -109,31 +109,31 @@ body {
   --toast-accent: #5a6672;
 
   max-width: min(26rem, 92vw);
-  border-inline-start: 0.5rem solid var(--toast-accent);
-  border-radius: clamp(0.375rem, 1vw, 0.5rem);
   font-size: clamp(0.875rem, 0.8rem + 0.25vw, 1rem);
-}
 
-.toast-success {
-  --toast-accent: #2d7d46;
-}
+  &.toast-success {
+    --toast-accent: #2d7d46;
+  }
 
-.toast-error {
-  --toast-accent: #ee0033; /* Viettel red */
-}
+  &.toast-error {
+    --toast-accent: #ee0033; /* Viettel red */
+  }
 
-.toast-info {
-  --toast-accent: #1565c0;
-}
+  &.toast-info {
+    --toast-accent: #1565c0;
+  }
 
-.toast .mdc-snackbar-surface {
-  border-radius: inherit;
-}
+  .mdc-snackbar__surface {
+    border-inline-start: 0.5rem solid var(--toast-accent) !important;
+    border-radius: clamp(0.375rem, 1vw, 0.5rem) !important;
+    overflow: hidden;
+  }
 
-.toast .mat-mdc-snack-bar-action {
-  color: #ffffff;
-  font-weight: 600;
-  white-space: nowrap;
+  .mat-mdc-snack-bar-action {
+    color: #ffffff;
+    font-weight: 600;
+    white-space: nowrap;
+  }
 }
 
 /* Keep the toast clear of the bottom edge on phones and above the safe area. */
