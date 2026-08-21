@@ -66,7 +66,7 @@ public enum ErrorCode {
     DEPARTMENT_HAS_EMPLOYEES("Cannot delete a department that still has employees assigned to it"),
     DEPARTMENT_HAS_TEAMS("Cannot delete a department that still has teams"),
     DEPARTMENT_CIRCULAR_REFERENCE("Moving this department here would create a circular reference"),
-    DEPARTMENT_INVALID_REORDER("The reorder payload must contain exactly the direct children of that parent"),
+    DEPARTMENT_INVALID_MOVE_TARGET("The anchor department does not belong to the target parent"),
 
     // ---------- Generic ----------
     /** Returned as 403 whenever the caller's role does not cover the requested data. */

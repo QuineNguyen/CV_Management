@@ -1,4 +1,4 @@
-package com.training.cvmanagementbe.service;
+package com.training.cvmanagementbe.service.impl;
 
 import com.training.cvmanagementbe.config.MinioConfig;
 import io.minio.*;

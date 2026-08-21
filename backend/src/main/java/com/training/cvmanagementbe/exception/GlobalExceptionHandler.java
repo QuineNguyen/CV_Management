@@ -33,7 +33,6 @@ public class GlobalExceptionHandler {
 
     /**
      * Database index and constraint names mapped to client-facing codes.
-     *
      * These names are a contract between the migrations, this class, and the schema test that
      * asserts the indexes exist. Renaming an index means editing all three.
      */
@@ -104,14 +103,13 @@ public class GlobalExceptionHandler {
 
     // --------- 404 ---------
     @ExceptionHandler(NoHandlerFoundException.class)
-    ResponseEntity<ApiError> handleUnknownPath(NoHandlerFoundException ex, HttpServletRequest req) {
+    ResponseEntity<ApiError> handleUnknownPath(HttpServletRequest req) {
         return respond(HttpStatus.NOT_FOUND, ErrorCode.NOT_FOUND, req);
     }
 
     // --------- 409 ---------
     @ExceptionHandler(OptimisticLockingFailureException.class)
-    ResponseEntity<ApiError> handleLostUpdate(OptimisticLockingFailureException ex,
-                                              HttpServletRequest req) {
+    ResponseEntity<ApiError> handleLostUpdate(HttpServletRequest req) {
         return respond(HttpStatus.CONFLICT, ErrorCode.STALE_STATE, req);
     }
 
@@ -129,7 +127,7 @@ public class GlobalExceptionHandler {
                 .orElse(ErrorCode.CONFLICT);
 
         // A recognised constraint means a specific business rule was broken, which is 422.
-        // An unrecognised one only tells us the write clashed with existing data, which is 409.
+        // An unrecognised one only tells us the written clashed with existing data, which is 409.
         HttpStatus status = code == ErrorCode.CONFLICT
                 ? HttpStatus.CONFLICT
                 : HttpStatus.UNPROCESSABLE_ENTITY;
