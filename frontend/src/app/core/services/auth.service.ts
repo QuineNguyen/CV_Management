@@ -1,7 +1,7 @@
 import { Injectable, computed, inject, signal, PLATFORM_ID } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
-import { firstValueFrom } from 'rxjs';
+import { finalize, firstValueFrom, map, Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { CurrentUser, Role } from '../models/user.model';
 import { AuthenticatedUser, ChangePasswordRequest, LoginRequest, LoginResponse } from '../dtos/auth.dto';
@@ -33,18 +33,16 @@ export class AuthService {
 
   // ---------- Sign-in ----------
 
-  async signIn(request: LoginRequest): Promise<AuthenticatedUser> {
-    const response = await firstValueFrom(
-      this.http.post<LoginResponse>(this.url(ApiEndpoint.Login), request),
+  signIn(request: LoginRequest): Observable<AuthenticatedUser> {
+    return this.http.post<LoginResponse>(this.url(ApiEndpoint.Login), request).pipe(
+      map(response => this.applySession(response))
     );
-    return this.applySession(response);
   }
 
-  async signInWithGoogle(idToken: string): Promise<AuthenticatedUser> {
-    const response = await firstValueFrom(
-      this.http.post<LoginResponse>(this.url(ApiEndpoint.GoogleLogin), { idToken })
+  signInWithGoogle(idToken: string): Observable<AuthenticatedUser> {
+    return this.http.post<LoginResponse>(this.url(ApiEndpoint.GoogleLogin), { idToken }).pipe(
+      map(response => this.applySession(response))
     );
-    return this.applySession(response);
   }
 
   // ---------- Sign-out ----------
@@ -53,12 +51,12 @@ export class AuthService {
    * The local session is cleared even if the request fails, so a network error
    * cannot leave the browser holding a token the user believes is gone.
    */
-  async signOut(): Promise<void> {
-    try {
-      await firstValueFrom(this.http.post<void>(this.url(ApiEndpoint.Logout), {}));
-    } finally {
-      this.clearSession();
-    }
+  signOut(): Observable<void> {
+    return this.http.post<void>(this.url(ApiEndpoint.Logout), {}).pipe(
+      finalize(() => {
+        this.clearSession();
+      })
+    );
   }
 
   /** Clears local session state without invoking server logout endpoint. */
@@ -74,10 +72,8 @@ export class AuthService {
 
   // ---------- Password ----------
   // All sessions are revoked server-side, so the caller must force a re-login.
-  async changePassword(request: ChangePasswordRequest): Promise<void> {
-    await firstValueFrom(
-      this.http.post<void>(this.url(ApiEndpoint.ChangePassword), request),
-    );
+  changePassword(request: ChangePasswordRequest): Observable<void> {
+    return this.http.post<void>(this.url(ApiEndpoint.ChangePassword), request);
   }
 
   // ---------- Session persistence ----------

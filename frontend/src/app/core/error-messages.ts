@@ -61,7 +61,16 @@ export const ERROR_MESSAGES: Readonly<Record<ClientErrorCode, string>> = {
   INVALID_CURRENT_PASSWORD: 'Incorrect current password',
   PASSWORD_TOO_WEAK: 'Password must be at least 8 characters, including one uppercase letter, one lowercase letter, one number and one special character.',
   PASSWORD_CONFIRMATION_MISMATCH: 'Passwords do not match',
-  PASSWORD_SAME_AS_OLD: 'New password must be different from the old password'
+  PASSWORD_SAME_AS_OLD: 'New password must be different from the old password',
+
+  // Department
+  DUPLICATE_DEPARTMENT_CODE: 'Department code already exists',
+  DUPLICATE_DEPARTMENT_NAME: 'Department name already exists',
+  DEPARTMENT_HAS_CHILDREN: 'Cannot move or delete department because it has children',
+  DEPARTMENT_HAS_EMPLOYEES: 'Cannot move or delete department because it has employees',
+  DEPARTMENT_HAS_TEAMS: 'Cannot move or delete department because it has teams',
+  DEPARTMENT_CIRCULAR_REFERENCE: 'Cannot move department because it would create a circular reference',
+  DEPARTMENT_INVALID_REORDER: 'The sorted list does not match the current data',
 };
 
 export function messageFor(code: string, fallback?: string): string {

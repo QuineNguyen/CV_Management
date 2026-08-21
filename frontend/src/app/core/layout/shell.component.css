@@ -120,4 +120,8 @@
   .shell-user-role {
     display: none;
   }
+
+  .shell-toolbar {
+    padding-inline: clamp(0.25rem, 2vw, 0.75rem);
+  }
 }

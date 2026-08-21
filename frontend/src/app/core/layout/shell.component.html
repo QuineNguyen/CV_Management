@@ -16,6 +16,8 @@
           class="shell-nav-link"
           [routerLink]="item.route"
           routerLinkActive="active"
+          #rla="routerLinkActive"
+          [attr.aria-current]="rla.isActive ? 'page' : null"
           (click)="isCompact() && drawer.close()">
           <span matListItemIcon class="material-symbols-outlined">{{ item.icon }}</span>
           <span matListItemTitle>{{ item.label }}</span>
@@ -32,7 +34,7 @@
 
       <span class="shell-spacer"></span>
 
-      <button mat-button [matMenuTriggerFor]="accountMenu">
+      <button mat-button [matMenuTriggerFor]="accountMenu" aria-label="Account menu">
         <div class="shell-user">
           <span class="material-symbols-outlined">account_circle</span>
           <span class="shell-user-name">{{ user()?.fullName }}</span>
