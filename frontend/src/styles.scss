@@ -26,6 +26,7 @@ html {
   --vt-red: #ee0033;
   --vt-red-dark: #c4002a;
   --vt-red-light: #ff4d6d;
+  --vt-red-tint: rgba(238, 0, 51, 0.08);  /* subtle background highlight */
   --vt-red-surface: #fff5f7;   /* tinted background for selected states */
 
   /* Neutrals */
@@ -42,11 +43,24 @@ html {
 
   /* Layout */
   --vt-radius: clamp(8px, 1.2vw, 12px);
+  --vt-radius-sm: clamp(0.375rem, 1vw, 0.5rem);
+  --vt-radius-md: clamp(0.5rem, 1.5vw, 0.875rem);
   --vt-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
   --vt-sidenav-width: clamp(220px, 20vw, 264px);
 
+  /* Spacing */
+  --vt-gap: clamp(0.5rem, 1.5vw, 1rem);
+  --vt-pad: clamp(0.75rem, 2.5vw, 1.5rem);
+  --vt-indent: clamp(0.875rem, 3vw, 1.75rem);
+
+  /* Typography */
+  --vt-fs-sm: clamp(0.75rem, 0.7rem + 0.2vw, 0.875rem);
+  --vt-fs-md: clamp(0.875rem, 0.8rem + 0.25vw, 1rem);
+  --vt-fs-lg: clamp(1.125rem, 1rem + 1vw, 1.625rem);
+
   /* Minimum touch target on tablets and phones (WCAG 2.5.5) */
   --vt-touch-target: 2.75rem; /* ~44px */
+  --vt-tap: clamp(2rem, 8vw, 2.5rem);
 }
 
 html, body {

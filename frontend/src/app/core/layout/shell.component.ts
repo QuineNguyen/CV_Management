@@ -14,14 +14,9 @@ import { AuthService } from '../services/auth.service';
 import { Role } from '../models/user.model';
 import { UserRole } from '../enums/user-role.enum';
 import { AppRoute } from '../enums/app-route.enum';
+import { NavItem } from '../models/nav-item.model';
+import { NavIconEnum } from '../enums/nav-icon.enum';
 
-interface NavItem {
-  label: string;
-  icon: string;
-  route: string;
-  /** Roles allowed to see the entry. Omitted means everyone signed in. */
-  roles?: UserRole[];
-}
 
 /**
  * Application shell: toolbar, navigation and the outlet every screen renders into.
@@ -68,17 +63,17 @@ export class ShellComponent {
   );
 
   private readonly navItems: NavItem[] = [
-    { label: 'Home', icon: 'home', route: AppRoute.Home },
-    { label: 'Users', icon: 'group', route: AppRoute.Users, roles: [UserRole.Admin] },
-    { label: 'Departments', icon: 'account_tree', route: AppRoute.Departments, roles: [UserRole.Admin] },
-    { label: 'Teams', icon: 'groups', route: AppRoute.Teams, roles: [UserRole.Admin] },
+    { label: 'Home', icon: NavIconEnum.Home, route: AppRoute.Home },
+    { label: 'Users', icon: NavIconEnum.Users, route: AppRoute.Users, roles: [UserRole.Admin] },
+    { label: 'Departments', icon: NavIconEnum.Departments, route: AppRoute.Departments, roles: [UserRole.Admin] },
+    { label: 'Teams', icon: NavIconEnum.Teams, route: AppRoute.Teams, roles: [UserRole.Admin] },
     // Later stages add their entries here. Each one declares the roles it is offered to; the
     // server still enforces access independently.
   ];
 
   // Sidebar visibility is convenience only; the backend enforces scope on every query.
   readonly visibleNavItems = computed(() => {
-    const role = this.auth.user()?.role;
+    const role = this.user()?.role;
     return this.navItems.filter((item) => !item.roles || (role && item.roles.includes(role)));
   });
 

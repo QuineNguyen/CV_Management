@@ -7,8 +7,12 @@ import { MatInputModule } from "@angular/material/input";
 import { AuthService } from "../../services/auth.service";
 import { Router } from "@angular/router";
 import { MatSnackBar } from "@angular/material/snack-bar";
+import { firstValueFrom } from "rxjs";
+import { HttpErrorResponse } from "@angular/common/http";
 import { changePasswordGroupValidator, evaluatePassword, passwordPolicyValidator, PasswordRule } from "../../validators/password.validator";
 import { AppRoute } from "../../enums/app-route.enum";
+import { ApiError } from "../../dtos/api-error.dto";
+import { messageFor } from "../../error-messages";
 
 @Component({
     selector: 'app-change-password',
@@ -61,16 +65,28 @@ export class ChangePasswordComponent {
 
         this.submitting.set(true);
         try {
-            await this.auth.changePassword(this.form.getRawValue());
+            await firstValueFrom(this.auth.changePassword(this.form.getRawValue()));
             // The server revoked every token, so the current one is already dead.
             this.auth.clearSession();
             this.snackBar.open('Password changed successfully. Please sign in again.', 'Close', {
                 duration: 5000,
             });
             await this.router.navigate([AppRoute.Login]);
+        } catch (error) {
+            this.snackBar.open(this.extractErrorMessage(error), 'Close', { duration: 5000 });
         } finally {
             this.submitting.set(false);
         }
+    }
+
+    private extractErrorMessage(error: unknown): string {
+        if (error instanceof HttpErrorResponse) {
+            const apiError = error.error as ApiError | null;
+            if (apiError?.code) {
+                return messageFor(apiError.code, apiError.message);
+            }
+        }
+        return messageFor('INTERNAL_ERROR');
     }
 
     async cancel(): Promise<void> {

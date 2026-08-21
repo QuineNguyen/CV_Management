@@ -1,0 +1,59 @@
+<div class="modal-backdrop" (click)="onCancel()">
+  <div class="modal" role="dialog" aria-modal="true" (click)="$event.stopPropagation()">
+
+    <h2 class="modal-title">{{ title() }}</h2>
+
+    <form class="form" [formGroup]="form" (ngSubmit)="onSubmit()">
+
+      <div class="field">
+        <label class="field-label" for="dept-code">
+          Department Code <span class="field-required">*</span>
+        </label>
+        <input id="dept-code" class="field-input" type="text" formControlName="code"
+               placeholder="e.g. TECH" autocomplete="off" />
+        @if (hasError('code', 'required')) {
+          <span class="field-error">Department code is required.</span>
+        }
+        @if (hasError('code', 'maxlength')) {
+          <span class="field-error">Code must be at most 50 characters.</span>
+        }
+      </div>
+
+      <div class="field">
+        <label class="field-label" for="dept-name">
+          Department Name <span class="field-required">*</span>
+        </label>
+        <input id="dept-name" class="field-input" type="text" formControlName="name"
+               placeholder="e.g. Technology Division" autocomplete="off" />
+        @if (hasError('name', 'required')) {
+          <span class="field-error">Department name is required.</span>
+        }
+        @if (hasError('name', 'maxlength')) {
+          <span class="field-error">Name must be at most 255 characters.</span>
+        }
+      </div>
+
+      <div class="field">
+        <label class="field-label" for="dept-parent">Parent Department</label>
+        <select id="dept-parent" class="field-input" formControlName="parentDepartmentId">
+          <option value="">— Root level —</option>
+          @for (item of parentOptions(); track item.id) {
+            <option [value]="item.id">{{ indent(item.depth) }}{{ item.code }} — {{ item.name }}</option>
+          }
+        </select>
+        <span class="field-hint">Leave empty if this is a root-level department.</span>
+      </div>
+
+      @if (serverError()) {
+        <p class="alert alert--error" role="alert">{{ serverError() }}</p>
+      }
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn--ghost" (click)="onCancel()" [disabled]="submitting()">Cancel</button>
+        <button type="submit" class="btn btn--primary" [disabled]="submitting()">
+          {{ submitting() ? 'Saving...' : 'Save' }}
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

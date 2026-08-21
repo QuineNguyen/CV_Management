@@ -2,6 +2,7 @@ import { Component, DestroyRef, ElementRef, PLATFORM_ID, ViewChild, afterNextRen
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
+import { firstValueFrom } from 'rxjs';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -94,7 +95,7 @@ export class LoginComponent {
     this.submitting.set(true);
     this.failureMessage.set(null);
     try {
-      const user = await this.auth.signIn(this.form.getRawValue());
+      const user = await firstValueFrom(this.auth.signIn(this.form.getRawValue()));
       await this.routeAfterSignIn(user);
     } catch (error) {
       this.handleLoginError(error);
@@ -107,7 +108,7 @@ export class LoginComponent {
     this.submitting.set(true);
     this.failureMessage.set(null);
     try {
-      const user = await this.auth.signInWithGoogle(idToken);
+      const user = await firstValueFrom(this.auth.signInWithGoogle(idToken));
       await this.routeAfterSignIn(user);
     } catch {
       this.failureMessage.set('Google sign in failed. Please try again.');
