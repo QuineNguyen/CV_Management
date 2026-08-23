@@ -68,6 +68,24 @@ public enum ErrorCode {
     DEPARTMENT_CIRCULAR_REFERENCE("Moving this department here would create a circular reference"),
     DEPARTMENT_INVALID_MOVE_TARGET("The anchor department does not belong to the target parent"),
 
+    // ---------- Team ----------
+    DUPLICATE_TEAM_CODE("Team code already exists"),
+    INVALID_TECH_LEAD_ROLE("Selected user is not a tech lead"),
+    INVALID_TECH_LEAD_INACTIVE("Selected tech lead is not active"),
+    TEAM_HAS_MEMBERS("Team still has members"),
+    TEAM_HAS_PROFILES("Team is still linked to CV profiles"),
+    USER_ALREADY_IN_TEAM("User already belongs to this team"),
+    CANNOT_REMOVE_ONLY_TEAM("User must belong to at least one team"),
+    CANNOT_REMOVE_PRIMARY_TEAM("Cannot remove the primary team"),
+
+    // ---------- User ----------
+    PRIMARY_TEAM_REQUIRED("Exactly one primary team is required"),
+    DUPLICATE_TEAM_ASSIGNMENT("Duplicated team assignment"),
+    REPLACEMENT_TECH_LEAD_REQUIRED("Replacement tech lead is required"),
+    INVALID_REPLACEMENT_TECH_LEAD("Invalid replacement tech lead"),
+    USER_ALREADY_ACTIVE("User is already active"),
+    USER_ALREADY_INACTIVE("User is already inactive"),
+
     // ---------- Generic ----------
     /** Returned as 403 whenever the caller's role does not cover the requested data. */
     OUT_OF_SCOPE("You do not have access to this data"),

@@ -24,7 +24,8 @@ public enum DbConstraint {
     FK_UR_CV_PROFILE("fk_ur_cv_profile"),
     UK_DEPARTMENT_CODE("uk_department_code"),
     UK_DEPARTMENT_NAME("uk_department_name"),
-    UK_TEAMS_CODE("uk_teams_code");
+    UK_TEAMS_CODE("uk_teams_code"),
+    UK_TEAM_MEMBERS_PAIR("uk_team_members_pair");
 
     private final String indexName;
 }
