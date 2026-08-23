@@ -1,10 +1,9 @@
 package com.training.cvmanagementbe.service.impl;
 
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
-import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
-import com.google.api.client.http.javanet.NetHttpTransport;
-import com.google.api.client.json.gson.GsonFactory;
 import com.training.cvmanagementbe.common.AuditLogger;
+import com.training.cvmanagementbe.config.auth.GoogleTokenVerifier;
+import com.training.cvmanagementbe.config.auth.PasswordGenerator;
 import com.training.cvmanagementbe.dto.request.ChangePasswordRequest;
 import com.training.cvmanagementbe.dto.request.GoogleLoginRequest;
 import com.training.cvmanagementbe.dto.request.LoginRequest;
@@ -23,14 +22,10 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.security.SecureRandom;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
 import java.util.UUID;
 import java.util.function.Supplier;
 
@@ -38,43 +33,39 @@ import java.util.function.Supplier;
 public class AuthService {
 
     private static final String USER_ENTITY = "user";
-    private static final SecureRandom RANDOM = new SecureRandom();
 
     private final UserRepository userRepository;
     private final ExternalAccountLinkRepository linkRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final AuditLogger auditLogger;
-    private final GoogleIdTokenVerifier googleVerifier;
+    private final PasswordGenerator passwordGenerator;
+    private final GoogleTokenVerifier googleTokenVerifier;
 
     private final int maxFailedAttempts;
     private final long lockDurationMinutes;
     private final int minPasswordLength;
-    private final int temporaryPasswordLength;
 
     public AuthService(UserRepository userRepository,
                        ExternalAccountLinkRepository linkRepository,
                        PasswordEncoder passwordEncoder,
                        JwtService jwtService,
                        AuditLogger auditLogger,
-                       @Value("${google.client-id}") String googleClientId,
+                       PasswordGenerator passwordGenerator,
+                       GoogleTokenVerifier googleTokenVerifier,
                        @Value("${security.login.max-failed-attempts:5}") int maxFailedAttempts,
                        @Value("${security.login.lock-duration-minutes:5}") long lockDurationMinutes,
-                       @Value("${security.password.min-length:8}") int minPasswordLength,
-                       @Value("${security.password.temporary-length:12}") int temporaryPasswordLength) {
+                       @Value("${security.password.min-length:8}") int minPasswordLength) {
         this.userRepository = userRepository;
         this.linkRepository = linkRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
         this.auditLogger = auditLogger;
+        this.passwordGenerator = passwordGenerator;
+        this.googleTokenVerifier = googleTokenVerifier;
         this.maxFailedAttempts = maxFailedAttempts;
         this.lockDurationMinutes = lockDurationMinutes;
         this.minPasswordLength = minPasswordLength;
-        this.temporaryPasswordLength = temporaryPasswordLength;
-        this.googleVerifier = new GoogleIdTokenVerifier.Builder(
-                new NetHttpTransport(), GsonFactory.getDefaultInstance())
-                .setAudience(Collections.singletonList(googleClientId))
-                .build();
     }
 
     // ---------- Password sign-in ----------
@@ -109,7 +100,7 @@ public class AuthService {
     // ---------- Google sign-in ----------
     @Transactional
     public LoginResponse loginWithGoogle(GoogleLoginRequest request) {
-        GoogleIdToken.Payload payload = verifyGoogleToken(request.idToken());
+        GoogleIdToken.Payload payload = googleTokenVerifier.verify(request.idToken());
         String email = payload.getEmail();
         String providerUserId = payload.getSubject();
 
@@ -125,20 +116,6 @@ public class AuthService {
             recordSuccess(user);
             return issueToken(user);
         });
-    }
-
-    private GoogleIdToken.Payload verifyGoogleToken(String idToken) {
-        try {
-            GoogleIdToken token = googleVerifier.verify(idToken);
-            if (token == null) {
-                throw new ApiException.UnauthorizedException(ErrorCode.GOOGLE_TOKEN_INVALID);
-            }
-            return token.getPayload();
-        } catch (ApiException ex) {
-            throw ex;
-        } catch (Exception ex) {
-            throw new ApiException.UnauthorizedException(ErrorCode.GOOGLE_TOKEN_INVALID);
-        }
     }
 
     private void linkOrVerifyGoogleAccount(User user, String providerUserId, String email) {
@@ -214,7 +191,7 @@ public class AuthService {
             throw new ApiException.BusinessRuleException(ErrorCode.ACCOUNT_INACTIVE);
         }
 
-        String temporaryPassword = generateTemporaryPassword();
+        String temporaryPassword = passwordGenerator.generate();
         target.setPasswordHash(passwordEncoder.encode(temporaryPassword));
         target.setMustChangePassword(true);
         target.setFailedLoginCount(0);
@@ -274,29 +251,6 @@ public class AuthService {
                 throw new ApiException.BusinessRuleException(ErrorCode.PASSWORD_TOO_WEAK);
             }
         }
-    }
-
-    private String generateTemporaryPassword() {
-        StringBuilder allPools = new StringBuilder();
-        List<Character> characters = new ArrayList<>(temporaryPasswordLength);
-
-        // Seed one character per class first, so the result always satisfies the policy
-        for (PasswordCharset charset : PasswordCharset.values()) {
-            allPools.append(charset.pool());
-            characters.add(pick(charset.pool()));
-        }
-        while (characters.size() < temporaryPasswordLength) {
-            characters.add(pick(allPools.toString()));
-        }
-
-        Collections.shuffle(characters, RANDOM);
-        StringBuilder password = new StringBuilder(characters.size());
-        characters.forEach(password::append);
-        return password.toString();
-    }
-
-    private char pick(String pool) {
-        return pool.charAt(RANDOM.nextInt(pool.length()));
     }
 
     // ---------- Helpers ----------
