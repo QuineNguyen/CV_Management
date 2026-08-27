@@ -2,12 +2,12 @@
   <div class="modal" role="dialog" aria-modal="true">
     <h2 class="modal-title">{{ title() }}</h2>
 
-    <form [formGroup]="form" (ngSubmit)="onSubmit()" novalidate>
+    <form class="form" [formGroup]="form" (ngSubmit)="onSubmit()" novalidate>
 
       <!-- Identity -->
       <div class="form-grid">
         <label class="field">
-          <span class="field-label">Full name <span class="required" aria-hidden="true">*</span></span>
+          <span class="field-label">Full name <span class="field-required" aria-hidden="true">*</span></span>
           <input type="text" class="field-input" formControlName="fullName" maxlength="200" autocomplete="off" />
           @if (hasError('fullName', 'required')) {
             <span class="field-error">Full name is required</span>
@@ -16,7 +16,7 @@
 
         <!-- Role -->
         <div class="field custom-select-wrap">
-          <span class="field-label">Role <span class="required" aria-hidden="true">*</span></span>
+          <span class="field-label">Role <span class="field-required" aria-hidden="true">*</span></span>
 
           <button
             type="button"
@@ -63,7 +63,7 @@
         </div>
 
         <label class="field">
-          <span class="field-label">Email <span class="required" aria-hidden="true">*</span></span>
+          <span class="field-label">Email <span class="field-required" aria-hidden="true">*</span></span>
           <input type="email" class="field-input" formControlName="email" maxlength="255" autocomplete="off" />
           @if (hasError('email', 'required')) {
             <span class="field-error">Email is required</span>
@@ -74,7 +74,7 @@
         </label>
 
         <label class="field">
-          <span class="field-label">Username <span class="required" aria-hidden="true">*</span></span>
+          <span class="field-label">Username <span class="field-required" aria-hidden="true">*</span></span>
           <input type="text" class="field-input" formControlName="username" maxlength="100" autocomplete="off" />
           @if (hasError('username', 'required')) {
             <span class="field-error">Username is required</span>
@@ -89,21 +89,21 @@
 
         <!-- Department picker -->
         <div class="field">
-          <span class="field-label">Department <span class="required" aria-hidden="true">*</span></span>
+          <span class="field-label">Department <span class="field-required" aria-hidden="true">*</span></span>
 
           <button
             type="button"
-            class="picker-trigger custom-select-trigger"
+            class="field-input picker-trigger custom-select-trigger"
             [class.is-open]="pickerOpen()"
             [attr.aria-expanded]="pickerOpen()"
             (click)="togglePicker($event)">
             @if (selectedDepartment(); as department) {
               <span class="picker-value">
-                <span class="code-chip">{{ department.code }}</span>
+                <span class="code-chip is-primary">{{ department.code }}</span>
                 <span class="picker-name">{{ department.name }}</span>
               </span>
             } @else {
-              <span class="picker-placeholder">Select a department</span>
+              <span class="picker-value picker-value--empty">Select a department</span>
             }
           </button>
 
@@ -129,7 +129,7 @@
                         class="picker-option"
                         [class.is-selected]="department.id === selectedDepartment()?.id"
                         (click)="selectDepartment(department)">
-                        <span class="code-chip">{{ department.code }}</span>
+                        <span class="code-chip is-primary">{{ department.code }}</span>
                         <span class="picker-name">{{ department.name }}</span>
                       </button>
                     </li>
@@ -159,9 +159,9 @@
       <!-- Teams -->
       <fieldset class="team-section">
         <legend class="team-legend">
-          Teams <span class="required" aria-hidden="true">*</span>
+          Teams <span class="field-required" aria-hidden="true">*</span>
         </legend>
-        <p class="team-hint">
+        <p class="text-muted">
           A user belongs to at least one team, and exactly one of them is the primary team
         </p>
 
@@ -182,7 +182,7 @@
           </div>
 
           @if (teamPanelOpen()) {
-            <div class="picker-panel picker-panel-float" (click)="$event.stopPropagation()">
+            <div class="picker-panel picker-panel--float" (click)="$event.stopPropagation()">
               @if (teamLookupLoading()) {
                 <p class="picker-status">Searching…</p>
               } @else if (!teamOptions().length) {
@@ -192,7 +192,7 @@
                   @for (team of teamOptions(); track team.id) {
                     <li>
                       <button type="button" class="picker-option" (click)="addTeam(team)">
-                        <span class="code-chip">{{ team.code }}</span>
+                        <span class="code-chip is-primary">{{ team.code }}</span>
                         <span class="picker-name">{{ team.name }}</span>
                       </button>
                     </li>
@@ -217,7 +217,7 @@
                     [checked]="isPrimary(team.id)"
                     (change)="setPrimary(team.id)" />
                   <span class="assigned-label">
-                    <span class="code-chip">{{ team.code }}</span>
+                    <span class="code-chip is-primary">{{ team.code }}</span>
                     <span class="picker-name">{{ team.name }}</span>
                   </span>
                 </label>
@@ -230,7 +230,7 @@
               </li>
             }
           </ul>
-          <p class="team-hint">Select the radio button to mark the primary team</p>
+          <p class="text-muted">Select the radio button to mark the primary team</p>
         } @else {
           <p class="team-empty">No team assigned yet.</p>
         }

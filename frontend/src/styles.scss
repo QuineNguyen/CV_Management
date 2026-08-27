@@ -1,4 +1,5 @@
 @use '@angular/material' as mat;
+@use './styles/ui';
 
 $vt-theme: mat.define-theme((
   color: (
@@ -49,7 +50,7 @@ html {
   --vt-sidenav-width: clamp(220px, 20vw, 264px);
 
   /* Spacing */
-  --vt-gap: clamp(0.5rem, 1.5vw, 1rem);
+  --vt-gap: clamp(0.5rem, 1.5vw, 0.8rem);
   --vt-pad: clamp(0.75rem, 2.5vw, 1.5rem);
   --vt-indent: clamp(0.875rem, 3vw, 1.75rem);
 
@@ -224,16 +225,6 @@ body {
 .material-symbols-outlined {
   font-family: 'Material Symbols Outlined';
   font-variation-settings: 'FILL' 0, 'wght' 400;
-}
-
-/* Shared empty-state layout styling. */
-.empty-state {
-  display: grid;
-  place-items: center;
-  gap: 0.5rem;
-  padding: 3rem 1rem;
-  color: var(--mat-sys-on-surface-variant);
-  text-align: center;
 }
 
 /* ---------- Toast (MatSnackBar) ---------- */

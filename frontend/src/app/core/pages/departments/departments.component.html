@@ -1,15 +1,15 @@
-<section class="dept-page">
+<section class="page">
 
   <!-- Toolbar -->
-  <header class="dept-toolbar">
-    <div class="dept-heading">
-      <h1 class="dept-title">Department Management</h1>
-      <p class="dept-subtitle">
+  <header class="page-toolbar">
+    <div class="page-heading">
+      <h1 class="page-title">Department Management</h1>
+      <p class="page-subtitle">
         Organisation tree · {{ pageState().total }} root department(s)
       </p>
     </div>
 
-    <div class="dept-toolbar-actions">
+    <div class="page-toolbar-actions">
       <button type="button" class="btn btn-ghost" (click)="expandAll()">Expand All</button>
       <button type="button" class="btn btn-ghost" (click)="collapseAll()">Collapse All</button>
       <button type="button" class="btn btn-primary" (click)="openCreate(null)">
@@ -38,7 +38,7 @@
       </ng-container>
     </div>
     <mat-paginator
-      class="dept-paginator"
+      class="page-paginator"
       [length]="pageState().total"
       [pageIndex]="pageState().index"
       [pageSize]="pageState().size"
@@ -46,7 +46,7 @@
       [hidePageSize]="false"
       showFirstLastButtons
       (page)="onPageChange($event)" />
-    <p class="dept-hint">Drag the ⠿ handle to reorder departments under the same parent.</p>
+    <p class="text-muted">Drag the ⠿ handle to reorder departments under the same parent.</p>
   }
 </section>
 
@@ -67,7 +67,7 @@
           <button
             type="button"
             class="node-toggle"
-            [class.node-toggle-hidden]="!node.children.length"
+            [class.node-toggle--hidden]="!node.children.length"
             [attr.aria-expanded]="isExpanded(node.id)"
             [attr.aria-label]="isExpanded(node.id) ? 'Collapse' : 'Expand'"
             (click)="toggle(node.id)">
@@ -77,7 +77,7 @@
           <span class="node-handle" cdkDragHandle aria-label="Drag to reorder">⠿</span>
 
           <div class="node-label">
-            <span class="node-code">{{ node.code }}</span>
+            <span class="code-chip is-primary">{{ node.code }}</span>
             <span class="node-name" [title]="node.name">{{ node.name }}</span>
           </div>
 
@@ -86,7 +86,7 @@
                     (click)="openCreate(node.id)">＋</button>
             <button type="button" class="icon-btn" title="Edit"
                     (click)="openEdit(node)">✎</button>
-            <button type="button" class="icon-btn icon-btn-danger" title="Delete"
+            <button type="button" class="icon-btn icon-btn--danger" title="Delete"
                     (click)="askDelete(node)">🗑</button>
           </div>
         </div>

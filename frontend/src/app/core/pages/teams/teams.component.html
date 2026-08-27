@@ -1,10 +1,10 @@
-<section class="team-page">
+<section class="page">
 
   <!-- Toolbar -->
-  <header class="team-toolbar">
-    <div class="team-heading">
-      <h1 class="team-title">Team Management</h1>
-      <p class="team-subtitle">
+  <header class="page-toolbar">
+    <div class="page-heading">
+      <h1 class="page-title">Team Management</h1>
+      <p class="page-subtitle">
         {{ pageState().total }} team(s)
         @if (!sort()) {
           · ordered by display order
@@ -13,7 +13,7 @@
       </p>
     </div>
 
-    <div class="team-toolbar-actions">
+    <div class="page-toolbar-actions">
       <button type="button" class="btn btn-primary" (click)="openCreate()">
         <span aria-hidden="true">＋</span> Add Team
       </button>
@@ -21,7 +21,7 @@
   </header>
 
   <!-- Filters -->
-  <div class="team-filters">
+  <div class="page-filters">
     <label class="field">
       <span class="field-label">Search</span>
       <div class="search-input-wrap">
@@ -56,8 +56,8 @@
   } @else {
 
     <!-- Table: laptop and desktop -->
-    <div class="team-table-wrap">
-      <table class="team-table">
+    <div class="data-table-wrap">
+      <table class="data-table">
         <thead>
           <tr>
             <th scope="col" class="col-code" [attr.aria-sort]="ariaSort(sortField.Code)">
@@ -92,7 +92,7 @@
         <tbody>
           @for (team of teams(); track team.id) {
             <tr>
-              <td class="col-code"><span class="code-chip">{{ team.code }}</span></td>
+              <td class="col-code"><span class="code-chip is-primary">{{ team.code }}</span></td>
               <td class="col-name">
                 <span class="cell-strong">{{ team.name }}</span>
                 @if (team.description) {
@@ -119,11 +119,11 @@
     </div>
 
     <!-- Cards: iPad and phone -->
-    <ul class="team-cards">
+    <ul class="data-cards">
       @for (team of teams(); track team.id) {
-        <li class="team-card">
-          <div class="team-card-head">
-            <span class="code-chip">{{ team.code }}</span>
+        <li class="data-card">
+          <div class="data-card-head">
+            <span class="code-chip is-primary">{{ team.code }}</span>
             <div class="row-actions">
               <button type="button" class="icon-btn" title="Members" (click)="openMembers(team)">👥</button>
               <button type="button" class="icon-btn" title="Edit" (click)="openEdit(team)">✎</button>
@@ -131,9 +131,9 @@
             </div>
           </div>
 
-          <p class="team-card-name">{{ team.name }}</p>
+          <p class="data-card-title">{{ team.name }}</p>
 
-          <dl class="team-card-facts">
+          <dl class="data-card-facts">
             <div>
               <dt>Tech Lead</dt>
               <dd>{{ team.techLeadFullName ?? '—' }}</dd>
@@ -152,7 +152,7 @@
     </ul>
 
     <mat-paginator
-      class="team-paginator"
+      class="page-paginator"
       [length]="pageState().total"
       [pageIndex]="pageState().index"
       [pageSize]="pageState().size"

@@ -1,149 +1,16 @@
-/* ---------- Modal shell ---------- */
+:host {
+  color: var(--vt-ink);
+  --vt-modal-w: min(46rem, 100%);
+  --vt-modal-h: min(98vh, 52rem);
+  --vt-modal-z: 60;
+}
+
+/* Panel floats over the assigned list, so the backdrop must not scroll. */
 .modal-backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 60;
-  display: grid;
-  place-items: center;
-  padding: var(--vt-pad);
-  background: rgba(31, 41, 51, 0.45);
   overflow: hidden;
 }
 
-.modal {
-  box-sizing: border-box;
-  width: min(46rem, 100%);
-  max-height: min(98vh, 52rem);
-  overflow-y: auto;
-  padding: var(--vt-pad);
-  background: var(--vt-surface);
-  border-radius: var(--vt-radius-md);
-  box-shadow: 0 1rem 2.5rem rgba(31, 41, 51, 0.24);
-}
-
-.modal-title {
-  margin: 0 0 var(--vt-gap);
-  font-size: var(--vt-fs-lg);
-}
-
-.modal-footer {
-  display: flex;
-  justify-content: flex-end;
-  gap: calc(var(--vt-gap) * 0.5);
-  margin-block-start: var(--vt-gap);
-}
-
-/* ---------- Form ---------- */
-.form-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(16rem, 100%), 1fr));
-  gap: var(--vt-gap);
-}
-
-.field {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-  min-width: 0;
-  position: relative;
-}
-
-.field-wide {
-  grid-column: 1 / -1;
-}
-
-.field-label {
-  font-size: var(--vt-fs-sm);
-  font-weight: 600;
-  color: var(--vt-ink-muted);
-}
-
-.required {
-  color: var(--vt-red);
-}
-
-.field-input {
-  box-sizing: border-box;
-  width: 100%;
-  min-height: var(--vt-touch-target);
-  padding: calc(var(--vt-gap) * 0.4) calc(var(--vt-gap) * 0.6);
-  border: 0.0625rem solid var(--vt-line);
-  border-radius: var(--vt-radius-sm);
-  background: var(--vt-surface);
-  color: var(--vt-ink);
-  font-family: inherit;
-}
-
-.field-input:focus {
-  outline: 0.125rem solid var(--vt-red);
-  outline-offset: -0.0625rem;
-}
-
-.field-input:disabled {
-  background: var(--vt-canvas);
-  color: var(--vt-ink-muted);
-  cursor: not-allowed;
-}
-
-.field-error {
-  font-size: var(--vt-fs-sm);
-  font-weight: 600;
-  color: var(--vt-red);
-}
-
-/* ---------- Department picker ---------- */
-.picker-trigger {
-  box-sizing: border-box;
-  width: 100%;
-  min-height: var(--vt-touch-target);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: calc(var(--vt-gap) * 0.5);
-  padding: calc(var(--vt-gap) * 0.4) calc(var(--vt-gap) * 0.6);
-  border: 0.0625rem solid var(--vt-line);
-  border-radius: var(--vt-radius-sm);
-  background: var(--vt-surface);
-  color: var(--vt-ink);
-  font-family: inherit;
-  font-size: var(--vt-fs-md);
-  text-align: start;
-  cursor: pointer;
-}
-
-.picker-trigger.is-open {
-  border-color: var(--vt-red);
-}
-
-.picker-value {
-  display: flex;
-  align-items: center;
-  gap: calc(var(--vt-gap) * 0.5);
-  min-width: 0;
-}
-
-.picker-placeholder {
-  color: var(--vt-ink-muted);
-}
-
-.picker-name {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.picker-panel {
-  display: flex;
-  flex-direction: column;
-  gap: calc(var(--vt-gap) * 0.4);
-  margin-block-start: 0.25rem;
-  padding: calc(var(--vt-gap) * 0.5);
-  border: 0.0625rem solid var(--vt-line);
-  border-radius: var(--vt-radius-sm);
-  background: var(--vt-canvas);
-}
-
-/* The team panel overlays the assigned list below instead of pushing it down */
+/* ---------- Team picker ---------- */
 .team-picker {
   position: relative;
 }
@@ -153,7 +20,7 @@
   display: flex;
 }
 
-/* Room for the icon, which sits over the field and never swallows a click on it */
+/* Room for the icon, which sits over the field and never swallows a click. */
 .team-search-input {
   padding-inline-end: var(--vt-touch-target);
 }
@@ -172,69 +39,6 @@
   color: var(--vt-ink-muted);
 }
 
-.picker-panel-float {
-  position: absolute;
-  inset-inline: 0;
-  top: calc(100% + 0.25rem);
-  z-index: 50;
-  margin-block-start: 0;
-  background: var(--vt-surface);
-  box-shadow: 0 0.5rem 1.5rem rgba(31, 41, 51, 0.16);
-}
-
-.picker-list {
-  list-style: none;
-  margin: 0.25rem 0 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.125rem;
-  max-height: min(13rem, 30vh);
-  overflow-y: auto;
-}
-
-.picker-option {
-  width: 100%;
-  min-height: var(--vt-touch-target);
-  display: flex;
-  align-items: center;
-  gap: calc(var(--vt-gap) * 0.5);
-  padding: calc(var(--vt-gap) * 0.3) calc(var(--vt-gap) * 0.5);
-  border: 0.0625rem solid transparent;
-  border-radius: var(--vt-radius-sm);
-  background: var(--vt-surface);
-  color: var(--vt-ink);
-  font-family: inherit;
-  font-size: var(--vt-fs-md);
-  text-align: start;
-  cursor: pointer;
-}
-
-.picker-option:hover {
-  border-color: var(--vt-red);
-}
-
-.picker-option.is-selected {
-  background: var(--vt-red-surface);
-  border-color: var(--vt-red);
-}
-
-.picker-status {
-  margin: 0.25rem 0 0;
-  font-size: var(--vt-fs-sm);
-  color: var(--vt-ink-muted);
-}
-
-.code-chip {
-  flex: 0 0 auto;
-  padding: 0.125rem 0.5rem;
-  border-radius: var(--vt-radius-sm);
-  background: var(--vt-red-tint);
-  color: var(--vt-red);
-  font-size: var(--vt-fs-sm);
-  font-weight: 700;
-}
-
 /* ---------- Team assignments ---------- */
 .team-section {
   margin: var(--vt-gap) 0 0;
@@ -249,12 +53,6 @@
   font-weight: 700;
 }
 
-.team-hint {
-  margin: 0 0 calc(var(--vt-gap) * 0.5);
-  font-size: var(--vt-fs-sm);
-  color: var(--vt-ink-muted);
-}
-
 .team-empty {
   margin: calc(var(--vt-gap) * 0.5) 0 0;
   padding: var(--vt-gap);
@@ -267,7 +65,7 @@
 
 .assigned-list {
   list-style: none;
-  margin: calc(var(--vt-gap) * 0.5) 0 calc(var(--vt-gap) * 0.5);
+  margin: calc(var(--vt-gap) * 0.5) 0;
   padding: 0;
   display: flex;
   flex-direction: column;
@@ -312,76 +110,4 @@
   align-items: center;
   gap: calc(var(--vt-gap) * 0.5);
   min-width: 0;
-}
-
-/* ---------- Buttons ---------- */
-.btn {
-  min-height: var(--vt-tap);
-  padding-inline: clamp(0.75rem, 2.5vw, 1.25rem);
-  border: 0.0625rem solid transparent;
-  border-radius: var(--vt-radius-sm);
-  font-size: var(--vt-fs-md);
-  font-weight: 600;
-  cursor: pointer;
-  transition: background-color 0.15s ease, color 0.15s ease;
-}
-
-.btn-primary {
-  background: var(--vt-red);
-  color: #fff;
-}
-
-.btn-primary:hover:not(:disabled) {
-  background: var(--vt-red-dark);
-}
-
-.btn-ghost {
-  background: transparent;
-  border-color: var(--vt-line);
-  color: var(--vt-ink);
-}
-
-.btn-ghost:hover:not(:disabled) {
-  border-color: var(--vt-red);
-  color: var(--vt-red);
-}
-
-.btn:disabled {
-  opacity: 0.55;
-  cursor: not-allowed;
-}
-
-.icon-btn {
-  width: var(--vt-tap);
-  height: var(--vt-tap);
-  flex: 0 0 auto;
-  display: inline-grid;
-  place-items: center;
-  border: 0.0625rem solid transparent;
-  border-radius: var(--vt-radius-sm);
-  background: transparent;
-  font-size: var(--vt-fs-md);
-  color: var(--vt-ink-muted);
-  cursor: pointer;
-}
-
-.icon-btn--danger:hover {
-  background: var(--vt-red);
-  color: #fff;
-}
-
-/* ---------- Phone ---------- */
-@media (max-width: 40rem) {
-  .modal {
-    width: 100%;
-    max-height: 94vh;
-  }
-
-  .modal-footer {
-    flex-direction: column-reverse;
-  }
-
-  .modal-footer .btn {
-    width: 100%;
-  }
 }

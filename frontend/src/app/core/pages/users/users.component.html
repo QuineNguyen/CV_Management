@@ -1,10 +1,10 @@
-<section class="user-page">
+<section class="page">
 
   <!-- Toolbar -->
-  <header class="user-toolbar">
-    <div class="user-heading">
-      <h1 class="user-title">User Management</h1>
-      <p class="user-subtitle">
+  <header class="page-toolbar">
+    <div class="page-heading">
+      <h1 class="page-title">User Management</h1>
+      <p class="page-subtitle">
         @if (isScopedView()) {
           {{ pageState().total }} account(s) in the teams you lead
         } @else {
@@ -14,7 +14,7 @@
     </div>
 
     @if (canManage()) {
-      <div class="user-toolbar-actions">
+      <div class="page-toolbar-actions">
         <button type="button" class="btn btn-primary" (click)="openCreate()">
           <span aria-hidden="true">＋</span> Add User
         </button>
@@ -23,7 +23,7 @@
   </header>
 
   <!-- Filters -->
-  <div class="user-filters">
+  <div class="page-filters">
     <label class="field field-grow">
       <span class="field-label">Search</span>
       <div class="search-input-wrap">
@@ -195,8 +195,8 @@
   } @else {
 
     <!-- Table: laptop and desktop -->
-    <div class="user-table-wrap">
-      <table class="user-table">
+    <div class="data-table-wrap">
+      <table class="data-table">
         <thead>
           <tr>
             <th scope="col" class="col-avatar">Avatar</th>
@@ -251,7 +251,7 @@
               <td class="col-role">{{ roleLabels[user.role] }}</td>
               <td class="col-dept">{{ user.departmentName ?? '—' }}</td>
               <td class="col-teams">
-                <div class="team-chips">
+                <div class="chip-list">
                   @for (team of user.teams; track team.teamId) {
                     <span class="code-chip" [class.is-primary]="team.primary" [matTooltip]="team.teamName">
                       {{ team.teamCode }}
@@ -296,20 +296,20 @@
     </div>
 
     <!-- Cards: iPad and phone -->
-    <ul class="user-cards">
+    <ul class="data-cards">
       @for (user of users(); track user.id) {
-        <li class="user-card" [class.is-inactive]="user.status !== activeStatus">
-          <div class="user-card-head">
-            <div class="user-card-identity">
+        <li class="data-card" [class.is-inactive]="user.status !== activeStatus">
+          <div class="data-card-head">
+            <div class="data-card-identity">
               @if (avatarOf(user); as avatar) {
                 <span class="avatar avatar-lg" [attr.data-tone]="avatar.tone" aria-hidden="true">
                   {{ avatar.initials }}
                 </span>
               }
-              <div class="user-card-text">
-                <p class="user-card-name">{{ user.fullName }}</p>
-                <p class="user-card-email">{{ user.email }}</p>
-                <p class="user-card-username">{{ user.username }}</p>
+              <div class="data-card-text">
+                <p class="data-card-title">{{ user.fullName }}</p>
+                <p class="data-card-line">{{ user.email }}</p>
+                <p class="data-card-line is-mono">{{ user.username }}</p>
               </div>
             </div>
 
@@ -336,7 +336,7 @@
             }
           </div>
 
-          <dl class="user-card-facts">
+          <dl class="data-card-facts">
             <div>
               <dt>Username</dt>
               <dd>{{ user.username }}</dd>
@@ -359,7 +359,7 @@
             </div>
           </dl>
 
-          <div class="team-chips">
+          <div class="chip-list">
             @for (team of user.teams; track team.teamId) {
               <span class="code-chip" [class.is-primary]="team.primary" [matTooltip]="team.teamName">{{ team.teamCode }}</span>
             }
@@ -369,7 +369,7 @@
     </ul>
 
     <mat-paginator
-      class="user-paginator"
+      class="page-paginator"
       [length]="pageState().total"
       [pageIndex]="pageState().index"
       [pageSize]="pageState().size"

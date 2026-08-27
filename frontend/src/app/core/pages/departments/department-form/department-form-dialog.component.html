@@ -35,11 +35,19 @@
 
       <div class="field">
         <label class="field-label" for="dept-parent-search">Parent Department</label>
-        <button type="button" class="field-input picker-trigger custom-select-trigger" (click)="togglePicker()">
+        <button
+          type="button"
+          class="field-input picker-trigger custom-select-trigger"
+          [class.is-open]="pickerOpen()"
+          [attr.aria-expanded]="pickerOpen()"
+          (click)="togglePicker()">
           @if (selectedParent(); as parent) {
-            <span class="picker-value">{{ parent.code }} — {{ parent.name }}</span>
+            <span class="picker-value">
+              <span class="code-chip is-primary">{{ parent.code }}</span>
+              <span class="picker-name">{{ parent.name }}</span>
+            </span>
           } @else {
-            <span class="picker-value picker-value-empty">— Root level —</span>
+            <span class="picker-value picker-value--empty">— Root level —</span>
           }
         </button>
 
@@ -51,7 +59,11 @@
 
             <ul class="picker-list" role="listbox">
               <li>
-                <button type="button" class="picker-option" (click)="selectParent(null)">
+                <button
+                  type="button"
+                  class="picker-option"
+                  [class.is-selected]="selectedParent() === null"
+                  (click)="selectParent(null)">
                   — Root level —
                 </button>
               </li>
@@ -64,9 +76,13 @@
 
               @for (item of parentOptions(); track item.id) {
                 <li>
-                  <button type="button" class="picker-option" (click)="selectParent(item)">
-                    <span class="picker-option-code">{{ item.code }}</span>
-                    <span class="picker-option-name">{{ item.name }}</span>
+                  <button
+                    type="button"
+                    class="picker-option"
+                    [class.is-selected]="selectedParent()?.id === item.id"
+                    (click)="selectParent(item)">
+                    <span class="code-chip is-primary">{{ item.code }}</span>
+                    <span class="picker-name">{{ item.name }}</span>
                   </button>
                 </li>
               }

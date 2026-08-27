@@ -4,7 +4,7 @@
     <header class="modal-head">
       <h2 class="modal-title">
         Members
-        <span class="code-chip">{{ team().code }}</span>
+        <span class="code-chip is-primary">{{ team().code }}</span>
       </h2>
       <p class="modal-subtitle">{{ team().name }} · {{ members().length }} member(s)</p>
     </header>
@@ -20,18 +20,18 @@
         autocomplete="off" />
 
       @if (lookupLoading()) {
-        <p class="lookup-status">Searching…</p>
+        <p class="picker-status">Searching…</p>
       } @else if (candidates().length) {
-        <ul class="lookup-list">
+        <ul class="picker-list">
           @for (candidate of candidates(); track candidate.id) {
             <li>
               <button
                 type="button"
-                class="lookup-option"
+                class="picker-option"
                 [disabled]="busyUserId() === candidate.id"
                 (click)="addMember(candidate)">
-                <span class="lookup-name">{{ candidate.fullName }}</span>
-                <span class="lookup-meta">{{ candidate.email }} · {{ roleLabels[candidate.role] }}</span>
+                <span class="picker-name">{{ candidate.fullName }}</span>
+                <span class="cell-muted">{{ candidate.email }} · {{ roleLabels[candidate.role] }}</span>
               </button>
             </li>
           }
@@ -56,7 +56,7 @@
               <p class="member-name">
                 {{ member.fullName }}
                 @if (member.primaryTeam) {
-                  <span class="badge-primary">Primary</span>
+                  <span class="status-badge is-active">Primary</span>
                 }
               </p>
               <p class="member-meta">{{ member.email }} · {{ roleLabels[member.role] }}</p>
