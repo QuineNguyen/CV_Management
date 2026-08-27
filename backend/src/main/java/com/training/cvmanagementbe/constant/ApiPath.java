@@ -17,5 +17,13 @@ public final class ApiPath {
     public static final String DEACTIVATE = "/{id}/deactivate";
     public static final String ACTIVATE = "/{id}/activate";
 
+    // CV profiles
+    public static final String EMPLOYEES = "/employees";
+    public static final String PROFILES = "/profiles";
+    public static final String PROFILES_BY_EMPLOYEE = "/{employeeId}/profiles";
+    public static final String PROFILE_ENSURE = "/{employeeId}/profiles/ensure";
+    public static final String PROFILE_TEAM_OPTIONS = "/{employeeId}/profiles/team-options";
+    public static final String SET_PRIMARY = "/{id}/set-primary";
+
     private ApiPath() {}
 }

@@ -44,6 +44,9 @@ public enum ErrorCode {
     VERSION_NUMBER_TAKEN("That version number is already used by this CV"),
     NOT_CV_OWNER("Only the CV owner can edit its content"),
     DRAFT_CONTENT_LOCKED("The draft is read-only while it is awaiting approval"),
+    CANNOT_DELETE_PRIMARY_PROFILE("Cannot delete the primary profile; assign another profile as primary first"),
+    PROFILE_HAS_PENDING_DRAFTS("Cannot delete a profile that has CVs awaiting approval"),
+    LINKED_TEAM_NOT_MEMBER("The linked team must be one the employee belongs to"),
 
     // ---------- Approval ----------
     APPROVAL_ALREADY_ASSIGNED("This draft already has an open approval assignment"),
