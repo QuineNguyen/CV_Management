@@ -274,7 +274,7 @@
                       <button
                         type="button"
                         class="icon-btn"
-                        [matTooltip]="selfActionHint(user.id, 'reset the password of')"
+                        [matTooltip]="selfActionHint(user.id, 'reset the password')"
                         [disabled]="user.id === currentUserId()"
                         (click)="askResetPassword(user)">🔑</button>
                       <button
@@ -320,7 +320,7 @@
                   <button
                     type="button"
                     class="icon-btn"
-                    [matTooltip]="selfActionHint(user.id, 'reset the password of')"
+                    [matTooltip]="selfActionHint(user.id, 'reset the password')"
                     [disabled]="user.id === currentUserId()"
                     (click)="askResetPassword(user)">🔑</button>
                   <button
