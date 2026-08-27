@@ -51,6 +51,7 @@ export class ShellComponent {
 
   readonly user = this.auth.user;
   readonly navOpen = signal(true);
+  readonly homeRoute = '/' + AppRoute.Home;
 
   /**
    * Drawer switches to overlay mode below 1024px, which covers phones and iPad in both

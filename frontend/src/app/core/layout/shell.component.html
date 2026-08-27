@@ -5,10 +5,14 @@
     [mode]="isCompact() ? 'over' : 'side'"
     [opened]="!isCompact() && navOpen()"
   >
-    <div class="shell-brand">
+    <a
+      class="shell-brand"
+      [routerLink]="homeRoute"
+      (click)="isCompact() && drawer.close()"
+    >
       <span class="material-symbols-outlined">description</span>
       <span>CV Management</span>
-    </div>
+    </a>
 
     <mat-nav-list>
       @for (item of visibleNavItems(); track item.route) {
