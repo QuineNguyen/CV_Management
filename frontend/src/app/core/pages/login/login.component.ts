@@ -1,6 +1,6 @@
 import { Component, DestroyRef, ElementRef, PLATFORM_ID, ViewChild, afterNextRender, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { MatButtonModule } from '@angular/material/button';
@@ -17,6 +17,8 @@ import { AuthService } from '../../services/auth.service';
 import { GoogleIdentityService } from '../../services/google-identity.service';
 import { StorageKey } from '../../enums/storage-key.enum';
 import { isPlatformBrowser } from '@angular/common';
+import { sanitizeReturnUrl } from '../../utils/return-url.util';
+import { QueryParam } from '../../enums/query-param.enum';
 
 // Fallback when the server does not send Retry-After.
 const LOCKOUT_FALLBACK_SECONDS = 5 * 60;
@@ -46,8 +48,14 @@ export class LoginComponent {
   private readonly auth = inject(AuthService);
   private readonly googleIdentity = inject(GoogleIdentityService);
   private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
   private readonly destroyRef = inject(DestroyRef);
   private readonly platformId = inject(PLATFORM_ID);
+
+  // Read once: the query string cannot change while the page is open
+  private readonly returnUrl = sanitizeReturnUrl(
+    this.route.snapshot.queryParamMap.get(QueryParam.ReturnUrl),
+  );
 
   @ViewChild('googleButton') private googleButton?: ElementRef<HTMLElement>;
 
@@ -56,7 +64,7 @@ export class LoginComponent {
   readonly failureMessage = signal<string | null>(null);
   readonly googleEnabled = this.googleIdentity.isEnabled;
 
-  /** Seconds remaining until the lockout expires. 0 means not locked. */
+  // Seconds remaining until the lockout expires. 0 means not locked
   readonly lockoutRemaining = signal(0);
 
   private lockoutTimer: ReturnType<typeof setInterval> | null = null;
@@ -117,10 +125,17 @@ export class LoginComponent {
     }
   }
 
-  // A temporary password grants a token but no access until it is replaced.
+  // A temporary password grants a token but no access until it is replaced
   private routeAfterSignIn(user: AuthenticatedUser): Promise<boolean> {
-    const target = user.mustChangePassword ? AppRoute.ChangePassword : AppRoute.Home;
-    return this.router.navigate([target]);
+    if (user.mustChangePassword) {
+      // The intended destination is carried across the forced change so the trip is not lost
+      return this.router.navigate([AppRoute.ChangePassword], {
+        queryParams: this.returnUrl ? { [QueryParam.ReturnUrl]: this.returnUrl } : undefined,
+      });
+    }
+
+    // navigateByUrl, not navigate([...]): returnUrl may carry its own query string or fragment.
+    return this.router.navigateByUrl(this.returnUrl ?? AppRoute.Home);
   }
 
   // ---------- Lockout handling ----------
@@ -203,7 +218,7 @@ export class LoginComponent {
     localStorage.setItem(StorageKey.Lockout, JSON.stringify(entry));
   }
 
-  /** Re-arms the countdown when the typed username matches the account that was locked. */
+  // Re-arms the countdown when the typed username matches the account that was locked
   private restoreLockout(): void {
     if (!this.isBrowser) {
       return;

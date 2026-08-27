@@ -2,6 +2,8 @@ import { inject } from '@angular/core';
 import { CanActivateFn, Router } from '@angular/router';
 import { UserRole } from '../enums/user-role.enum';
 import { AuthService } from './auth.service';
+import { AppRoute } from '../enums/app-route.enum';
+import { QueryParam } from '../enums/query-param.enum';
 
 /**
  * Blocks routes that require a session, remembering where the user was heading so sign-in can
@@ -14,7 +16,7 @@ export const authGuard: CanActivateFn = (_route, state) => {
   if (auth.isAuthenticated()) {
     return true;
   }
-  return router.createUrlTree(['/login'], { queryParams: { returnUrl: state.url } });
+  return router.createUrlTree([AppRoute.Login], { queryParams: { [QueryParam.ReturnUrl]: state.url } });
 };
 
 /**
@@ -28,6 +30,6 @@ export function roleGuard(...allowed: UserRole[]): CanActivateFn {
   return () => {
     const auth = inject(AuthService);
     const router = inject(Router);
-    return auth.hasRole(...allowed) ? true : router.createUrlTree(['/']);
+    return auth.hasRole(...allowed) ? true : router.createUrlTree([AppRoute.Home]);
   };
 }

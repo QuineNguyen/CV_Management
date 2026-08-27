@@ -8,6 +8,7 @@ import { ApiError } from '../dtos/api-error.dto';
 import { ToastService } from '../services/toast.service';
 import { ApiEndpoint } from '../enums/api-endpoint.enum';
 import { AppRoute } from '../enums/app-route.enum';
+import { QueryParam } from '../enums/query-param.enum';
 
 /**
  * Turns every failed request into one visible, consistent outcome.
@@ -64,8 +65,8 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
 
           if (!isSignInAttempt && !router.url.startsWith(AppRoute.Login)) {
             notify(message);
-            void router.navigate(['/login'], {
-              queryParams: { returnUrl: router.url },
+            void router.navigate([AppRoute.Login], {
+              queryParams: { [QueryParam.ReturnUrl]: router.url },
             });
           }
           break;

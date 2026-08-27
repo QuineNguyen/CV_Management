@@ -5,7 +5,7 @@ import { MatCardModule } from "@angular/material/card";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from "@angular/material/input";
 import { AuthService } from "../../services/auth.service";
-import { Router } from "@angular/router";
+import { ActivatedRoute, Router } from "@angular/router";
 import { ToastService } from "../../services/toast.service";
 import { firstValueFrom } from "rxjs";
 import { HttpErrorResponse } from "@angular/common/http";
@@ -13,6 +13,8 @@ import { changePasswordGroupValidator, evaluatePassword, passwordPolicyValidator
 import { AppRoute } from "../../enums/app-route.enum";
 import { ApiError } from "../../dtos/api-error.dto";
 import { messageFor } from "../../models/error-messages.model";
+import { sanitizeReturnUrl } from "../../utils/return-url.util";
+import { QueryParam } from "../../enums/query-param.enum";
 
 @Component({
     selector: 'app-change-password',
@@ -31,7 +33,11 @@ export class ChangePasswordComponent {
     private readonly formBuilder = inject(FormBuilder);
     private readonly auth = inject(AuthService);
     private readonly router = inject(Router);
+    private readonly route = inject(ActivatedRoute);
     private readonly toast = inject(ToastService);
+    private readonly returnUrl = sanitizeReturnUrl(
+        this.route.snapshot.queryParamMap.get(QueryParam.ReturnUrl),
+    )
 
     readonly rules = PasswordRule;
     readonly submitting = signal(false);
@@ -69,7 +75,9 @@ export class ChangePasswordComponent {
             // The server revoked every token, so the current one is already dead.
             this.auth.clearSession();
             this.toast.success('Password changed successfully. Please sign in again');
-            await this.router.navigate([AppRoute.Login]);
+            await this.router.navigate([AppRoute.Login], {
+                queryParams: this.returnUrl ? { [QueryParam.ReturnUrl]: this.returnUrl } : undefined,
+            });
         } catch (error) {
             this.toast.error(this.extractErrorMessage(error));
         } finally {
@@ -88,6 +96,6 @@ export class ChangePasswordComponent {
     }
 
     async cancel(): Promise<void> {
-        await this.router.navigate([AppRoute.Home]);
+        await this.router.navigateByUrl(this.returnUrl ?? AppRoute.Home);
     }
 }
