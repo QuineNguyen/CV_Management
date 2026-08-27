@@ -14,10 +14,8 @@ import java.util.UUID;
 // Team management contract. ALl listing endpoints return paginated data.
 public interface TeamService {
 
-    // Paginated search by keyword (code, name) and optional department filter.
-    PagedResponse<TeamResponse> search(String keyword,
-                                       UUID departmentId,
-                                       Pageable pageable);
+    // Paginated search by keyword (code, name).
+    PagedResponse<TeamResponse> search(String keyword, Pageable pageable);
 
     TeamResponse getById(UUID id);
 

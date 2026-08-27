@@ -1,0 +1,57 @@
+<div class="modal-backdrop" (click)="onCancel()">
+  <div class="modal" role="alertdialog" aria-modal="true" (click)="$event.stopPropagation()">
+    <h2 class="modal-title">Deactivate user</h2>
+
+    <p class="modal-body">
+      Deactivate <strong>{{ user().fullName }}</strong> ({{ user().username }})?
+    </p>
+
+    <ul class="effect-list">
+      <li>The account can no longer sign in and all issued tokens are revoked</li>
+      <li>Open drafts owned by this user are cancelled</li>
+      <li>Pending update requests addressed to this user are cancelled</li>
+      <li>Approval steps waiting on this user are cleared</li>
+      <li>Published CVs stay untouched and remain visible</li>
+    </ul>
+
+    @if (hasLedTeams()) {
+      <section class="handover">
+        <h3 class="handover-title">Hand over led teams</h3>
+        <p class="handover-hint">
+          This user leads {{ ledTeams().length }} team(s). Each one needs another active
+          tech lead before the account can be closed
+        </p>
+
+        <ul class="handover-list">
+          @for (team of ledTeams(); track team.id) {
+            <li class="handover-row">
+              <span class="handover-team">
+                <span class="code-chip">{{ team.code }}</span>
+                <span class="handover-name">{{ team.name }}</span>
+              </span>
+
+              <select
+                class="field-input"
+                [value]="replacementFor(team.id)"
+                (change)="onReplacementChange(team.id, $any($event.target).value)">
+                <option value="">Select a replacement</option>
+                @for (lead of candidates(); track lead.id) {
+                  <option [value]="lead.id">{{ lead.fullName }} ({{ lead.username }})</option>
+                }
+              </select>
+            </li>
+          }
+        </ul>
+      </section>
+    }
+
+    <div class="modal-footer">
+      <button type="button" class="btn btn-ghost" (click)="onCancel()" [disabled]="submitting()">
+        Cancel
+      </button>
+      <button type="button" class="btn btn-danger" [disabled]="!canSubmit()" (click)="onConfirm()">
+        {{ submitting() ? 'Deactivating...' : 'Deactivate' }}
+      </button>
+    </div>
+  </div>
+</div>

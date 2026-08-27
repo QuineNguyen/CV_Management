@@ -1,12 +1,13 @@
 import { HttpErrorResponse, HttpInterceptorFn } from '@angular/common/http';
 import { inject } from '@angular/core';
 import { Router } from '@angular/router';
-import { MatSnackBar } from '@angular/material/snack-bar';
 import { catchError, throwError } from 'rxjs';
 import { AuthService } from '../services/auth.service';
-import { ERROR_MESSAGES, messageFor } from '../error-messages';
+import { ERROR_MESSAGES, messageFor } from '../models/error-messages.model';
 import { ApiError } from '../dtos/api-error.dto';
 import { ToastService } from '../services/toast.service';
+import { ApiEndpoint } from '../enums/api-endpoint.enum';
+import { AppRoute } from '../enums/app-route.enum';
 
 /**
  * Turns every failed request into one visible, consistent outcome.
@@ -58,7 +59,10 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
           // Skip redirect when the request is a login/auth call (the login
           // component handles its own errors) or the user is already on the
           // login page — otherwise returnUrl keeps nesting on every attempt.
-          if (!req.url.includes('/auth/') && !router.url.startsWith('/login')) {
+          const isSignInAttempt = req.url.includes(ApiEndpoint.Login)
+              || req.url.includes(ApiEndpoint.GoogleLogin);
+
+          if (!isSignInAttempt && !router.url.startsWith(AppRoute.Login)) {
             notify(message);
             void router.navigate(['/login'], {
               queryParams: { returnUrl: router.url },

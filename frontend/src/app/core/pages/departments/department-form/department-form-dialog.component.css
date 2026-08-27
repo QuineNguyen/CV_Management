@@ -134,11 +134,6 @@
   color: var(--vt-ink-soft);
 }
 
-.picker-caret {
-  flex: 0 0 auto;
-  color: var(--vt-ink-soft);
-}
-
 .picker-panel {
   display: flex;
   flex-direction: column;

@@ -1,0 +1,108 @@
+<div class="modal-backdrop" (click)="onClose()">
+  <div class="modal" role="dialog" aria-modal="true" (click)="$event.stopPropagation()">
+
+    <header class="modal-head">
+      <h2 class="modal-title">
+        Members
+        <span class="code-chip">{{ team().code }}</span>
+      </h2>
+      <p class="modal-subtitle">{{ team().name }} · {{ members().length }} member(s)</p>
+    </header>
+
+    <!-- Add member -->
+    <div class="field">
+      <span class="field-label">Add a member</span>
+      <input
+        type="search"
+        class="field-input"
+        placeholder="Type at least 2 characters of a name, email or username"
+        [formControl]="keyword"
+        autocomplete="off" />
+
+      @if (lookupLoading()) {
+        <p class="lookup-status">Searching…</p>
+      } @else if (candidates().length) {
+        <ul class="lookup-list">
+          @for (candidate of candidates(); track candidate.id) {
+            <li>
+              <button
+                type="button"
+                class="lookup-option"
+                [disabled]="busyUserId() === candidate.id"
+                (click)="addMember(candidate)">
+                <span class="lookup-name">{{ candidate.fullName }}</span>
+                <span class="lookup-meta">{{ candidate.email }} · {{ roleLabels[candidate.role] }}</span>
+              </button>
+            </li>
+          }
+        </ul>
+      }
+    </div>
+
+    <!-- Member list -->
+    @if (loading()) {
+      <div class="skeleton-stack" aria-busy="true">
+        @for (row of [1, 2, 3]; track row) {
+          <div class="skeleton-row"></div>
+        }
+      </div>
+    } @else if (isEmpty()) {
+      <p class="member-empty">This team has no member yet.</p>
+    } @else {
+      <ul class="member-list">
+        @for (member of members(); track member.id) {
+          <li class="member-row">
+            <div class="member-info">
+              <p class="member-name">
+                {{ member.fullName }}
+                @if (member.primaryTeam) {
+                  <span class="badge-primary">Primary</span>
+                }
+              </p>
+              <p class="member-meta">{{ member.email }} · {{ roleLabels[member.role] }}</p>
+            </div>
+
+            <!-- The server rejects removing a primary team, so the action is disabled up front -->
+            <button
+              type="button"
+              class="icon-btn icon-btn--danger"
+              [disabled]="member.primaryTeam || busyUserId() === member.userId"
+              [title]="member.primaryTeam
+                ? 'Change the primary team from the user form first'
+                : 'Remove from team'"
+              (click)="askRemove(member)">
+              ✕
+            </button>
+          </li>
+        }
+      </ul>
+    }
+
+    <div class="modal-footer">
+      <button type="button" class="btn btn-primary" (click)="onClose()">Done</button>
+    </div>
+  </div>
+</div>
+
+<!-- Remove confirmation -->
+@if (removeTarget(); as target) {
+  <div class="modal-backdrop modal-backdrop--stacked" (click)="cancelRemove()">
+    <div class="modal modal-sm" role="alertdialog" aria-modal="true" (click)="$event.stopPropagation()">
+      <h2 class="modal-title">Remove member</h2>
+      <p class="modal-body">
+        Remove <strong>{{ target.fullName }}</strong> from <strong>{{ team().code }}</strong>?
+        A user must keep at least one team
+      </p>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-ghost" (click)="cancelRemove()">Cancel</button>
+        <button
+          type="button"
+          class="btn btn-danger"
+          [disabled]="busyUserId() === target.userId"
+          (click)="confirmRemove()">
+          {{ busyUserId() === target.userId ? 'Removing...' : 'Remove' }}
+        </button>
+      </div>
+    </div>
+  </div>
+}

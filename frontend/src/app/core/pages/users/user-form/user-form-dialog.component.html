@@ -1,0 +1,249 @@
+<div class="modal-backdrop" (click)="onBackdropClick($event)">
+  <div class="modal" role="dialog" aria-modal="true">
+    <h2 class="modal-title">{{ title() }}</h2>
+
+    <form [formGroup]="form" (ngSubmit)="onSubmit()" novalidate>
+
+      <!-- Identity -->
+      <div class="form-grid">
+        <label class="field">
+          <span class="field-label">Full name <span class="required" aria-hidden="true">*</span></span>
+          <input type="text" class="field-input" formControlName="fullName" maxlength="200" autocomplete="off" />
+          @if (hasError('fullName', 'required')) {
+            <span class="field-error">Full name is required</span>
+          }
+        </label>
+
+        <!-- Role -->
+        <div class="field custom-select-wrap">
+          <span class="field-label">Role <span class="required" aria-hidden="true">*</span></span>
+
+          <button
+            type="button"
+            class="field-input custom-select-trigger"
+            [class.is-open]="roleOpen()"
+            (click)="toggleRoleDropdown($event)"
+            aria-haspopup="listbox"
+            [attr.aria-expanded]="roleOpen()">
+            <span class="custom-select-label">
+              {{ selectedRoleLabel() }}
+            </span>
+          </button>
+
+          @if (roleOpen()) {
+            <div class="custom-select-panel" (click)="$event.stopPropagation()">
+              <ul class="custom-select-list" role="listbox">
+                <li role="option" [attr.aria-selected]="!form.controls.role.value">
+                  <button
+                    type="button"
+                    class="custom-select-option"
+                    [class.is-selected]="!form.controls.role.value"
+                    (click)="selectRole('')">
+                    Select a role
+                  </button>
+                </li>
+                @for (role of roleOptions; track role) {
+                  <li role="option" [attr.aria-selected]="form.controls.role.value === role">
+                    <button
+                      type="button"
+                      class="custom-select-option"
+                      [class.is-selected]="form.controls.role.value === role"
+                      (click)="selectRole(role)">
+                      {{ roleLabels[role] }}
+                    </button>
+                  </li>
+                }
+              </ul>
+            </div>
+          }
+
+          @if (hasError('role', 'required')) {
+            <span class="field-error">Select a role.</span>
+          }
+        </div>
+
+        <label class="field">
+          <span class="field-label">Email <span class="required" aria-hidden="true">*</span></span>
+          <input type="email" class="field-input" formControlName="email" maxlength="255" autocomplete="off" />
+          @if (hasError('email', 'required')) {
+            <span class="field-error">Email is required</span>
+          }
+          @if (hasError('email', 'email')) {
+            <span class="field-error">Enter a valid email address</span>
+          }
+        </label>
+
+        <label class="field">
+          <span class="field-label">Username <span class="required" aria-hidden="true">*</span></span>
+          <input type="text" class="field-input" formControlName="username" maxlength="100" autocomplete="off" />
+          @if (hasError('username', 'required')) {
+            <span class="field-error">Username is required</span>
+          }
+          @if (hasError('username', 'pattern')) {
+            <span class="field-error">Only letters, digits, dot, underscore and hyphen</span>
+          }
+          @if (hasError('username', 'minlength')) {
+            <span class="field-error">Username must be at least 3 characters</span>
+          }
+        </label>
+
+        <!-- Department picker -->
+        <div class="field">
+          <span class="field-label">Department <span class="required" aria-hidden="true">*</span></span>
+
+          <button
+            type="button"
+            class="picker-trigger custom-select-trigger"
+            [class.is-open]="pickerOpen()"
+            [attr.aria-expanded]="pickerOpen()"
+            (click)="togglePicker($event)">
+            @if (selectedDepartment(); as department) {
+              <span class="picker-value">
+                <span class="code-chip">{{ department.code }}</span>
+                <span class="picker-name">{{ department.name }}</span>
+              </span>
+            } @else {
+              <span class="picker-placeholder">Select a department</span>
+            }
+          </button>
+
+          @if (pickerOpen()) {
+            <div class="picker-panel">
+              <input
+                type="search"
+                class="field-input"
+                placeholder="Search by code or name"
+                [formControl]="departmentKeyword"
+                autocomplete="off" />
+
+              @if (lookupLoading()) {
+                <p class="picker-status">Loading…</p>
+              } @else if (!departmentOptions().length) {
+                <p class="picker-status">No department matches</p>
+              } @else {
+                <ul class="picker-list">
+                  @for (department of departmentOptions(); track department.id) {
+                    <li>
+                      <button
+                        type="button"
+                        class="picker-option"
+                        [class.is-selected]="department.id === selectedDepartment()?.id"
+                        (click)="selectDepartment(department)">
+                        <span class="code-chip">{{ department.code }}</span>
+                        <span class="picker-name">{{ department.name }}</span>
+                      </button>
+                    </li>
+                  }
+                </ul>
+              }
+            </div>
+          }
+        </div>
+
+        <label class="field">
+          <span class="field-label">Date of birth</span>
+          <input type="date" class="field-input" formControlName="dateOfBirth" />
+        </label>
+
+        <label class="field">
+          <span class="field-label">Phone number</span>
+          <input type="tel" class="field-input" formControlName="phoneNumber" maxlength="30" autocomplete="off" />
+        </label>
+
+        <label class="field field-wide">
+          <span class="field-label">Address</span>
+          <input type="text" class="field-input" formControlName="address" maxlength="500" autocomplete="off" />
+        </label>
+      </div>
+
+      <!-- Teams -->
+      <fieldset class="team-section">
+        <legend class="team-legend">
+          Teams <span class="required" aria-hidden="true">*</span>
+        </legend>
+        <p class="team-hint">
+          A user belongs to at least one team, and exactly one of them is the primary team
+        </p>
+
+        <div class="team-picker">
+          <div class="team-search">
+            <input
+              type="search"
+              class="field-input team-search-input"
+              placeholder="Search a team by code or name"
+              [formControl]="teamKeyword"
+              autocomplete="off"
+              role="combobox"
+              aria-haspopup="listbox"
+              [attr.aria-expanded]="teamPanelOpen()"
+              (click)="openTeamPanel($event)"
+              (focus)="openTeamPanel()" />
+            <span class="material-symbols-outlined team-search-icon" aria-hidden="true">search</span>
+          </div>
+
+          @if (teamPanelOpen()) {
+            <div class="picker-panel picker-panel-float" (click)="$event.stopPropagation()">
+              @if (teamLookupLoading()) {
+                <p class="picker-status">Searching…</p>
+              } @else if (!teamOptions().length) {
+                <p class="picker-status">No team matches</p>
+              } @else {
+                <ul class="picker-list" role="listbox">
+                  @for (team of teamOptions(); track team.id) {
+                    <li>
+                      <button type="button" class="picker-option" (click)="addTeam(team)">
+                        <span class="code-chip">{{ team.code }}</span>
+                        <span class="picker-name">{{ team.name }}</span>
+                      </button>
+                    </li>
+                  }
+                </ul>
+                @if (hasMoreTeamMatches()) {
+                  <p class="picker-status">Keep typing to narrow the results</p>
+                }
+              }
+            </div>
+          }
+        </div>
+
+        @if (assignedTeams().length) {
+          <ul class="assigned-list">
+            @for (team of assignedTeams(); track team.id) {
+              <li class="assigned-row" [class.is-primary]="isPrimary(team.id)">
+                <label class="assigned-radio">
+                  <input
+                    type="radio"
+                    name="primaryTeam"
+                    [checked]="isPrimary(team.id)"
+                    (change)="setPrimary(team.id)" />
+                  <span class="assigned-label">
+                    <span class="code-chip">{{ team.code }}</span>
+                    <span class="picker-name">{{ team.name }}</span>
+                  </span>
+                </label>
+
+                <button
+                  type="button"
+                  class="icon-btn icon-btn--danger"
+                  title="Remove team"
+                  (click)="removeTeam(team.id)">✕</button>
+              </li>
+            }
+          </ul>
+          <p class="team-hint">Select the radio button to mark the primary team</p>
+        } @else {
+          <p class="team-empty">No team assigned yet.</p>
+        }
+      </fieldset>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-ghost" (click)="onCancel()" [disabled]="submitting()">
+          Cancel
+        </button>
+        <button type="submit" class="btn btn-primary" [disabled]="!canSubmit()">
+          {{ submitting() ? 'Saving...' : (isEdit() ? 'Save changes' : 'Create user') }}
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

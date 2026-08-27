@@ -1,3 +1,5 @@
+import { PageQuery } from "./page.dto";
+
 export interface DepartmentNode {
     id: string;
     code: string;
@@ -19,9 +21,7 @@ export interface MoveDepartmentRequest {
     beforeDepartmentId: string | null;
 }
 
-export interface DepartmentSearchQuery {
+export interface DepartmentSearchQuery extends PageQuery {
     keyword?: string;
     excludeSubtreeOf?: string;
-    page: number;
-    size: number;
 }

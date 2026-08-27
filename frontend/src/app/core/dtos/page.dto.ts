@@ -13,4 +13,6 @@ export interface PagedResponse<T> {
 export interface PageQuery {
     page: number;
     size: number;
+    sortBy?: string;
+    direction?: string;
 }

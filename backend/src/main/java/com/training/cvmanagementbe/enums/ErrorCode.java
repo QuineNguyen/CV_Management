@@ -64,7 +64,6 @@ public enum ErrorCode {
     DUPLICATE_DEPARTMENT_NAME("Another department already uses that name"),
     DEPARTMENT_HAS_CHILDREN("Cannot delete a department that still has sub-departments"),
     DEPARTMENT_HAS_EMPLOYEES("Cannot delete a department that still has employees assigned to it"),
-    DEPARTMENT_HAS_TEAMS("Cannot delete a department that still has teams"),
     DEPARTMENT_CIRCULAR_REFERENCE("Moving this department here would create a circular reference"),
     DEPARTMENT_INVALID_MOVE_TARGET("The anchor department does not belong to the target parent"),
 
@@ -72,6 +71,7 @@ public enum ErrorCode {
     DUPLICATE_TEAM_CODE("Team code already exists"),
     INVALID_TECH_LEAD_ROLE("Selected user is not a tech lead"),
     INVALID_TECH_LEAD_INACTIVE("Selected tech lead is not active"),
+    INACTIVE_USER_NOT_ASSIGNABLE("Inactive user cannot be assigned to a team"),
     TEAM_HAS_MEMBERS("Team still has members"),
     TEAM_HAS_PROFILES("Team is still linked to CV profiles"),
     USER_ALREADY_IN_TEAM("User already belongs to this team"),
@@ -85,6 +85,8 @@ public enum ErrorCode {
     INVALID_REPLACEMENT_TECH_LEAD("Invalid replacement tech lead"),
     USER_ALREADY_ACTIVE("User is already active"),
     USER_ALREADY_INACTIVE("User is already inactive"),
+    CANNOT_DEACTIVATE_SELF("You cannot deactivate your own account"),
+    CANNOT_CHANGE_OWN_ROLE("You cannot change your own role"),
 
     // ---------- Generic ----------
     /** Returned as 403 whenever the caller's role does not cover the requested data. */

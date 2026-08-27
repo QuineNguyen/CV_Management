@@ -5,7 +5,7 @@ export enum NavIconEnum {
   Logout = 'logout',
   Home = 'home',
   Departments = 'account_tree',
-  Users = 'group',
+  People = 'people',
   Teams = 'groups',
   Password = 'lock_reset',
 }

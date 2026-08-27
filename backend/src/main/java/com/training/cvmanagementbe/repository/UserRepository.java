@@ -39,25 +39,6 @@ public interface UserRepository extends JpaRepository<User, UUID> {
                       @Param("departmentId") UUID departmentId,
                       Pageable pageable);
 
-    // Scoped search used by TECH_LEAD: only members of the teams they lead.
-    @Query("""
-            SELECT u FROM User u
-            WHERE u.id IN (SELECT tm.userId FROM TeamMember tm WHERE tm.teamId IN :teamIds)
-              AND (:keyword IS NULL
-                   OR LOWER(u.fullName) LIKE :keyword
-                   OR LOWER(u.email) LIKE :keyword
-                   OR LOWER(u.username) LIKE :keyword)
-              AND (:role IS NULL OR u.role = :role)
-              AND (:status IS NULL OR u.status = :status)
-              AND (:departmentId IS NULL OR u.primaryDepartmentId = :departmentId)
-            """)
-    Page<User> searchByTeamIds(@Param("keyword") String keyword,
-                               @Param("teamIds") Collection<UUID> teamIds,
-                               @Param("role") Role role,
-                               @Param("status") AccountStatus status,
-                               @Param("departmentId") UUID departmentId,
-                               Pageable pageable);
-
     List<User> findByRoleAndStatusOrderByFullNameAsc(Role role, AccountStatus status);
 
     long countByRoleAndStatus(Role role, AccountStatus status);
@@ -65,8 +46,6 @@ public interface UserRepository extends JpaRepository<User, UUID> {
     boolean existsByEmail(String email);
 
     boolean existsByUsername(String username);
-
-    List<User> findByIdIn(Collection<UUID> ids);
 
     // Ids of active users belonging to any of the given teams, used by AuthScope checks.
     @Query("SELECT DISTINCT tm.userId FROM TeamMember tm WHERE tm.teamId IN :teamIds")
@@ -92,7 +71,7 @@ public interface UserRepository extends JpaRepository<User, UUID> {
 
     // Clears approval assignments still waiting on the user.
     @Modifying
-    @Query(value = "UPDATE approval_assignments SET status = :cancelled, updated_at = CURRENT_TIMESTAMP "
+    @Query(value = "UPDATE approval_assignments SET status = :cancelled, closed_at = CURRENT_TIMESTAMP "
             + "WHERE assignee_id = :userId AND status = :assigned",
             nativeQuery = true)
     int cancelAssignmentsByAssignee(@Param("userId") UUID userId,

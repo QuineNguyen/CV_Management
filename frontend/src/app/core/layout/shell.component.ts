@@ -11,7 +11,7 @@ import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { map } from 'rxjs';
 import { AuthService } from '../services/auth.service';
-import { Role } from '../models/user.model';
+import { ROLE_LABELS } from '../models/user.model';
 import { UserRole } from '../enums/user-role.enum';
 import { AppRoute } from '../enums/app-route.enum';
 import { NavItem } from '../models/nav-item.model';
@@ -64,7 +64,7 @@ export class ShellComponent {
 
   private readonly navItems: NavItem[] = [
     { label: 'Home', icon: NavIconEnum.Home, route: AppRoute.Home },
-    { label: 'Users', icon: NavIconEnum.Users, route: AppRoute.Users, roles: [UserRole.Admin] },
+    { label: 'Users', icon: NavIconEnum.People, route: AppRoute.Users, roles: [UserRole.Admin, UserRole.HR, UserRole.TechLead] },
     { label: 'Departments', icon: NavIconEnum.Departments, route: AppRoute.Departments, roles: [UserRole.Admin] },
     { label: 'Teams', icon: NavIconEnum.Teams, route: AppRoute.Teams, roles: [UserRole.Admin] },
     // Later stages add their entries here. Each one declares the roles it is offered to; the
@@ -78,14 +78,8 @@ export class ShellComponent {
   });
 
   readonly roleLabel = computed(() => {
-    const labels: Record<Role, string> = {
-      ADMIN: 'Administrator',
-      HR: 'HR',
-      TECH_LEAD: 'Tech Lead',
-      EMPLOYEE: 'Employee',
-    };
-    const role = this.auth.user()?.role;
-    return role ? labels[role] : '';
+    const role = this.user()?.role;
+    return role ? ROLE_LABELS[role] : '';
   });
 
   toggleNav(drawer: MatSidenav): void {
@@ -96,8 +90,16 @@ export class ShellComponent {
     }
   }
 
-  async signOut(): Promise<void> {
-    await this.auth.signOut();
-    await this.router.navigate([AppRoute.Login]);
+  // signOut returns an Observable; the session is cleared in its finalize block either way,
+  // so the redirect happens on both success and failure
+  signOut(): void {
+    this.auth.signOut().subscribe({
+      next: () => this.redirectToLogin(),
+      error: () => this.redirectToLogin(),
+    });
+  }
+
+  private redirectToLogin(): void {
+    void this.router.navigate([AppRoute.Login]);
   }
 }

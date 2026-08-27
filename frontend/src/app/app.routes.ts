@@ -1,8 +1,9 @@
 import { Routes } from '@angular/router';
 
-import { authGuard } from './core/services/auth.guard';
+import { authGuard, roleGuard } from './core/services/auth.guard';
 import { mustChangePasswordGuard } from './core/services/must-change-password.guard';
 import { AppRoute } from './core/enums/app-route.enum';
+import { UserRole } from './core/enums/user-role.enum';
 
 export const routes: Routes = [
   {
@@ -35,10 +36,27 @@ export const routes: Routes = [
       },
       {
         path: AppRoute.Departments,
+        canActivate: [roleGuard(UserRole.Admin)],
         title: 'Departments',
         loadComponent: () =>
           import('./core/pages/departments/departments.component')
             .then((m) => m.DepartmentsComponent),
+      },
+      {
+        path: AppRoute.Teams,
+        canActivate: [roleGuard(UserRole.Admin)],
+        title: 'Teams',
+        loadComponent: () =>
+          import('./core/pages/teams/teams.component')
+            .then((m) => m.TeamsComponent),
+      },
+      {
+        path: AppRoute.Users,
+        canActivate: [roleGuard(UserRole.Admin, UserRole.HR, UserRole.TechLead)],
+        title: 'Users',
+        loadComponent: () =>
+          import('./core/pages/users/users.component')
+            .then((m) => m.UsersComponent),
       },
     ],
   },

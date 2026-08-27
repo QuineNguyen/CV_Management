@@ -111,7 +111,7 @@ export class LoginComponent {
       const user = await firstValueFrom(this.auth.signInWithGoogle(idToken));
       await this.routeAfterSignIn(user);
     } catch {
-      this.failureMessage.set('Google sign in failed. Please try again.');
+      this.failureMessage.set('Google sign in failed. Please try again');
     } finally {
       this.submitting.set(false);
     }
@@ -135,7 +135,7 @@ export class LoginComponent {
       return;
     }
 
-    this.failureMessage.set('Sign in failed. Please check your credentials and try again.');
+    this.failureMessage.set('Sign in failed. Please check your credentials and try again');
   }
 
   private readRetryAfter(error: unknown): number | null {
@@ -181,7 +181,7 @@ export class LoginComponent {
       ? `${minutes}:${seconds.toString().padStart(2, '0')}`
       : `${seconds}s`;
     this.failureMessage.set(
-      `Account is temporarily locked due to too many failed attempts. Try again in ${time}.`,
+      `Account is temporarily locked due to too many failed attempts. Try again in ${time}`,
     );
   }
 

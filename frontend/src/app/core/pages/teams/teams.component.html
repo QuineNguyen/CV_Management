@@ -1,0 +1,198 @@
+<section class="team-page">
+
+  <!-- Toolbar -->
+  <header class="team-toolbar">
+    <div class="team-heading">
+      <h1 class="team-title">Team Management</h1>
+      <p class="team-subtitle">
+        {{ pageState().total }} team(s)
+        @if (!sort()) {
+          · ordered by display order
+        }
+        · each has one active tech lead
+      </p>
+    </div>
+
+    <div class="team-toolbar-actions">
+      <button type="button" class="btn btn-primary" (click)="openCreate()">
+        <span aria-hidden="true">＋</span> Add Team
+      </button>
+    </div>
+  </header>
+
+  <!-- Filters -->
+  <div class="team-filters">
+    <label class="field">
+      <span class="field-label">Search</span>
+      <div class="search-input-wrap">
+        <span class="material-symbols-outlined search-icon" aria-hidden="true">search</span>
+        <input
+          type="search"
+          class="field-input search-input"
+          placeholder="Code or name"
+          [formControl]="keyword"
+          autocomplete="off" />
+      </div>
+    </label>
+
+    <button type="button" class="btn btn-ghost" (click)="clearFilters()">Clear</button>
+  </div>
+
+  <!-- Body -->
+  @if (loading()) {
+    <div class="skeleton-stack" aria-busy="true">
+      @for (row of [1, 2, 3, 4, 5]; track row) {
+        <div class="skeleton-row"></div>
+      }
+    </div>
+  } @else if (isEmpty()) {
+    <div class="empty-state">
+      <p class="empty-state-title">No team found</p>
+      <p class="empty-state-hint">
+        No team matches the current filters. Adjust the search or create a new team
+      </p>
+      <button type="button" class="btn btn-primary" (click)="openCreate()">Add team</button>
+    </div>
+  } @else {
+
+    <!-- Table: laptop and desktop -->
+    <div class="team-table-wrap">
+      <table class="team-table">
+        <thead>
+          <tr>
+            <th scope="col" class="col-code" [attr.aria-sort]="ariaSort(sortField.Code)">
+              <button
+                type="button"
+                class="sort-header"
+                [title]="sortHint(sortField.Code)"
+                (click)="toggleSort(sortField.Code)">
+                Code
+                <span class="material-symbols-outlined sort-icon" aria-hidden="true">
+                  {{ sortIcon(sortField.Code) }}
+                </span>
+              </button>
+            </th>
+            <th scope="col" class="col-name" [attr.aria-sort]="ariaSort(sortField.Name)">
+              <button
+                type="button"
+                class="sort-header"
+                [title]="sortHint(sortField.Name)"
+                (click)="toggleSort(sortField.Name)">
+                Name
+                <span class="material-symbols-outlined sort-icon" aria-hidden="true">
+                  {{ sortIcon(sortField.Name) }}
+                </span>
+              </button>
+            </th>
+            <th scope="col" class="col-lead">Tech Lead</th>
+            <th scope="col" class="col-members">Members</th>
+            <th scope="col" class="col-actions"><span class="sr-only">Actions</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (team of teams(); track team.id) {
+            <tr>
+              <td class="col-code"><span class="code-chip">{{ team.code }}</span></td>
+              <td class="col-name">
+                <span class="cell-strong">{{ team.name }}</span>
+                @if (team.description) {
+                  <span class="cell-muted" [title]="team.description">{{ team.description }}</span>
+                }
+              </td>
+              <td class="col-lead">{{ team.techLeadFullName ?? '—' }}</td>
+              <td class="col-members">
+                <button type="button" class="link-btn" (click)="openMembers(team)">
+                  {{ team.memberCount }}
+                </button>
+              </td>
+              <td class="col-actions">
+                <div class="row-actions">
+                  <button type="button" class="icon-btn" title="Members" (click)="openMembers(team)">👥</button>
+                  <button type="button" class="icon-btn" title="Edit" (click)="openEdit(team)">✎</button>
+                  <button type="button" class="icon-btn icon-btn--danger" title="Delete" (click)="askDelete(team)">🗑</button>
+                </div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Cards: iPad and phone -->
+    <ul class="team-cards">
+      @for (team of teams(); track team.id) {
+        <li class="team-card">
+          <div class="team-card-head">
+            <span class="code-chip">{{ team.code }}</span>
+            <div class="row-actions">
+              <button type="button" class="icon-btn" title="Members" (click)="openMembers(team)">👥</button>
+              <button type="button" class="icon-btn" title="Edit" (click)="openEdit(team)">✎</button>
+              <button type="button" class="icon-btn icon-btn--danger" title="Delete" (click)="askDelete(team)">🗑</button>
+            </div>
+          </div>
+
+          <p class="team-card-name">{{ team.name }}</p>
+
+          <dl class="team-card-facts">
+            <div>
+              <dt>Tech Lead</dt>
+              <dd>{{ team.techLeadFullName ?? '—' }}</dd>
+            </div>
+            <div>
+              <dt>Members</dt>
+              <dd>
+                <button type="button" class="link-btn" (click)="openMembers(team)">
+                  {{ team.memberCount }}
+                </button>
+              </dd>
+            </div>
+          </dl>
+        </li>
+      }
+    </ul>
+
+    <mat-paginator
+      class="team-paginator"
+      [length]="pageState().total"
+      [pageIndex]="pageState().index"
+      [pageSize]="pageState().size"
+      [pageSizeOptions]="pageSizeOptions"
+      showFirstLastButtons
+      (page)="onPageChange($event)" />
+  }
+</section>
+
+<!-- Create / edit dialog -->
+@if (dialogState(); as state) {
+  <app-team-form-dialog
+    [state]="state"
+    [submitting]="saving()"
+    (submitted)="submitDialog($event)"
+    (cancelled)="closeDialog()" />
+}
+
+<!-- Members panel -->
+@if (membersTarget(); as team) {
+  <app-team-members-dialog
+    [team]="team"
+    (closed)="closeMembers($event)" />
+}
+
+<!-- Delete confirmation -->
+@if (deleteTarget(); as target) {
+  <div class="modal-backdrop" (click)="cancelDelete()">
+    <div class="modal modal-sm" role="alertdialog" aria-modal="true" (click)="$event.stopPropagation()">
+      <h2 class="modal-title">Delete team</h2>
+      <p class="modal-body">
+        Delete <strong>{{ target.code }} — {{ target.name }}</strong>?
+        Only teams without members and without linked CV profiles can be deleted
+      </p>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-ghost" (click)="cancelDelete()" [disabled]="deleting()">Cancel</button>
+        <button type="button" class="btn btn-danger" (click)="confirmDelete()" [disabled]="deleting()">
+          {{ deleting() ? 'Deleting...' : 'Delete' }}
+        </button>
+      </div>
+    </div>
+  </div>
+}

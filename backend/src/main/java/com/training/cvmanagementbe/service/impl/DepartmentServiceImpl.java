@@ -11,7 +11,6 @@ import com.training.cvmanagementbe.enums.ErrorCode;
 import com.training.cvmanagementbe.enums.TargetType;
 import com.training.cvmanagementbe.exception.ApiException;
 import com.training.cvmanagementbe.repository.DepartmentRepository;
-import com.training.cvmanagementbe.repository.TeamRepository;
 import com.training.cvmanagementbe.repository.UserRepository;
 import com.training.cvmanagementbe.service.DepartmentService;
 import lombok.RequiredArgsConstructor;
@@ -39,7 +38,6 @@ public class DepartmentServiceImpl implements DepartmentService {
 
     private final DepartmentRepository departmentRepository;
     private final UserRepository userRepository;
-    private final TeamRepository teamRepository;
     private final AuditLogger auditLogger;
 
     @Override
@@ -186,9 +184,6 @@ public class DepartmentServiceImpl implements DepartmentService {
         }
         if (userRepository.existsByPrimaryDepartmentId(id)) {
             throw new ApiException.BusinessRuleException(ErrorCode.DEPARTMENT_HAS_EMPLOYEES);
-        }
-        if (teamRepository.existsByDepartmentId(id)) {
-            throw new ApiException.BusinessRuleException(ErrorCode.DEPARTMENT_HAS_TEAMS);
         }
     }
 

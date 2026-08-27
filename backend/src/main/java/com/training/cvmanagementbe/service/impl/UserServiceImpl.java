@@ -125,10 +125,10 @@ public class UserServiceImpl implements UserService {
         }
 
         // Email and username are immutable, so they are absent from the request
-        user.setUsername(request.fullName().trim());
+        user.setFullName(request.fullName().trim());
         user.setRole(request.role());
         user.setPrimaryDepartmentId(request.primaryDepartmentId());
-        user.setDateOfBirth(request.dateOfbirth());
+        user.setDateOfBirth(request.dateOfBirth());
         user.setPhoneNumber(trimToNull(request.phoneNumber()));
         user.setAddress(trimToNull(request.address()));
 
@@ -248,6 +248,9 @@ public class UserServiceImpl implements UserService {
         if (user.getRole() == Role.TECH_LEAD && teamRepository.existsByTechLeadId(user.getId())) {
             throw new ApiException.BusinessRuleException(ErrorCode.TECH_LEAD_STILL_ASSIGNED);
         }
+        if (user.getId().equals(CurrentActor.requireUserId()) && user.getRole() != newRole) {
+            throw new ApiException.BusinessRuleException(ErrorCode.CANNOT_CHANGE_OWN_ROLE);
+        }
         // Demoting the last active admin would lock the system out
         if (user.getRole() == Role.ADMIN && newRole != Role.ADMIN
                 && user.isActive()
@@ -259,6 +262,10 @@ public class UserServiceImpl implements UserService {
     private void validateDeactivatable(User user) {
         if (!user.isActive()) {
             throw new ApiException.BusinessRuleException(ErrorCode.USER_ALREADY_INACTIVE);
+        }
+        // An admin locking themselves out is almost always a mistake
+        if (user.getId().equals(CurrentActor.requireUserId())) {
+            throw new ApiException.BusinessRuleException(ErrorCode.CANNOT_DEACTIVATE_SELF);
         }
         if (user.getRole() == Role.ADMIN && countActiveAdmins() <= MIN_ACTIVE_ADMINS) {
             throw new ApiException.BusinessRuleException(ErrorCode.LAST_ACTIVE_ADMIN);
@@ -273,8 +280,8 @@ public class UserServiceImpl implements UserService {
         if (callerRole == Role.ADMIN || callerRole == Role.HR || callerId.equals(targetUserId)) {
             return;
         }
-        if (callerRole == Role.TECH_LEAD && ledTeamIds(callerId).stream()
-                .anyMatch(teamId -> teamMemberRepository.existsByUserIdAndTeamId(targetUserId, teamId))) {
+        if (callerRole == Role.TECH_LEAD
+                && findMemberIdsOfLedTeams(callerId).contains(targetUserId)) {
             return;
         }
         throw new ApiException.BusinessRuleException(ErrorCode.OUT_OF_SCOPE);
@@ -293,15 +300,24 @@ public class UserServiceImpl implements UserService {
         if (callerRole == Role.ADMIN || callerRole == Role.HR) {
             return userRepository.search(pattern, role, status, departmentId, pageable);
         }
+
+        // A tech lead may lead a team they do not belong to, so self is added explicitly
+        Set<UUID> visibleIds = new HashSet<>();
+        visibleIds.add(callerId);
         if (callerRole == Role.TECH_LEAD) {
-            List<UUID> teamIds = ledTeamIds(callerId);
-            return teamIds.isEmpty()
-                    ? Page.empty(pageable)
-                    : userRepository.searchByTeamIds(pattern, teamIds, role, status, departmentId, pageable);
+            visibleIds.addAll(findMemberIdsOfLedTeams(callerId));
         }
 
         // EMPLOYEE only ever sees the own record
-        return userRepository.searchByIds(pattern, List.of(callerId), role, status, departmentId, pageable);
+        return userRepository.searchByIds(pattern, visibleIds, role, status, departmentId, pageable);
+    }
+
+    // An empty IN clause is invalid SQL, so the lookup is skipped when nothing is led
+    private Set<UUID> findMemberIdsOfLedTeams(UUID techLeadId) {
+        List<UUID> teamIds = ledTeamIds(techLeadId);
+        return teamIds.isEmpty()
+                ? Set.of()
+                : new HashSet<>(userRepository.findUserIdsByTeamIds(teamIds));
     }
 
     private List<UUID> ledTeamIds(UUID techLeadId) {
@@ -383,7 +399,7 @@ public class UserServiceImpl implements UserService {
     }
 
     private Map<UUID, List<UserTeamInfo>> findTeamInfos(Collection<UUID> userIds) {
-        List<TeamMember> memberships = teamMemberRepository.findByTeamIdIn(userIds);
+        List<TeamMember> memberships = teamMemberRepository.findByUserIdIn(userIds);
         if (memberships.isEmpty()) {
             return Map.of();
         }
@@ -394,7 +410,7 @@ public class UserServiceImpl implements UserService {
 
         Map<UUID, List<UserTeamInfo>> result = new HashMap<>();
         for (TeamMember membership : memberships) {
-            Team team = teamById.get(membership.getUserId());
+            Team team = teamById.get(membership.getTeamId());
             if (team == null) {
                 continue;
             }
@@ -419,8 +435,8 @@ public class UserServiceImpl implements UserService {
     private UserResponse withLedTeams(UserResponse response, List<Team> ledTeams) {
         List<TeamResponse> led = ledTeams.stream()
                 .map(team -> new TeamResponse(team.getId(), team.getCode(), team.getName(),
-                        team.getDescription(), team.getDepartmentId(), null, null,
-                        team.getTechLeadId(), null, team.getDisplayOrder(), 0L))
+                        team.getDescription(), team.getTechLeadId(), null,
+                        team.getDisplayOrder(), 0L))
                 .toList();
 
         return new UserResponse(response.id(), response.fullName(), response.email(),

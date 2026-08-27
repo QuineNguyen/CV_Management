@@ -20,9 +20,6 @@ public record TeamRequest(
         @Size(max = 2000)
         String description,
 
-        @NotNull
-        UUID departmentId,
-
         // Must reference an ACTIVE user whose role is TECH_LEAD
         @NotNull
         UUID techLeadId,

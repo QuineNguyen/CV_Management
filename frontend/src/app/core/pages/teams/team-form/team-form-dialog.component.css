@@ -1,0 +1,149 @@
+/* ---------- Modal shell ---------- */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  padding: var(--vt-pad);
+  background: rgba(31, 41, 51, 0.45);
+}
+
+.modal {
+  box-sizing: border-box;
+  width: min(40rem, 100%);
+  max-height: min(90vh, 48rem);
+  overflow-y: auto;
+  padding: var(--vt-pad);
+  background: var(--vt-surface);
+  border-radius: var(--vt-radius-md);
+  box-shadow: 0 1rem 2.5rem rgba(31, 41, 51, 0.24);
+}
+
+.modal-title {
+  margin: 0 0 var(--vt-gap);
+  font-size: var(--vt-fs-lg);
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: calc(var(--vt-gap) * 0.5);
+  margin-block-start: var(--vt-gap);
+}
+
+/* ---------- Form ---------- */
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(16rem, 100%), 1fr));
+  gap: var(--vt-gap);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 0;
+  position: relative;
+}
+
+.field-wide {
+  grid-column: 1 / -1;
+}
+
+.field-label {
+  font-size: var(--vt-fs-sm);
+  font-weight: 600;
+  color: var(--vt-ink-muted);
+}
+
+.required {
+  color: var(--vt-red);
+}
+
+.field-input {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: var(--vt-touch-target);
+  padding: calc(var(--vt-gap) * 0.4) calc(var(--vt-gap) * 0.6);
+  border: 0.0625rem solid var(--vt-line);
+  border-radius: var(--vt-radius-sm);
+  background: var(--vt-surface);
+  color: var(--vt-ink);
+  font-family: inherit;
+}
+
+.field-input:focus {
+  outline: 0.125rem solid var(--vt-red);
+  outline-offset: -0.0625rem;
+}
+
+.field-textarea {
+  min-height: clamp(4rem, 14vh, 7rem);
+  resize: vertical;
+  line-height: 1.5;
+}
+
+.field-hint {
+  font-size: var(--vt-fs-sm);
+  color: var(--vt-ink-muted);
+}
+
+.field-error {
+  font-size: var(--vt-fs-sm);
+  font-weight: 600;
+  color: var(--vt-red);
+}
+
+/* ---------- Buttons ---------- */
+.btn {
+  min-height: var(--vt-tap);
+  padding-inline: clamp(0.75rem, 2.5vw, 1.25rem);
+  border: 0.0625rem solid transparent;
+  border-radius: var(--vt-radius-sm);
+  font-size: var(--vt-fs-md);
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.btn-primary {
+  background: var(--vt-red);
+  color: #fff;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: var(--vt-red-dark);
+}
+
+.btn-ghost {
+  background: transparent;
+  border-color: var(--vt-line);
+  color: var(--vt-ink);
+}
+
+.btn-ghost:hover:not(:disabled) {
+  border-color: var(--vt-red);
+  color: var(--vt-red);
+}
+
+.btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* ---------- Phone ---------- */
+@media (max-width: 40rem) {
+  .modal {
+    width: 100%;
+    max-height: 92vh;
+  }
+
+  .modal-footer {
+    flex-direction: column-reverse;
+  }
+
+  .modal-footer .btn {
+    width: 100%;
+  }
+}

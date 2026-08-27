@@ -38,12 +38,12 @@ public final class CurrentActor {
         return get().map(Actor::userId)
                 .orElseThrow(() -> new IllegalStateException(
                         "No current actor context found. Asynchronous or background tasks must use CurrentActor.runAs() "
-                                + "with the initiating user's context."));
+                                + "with the initiating user's context"));
     }
 
     public static Role requireRole() {
         return get().map(Actor::role)
-                .orElseThrow(() -> new IllegalStateException("No current actor role found in context."));
+                .orElseThrow(() -> new IllegalStateException("No current actor role found in context"));
     }
 
     /**
