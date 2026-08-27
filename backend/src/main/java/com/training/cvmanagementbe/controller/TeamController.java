@@ -34,19 +34,18 @@ public class TeamController {
     private final TeamService teamService;
 
     @GetMapping
-    @Operation(summary = "List teams with pagination, keyword search and department filter")
+    @Operation(summary = "List teams with pagination and keyword search")
     public ResponseEntity<PagedResponse<TeamResponse>> search(
             @RequestParam(required = false) String keyword,
-            @RequestParam(required = false) UUID departmentId,
             @RequestParam(defaultValue = "DISPLAY_ORDER") TeamSortField sortBy,
             @RequestParam(defaultValue = "ASC") Sort.Direction direction,
             @RequestParam(defaultValue = PageDefaults.PAGE) int page,
             @RequestParam(defaultValue = PageDefaults.SIZE) int size
     ) {
-        Sort sort = Sort.by(direction, sortBy.getProperty())
-                .and(Sort.by(Sort.Order.asc(TeamSortField.NAME.getProperty())));
+        Sort sort = PageDefaults.sortBy(direction, sortBy.getProperty(),
+                TeamSortField.DISPLAY_ORDER.getProperty());
         Pageable pageable = PageRequest.of(PageDefaults.clampPage(page), PageDefaults.clampSize(size), sort);
-        return ResponseEntity.ok(teamService.search(keyword, departmentId, pageable));
+        return ResponseEntity.ok(teamService.search(keyword, pageable));
     }
 
     @GetMapping(ApiPath.BY_ID)

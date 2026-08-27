@@ -1,0 +1,111 @@
+<div class="modal-backdrop" (click)="onCancel()">
+  <div class="modal" role="dialog" aria-modal="true" (click)="$event.stopPropagation()">
+    <h2 class="modal-title">{{ title() }}</h2>
+
+    <form [formGroup]="form" (ngSubmit)="onSubmit()" novalidate>
+      <div class="form-grid">
+
+        <!-- Code -->
+        <label class="field">
+          <span class="field-label">Code <span class="required" aria-hidden="true">*</span></span>
+          <input
+            type="text"
+            class="field-input"
+            formControlName="code"
+            placeholder="ALPHA"
+            maxlength="50"
+            autocomplete="off" />
+          <span class="field-hint">Unique across the whole system</span>
+          @if (hasError('code', 'required')) {
+            <span class="field-error">Code is required</span>
+          }
+          @if (hasError('code', 'maxlength')) {
+            <span class="field-error">Code must be at most 50 characters</span>
+          }
+        </label>
+
+        <!-- Name -->
+        <label class="field">
+          <span class="field-label">Name <span class="required" aria-hidden="true">*</span></span>
+          <input
+            type="text"
+            class="field-input"
+            formControlName="name"
+            maxlength="200"
+            autocomplete="off" />
+          @if (hasError('name', 'required')) {
+            <span class="field-error">Name is required</span>
+          }
+        </label>
+
+        <!-- Tech lead -->
+        <div class="field custom-select-wrap">
+          <span class="field-label">Tech Lead <span class="required" aria-hidden="true">*</span></span>
+
+          <button
+            type="button"
+            class="field-input custom-select-trigger"
+            [class.is-open]="techLeadOpen()"
+            (click)="toggleTechLeadDropdown($event)"
+            aria-haspopup="listbox"
+            [attr.aria-expanded]="techLeadOpen()">
+            <span class="custom-select-label">
+              {{ selectedTechLeadLabel() }}
+            </span>
+          </button>
+
+          @if (techLeadOpen()) {
+            <div class="custom-select-panel" (click)="$event.stopPropagation()">
+              <ul class="custom-select-list" role="listbox">
+                <li role="option" [attr.aria-selected]="!form.controls.techLeadId.value">
+                  <button
+                    type="button"
+                    class="custom-select-option"
+                    [class.is-selected]="!form.controls.techLeadId.value"
+                    (click)="selectTechLead('')">
+                    Select a tech lead
+                  </button>
+                </li>
+                @for (lead of techLeads(); track lead.id) {
+                  <li role="option" [attr.aria-selected]="form.controls.techLeadId.value === lead.id">
+                    <button
+                      type="button"
+                      class="custom-select-option"
+                      [class.is-selected]="form.controls.techLeadId.value === lead.id"
+                      (click)="selectTechLead(lead.id)">
+                      {{ lead.fullName }} ({{ lead.username }})
+                    </button>
+                  </li>
+                }
+              </ul>
+            </div>
+          }
+
+          <span class="field-hint">Active users with the Tech Lead role only</span>
+          @if (hasError('techLeadId', 'required')) {
+            <span class="field-error">Select a tech lead</span>
+          }
+        </div>
+
+        <!-- Description -->
+        <label class="field field-wide">
+          <span class="field-label">Description</span>
+          <textarea
+            class="field-input field-textarea"
+            formControlName="description"
+            rows="3"
+            maxlength="2000"></textarea>
+        </label>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-ghost" (click)="onCancel()" [disabled]="submitting()">
+          Cancel
+        </button>
+        <button type="submit" class="btn btn-primary" [disabled]="!canSubmit()">
+          {{ submitting() ? 'Saving...' : (isEdit() ? 'Save changes' : 'Create team') }}
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

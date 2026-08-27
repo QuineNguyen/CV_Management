@@ -1,0 +1,466 @@
+<section class="user-page">
+
+  <!-- Toolbar -->
+  <header class="user-toolbar">
+    <div class="user-heading">
+      <h1 class="user-title">User Management</h1>
+      <p class="user-subtitle">
+        @if (isScopedView()) {
+          {{ pageState().total }} account(s) in the teams you lead
+        } @else {
+          {{ pageState().total }} account(s) in your access scope
+        }
+      </p>
+    </div>
+
+    @if (canManage()) {
+      <div class="user-toolbar-actions">
+        <button type="button" class="btn btn-primary" (click)="openCreate()">
+          <span aria-hidden="true">＋</span> Add User
+        </button>
+      </div>
+    }
+  </header>
+
+  <!-- Filters -->
+  <div class="user-filters">
+    <label class="field field-grow">
+      <span class="field-label">Search</span>
+      <div class="search-input-wrap">
+        <span class="material-symbols-outlined search-icon" aria-hidden="true">search</span>
+        <input
+          type="search"
+          class="field-input search-input"
+          placeholder="Name, email or username"
+          [formControl]="keyword"
+          autocomplete="off" />
+      </div>
+    </label>
+
+    <!-- Role -->
+    <div class="field custom-select-wrap">
+      <span class="field-label">Role</span>
+      <button
+        type="button"
+        class="field-input custom-select-trigger"
+        [class.is-open]="roleOpen()"
+        (click)="toggleRoleDropdown($event)"
+        aria-haspopup="listbox"
+        [attr.aria-expanded]="roleOpen()">
+        <span class="custom-select-label">
+          {{ selectedRoleLabel() }}
+        </span>
+      </button>
+
+      @if (roleOpen()) {
+        <div class="custom-select-panel" (click)="$event.stopPropagation()">
+          <ul class="custom-select-list" role="listbox">
+            <li role="option" [attr.aria-selected]="roleFilter() === null">
+              <button
+                type="button"
+                class="custom-select-option"
+                [class.is-selected]="roleFilter() === null"
+                (click)="selectRole(null)">
+                All roles
+              </button>
+            </li>
+            @for (role of roleOptions; track role) {
+              <li role="option" [attr.aria-selected]="roleFilter() === role">
+                <button
+                  type="button"
+                  class="custom-select-option"
+                  [class.is-selected]="roleFilter() === role"
+                  (click)="selectRole(role)">
+                  {{ roleLabels[role] }}
+                </button>
+              </li>
+            }
+          </ul>
+        </div>
+      }
+    </div>
+
+    <!-- Status -->
+    <div class="field custom-select-wrap">
+      <span class="field-label">Status</span>
+      <button
+        type="button"
+        class="field-input custom-select-trigger"
+        [class.is-open]="statusOpen()"
+        (click)="toggleStatusDropdown($event)"
+        aria-haspopup="listbox"
+        [attr.aria-expanded]="statusOpen()">
+        <span class="custom-select-label">
+          {{ selectedStatusLabel() }}
+        </span>
+      </button>
+
+      @if (statusOpen()) {
+        <div class="custom-select-panel" (click)="$event.stopPropagation()">
+          <ul class="custom-select-list" role="listbox">
+            <li role="option" [attr.aria-selected]="statusFilter() === null">
+              <button
+                type="button"
+                class="custom-select-option"
+                [class.is-selected]="statusFilter() === null"
+                (click)="selectStatus(null)">
+                All statuses
+              </button>
+            </li>
+            @for (status of statusOptions; track status) {
+              <li role="option" [attr.aria-selected]="statusFilter() === status">
+                <button
+                  type="button"
+                  class="custom-select-option"
+                  [class.is-selected]="statusFilter() === status"
+                  (click)="selectStatus(status)">
+                  {{ status }}
+                </button>
+              </li>
+            }
+          </ul>
+        </div>
+      }
+    </div>
+
+    <!-- Department: the listing endpoint is admin-only, so the filter is hidden for HR and tech leads -->
+    @if (canManage()) {
+      <div class="field custom-select-wrap">
+        <span class="field-label">Department</span>
+        <button
+          type="button"
+          class="field-input custom-select-trigger"
+          [class.is-open]="departmentOpen()"
+          (click)="toggleDepartmentDropdown($event)"
+          aria-haspopup="listbox"
+          [attr.aria-expanded]="departmentOpen()">
+          <span class="custom-select-label">
+            {{ selectedDepartmentLabel() }}
+          </span>
+        </button>
+
+        @if (departmentOpen()) {
+          <div class="custom-select-panel" (click)="$event.stopPropagation()">
+            <ul class="custom-select-list" role="listbox">
+              <li role="option" [attr.aria-selected]="departmentFilter() === null">
+                <button
+                  type="button"
+                  class="custom-select-option"
+                  [class.is-selected]="departmentFilter() === null"
+                  (click)="selectDepartment(null)">
+                  All departments
+                </button>
+              </li>
+              @for (department of departments(); track department.id) {
+                <li role="option" [attr.aria-selected]="departmentFilter() === department.id">
+                  <button
+                    type="button"
+                    class="custom-select-option"
+                    [class.is-selected]="departmentFilter() === department.id"
+                    (click)="selectDepartment(department.id)">
+                    {{ department.code }} — {{ department.name }}
+                  </button>
+                </li>
+              }
+            </ul>
+          </div>
+        }
+      </div>
+    }
+
+    <button type="button" class="btn btn-ghost" (click)="clearFilters()">Clear</button>
+  </div>
+
+  <!-- Body -->
+  @if (loading()) {
+    <div class="skeleton-stack" aria-busy="true">
+      @for (row of [1, 2, 3, 4, 5]; track row) {
+        <div class="skeleton-row"></div>
+      }
+    </div>
+  } @else if (isEmpty()) {
+    <div class="empty-state">
+      <p class="empty-state-title">No user found</p>
+      @if (isScopedView()) {
+        <p class="empty-state-hint">
+          You only see members of the teams you lead. None of them matches the current filters.
+        </p>
+      } @else {
+        <p class="empty-state-hint">No account matches the current filters</p>
+      }
+      @if (canManage()) {
+        <button type="button" class="btn btn-primary" (click)="openCreate()">Add user</button>
+      }
+    </div>
+  } @else {
+
+    <!-- Table: laptop and desktop -->
+    <div class="user-table-wrap">
+      <table class="user-table">
+        <thead>
+          <tr>
+            <th scope="col" class="col-avatar">Avatar</th>
+            <th scope="col" class="col-name" [attr.aria-sort]="ariaSort(sortField.FullName)">
+              <button type="button" class="sort-header" (click)="toggleSort(sortField.FullName)">
+                Name
+                <span class="material-symbols-outlined sort-icon" aria-hidden="true">
+                  {{ sortIcon(sortField.FullName) }}
+                </span>
+              </button>
+            </th>
+            <th scope="col" class="col-role" [attr.aria-sort]="ariaSort(sortField.Role)">
+              <button type="button" class="sort-header" (click)="toggleSort(sortField.Role)">
+                Role
+                <span class="material-symbols-outlined sort-icon" aria-hidden="true">
+                  {{ sortIcon(sortField.Role) }}
+                </span>
+              </button>
+            </th>
+            <!-- Joined data is outside the backend sort whitelist -->
+            <th scope="col" class="col-dept">Department</th>
+            <th scope="col" class="col-teams">Teams</th>
+            <th scope="col" class="col-status" [attr.aria-sort]="ariaSort(sortField.Status)">
+              <button type="button" class="sort-header" (click)="toggleSort(sortField.Status)">
+                Status
+                <span class="material-symbols-outlined sort-icon" aria-hidden="true">
+                  {{ sortIcon(sortField.Status) }}
+                </span>
+              </button>
+            </th>
+            @if (canManage()) {
+              <th scope="col" class="col-actions"><span class="sr-only">Actions</span></th>
+            }
+          </tr>
+        </thead>
+        <tbody>
+          @for (user of users(); track user.id) {
+            <tr [class.is-inactive]="user.status !== activeStatus">
+              <td class="col-avatar">
+                @if (avatarOf(user); as avatar) {
+                  <span class="avatar" [attr.data-tone]="avatar.tone" aria-hidden="true">
+                    {{ avatar.initials }}
+                  </span>
+                }
+              </td>
+              <!-- Created date lives in the tooltip since the column was dropped -->
+              <td class="col-name">
+                <span class="cell-strong">{{ user.fullName }}</span>
+                <span class="cell-muted">{{ user.email }}</span>
+                <span class="cell-username">{{ user.username }}</span>
+              </td>
+              <td class="col-role">{{ roleLabels[user.role] }}</td>
+              <td class="col-dept">{{ user.departmentName ?? '—' }}</td>
+              <td class="col-teams">
+                <div class="team-chips">
+                  @for (team of user.teams; track team.teamId) {
+                    <span class="code-chip" [class.is-primary]="team.primary" [matTooltip]="team.teamName">
+                      {{ team.teamCode }}
+                    </span>
+                  } @empty {
+                    <span class="cell-muted">—</span>
+                  }
+                </div>
+              </td>
+              <td class="col-status">
+                <span class="status-badge" [class.is-active]="user.status === activeStatus">
+                  {{ user.status }}
+                </span>
+              </td>
+              @if (canManage()) {
+                <td class="col-actions">
+                  <div class="row-actions">
+                    <button type="button" class="icon-btn" matTooltip="Edit" (click)="openEdit(user)">✎</button>
+                    @if (user.status === activeStatus) {
+                      <button
+                        type="button"
+                        class="icon-btn"
+                        [matTooltip]="selfActionHint(user.id, 'reset the password of')"
+                        [disabled]="user.id === currentUserId()"
+                        (click)="askResetPassword(user)">🔑</button>
+                      <button
+                        type="button"
+                        class="icon-btn icon-btn--danger"
+                        [matTooltip]="selfActionHint(user.id, 'deactivate')"
+                        [disabled]="user.id === currentUserId()"
+                        (click)="askDeactivate(user)">⊘</button>
+                    } @else {
+                      <button type="button" class="icon-btn" matTooltip="Reactivate" (click)="askActivate(user)">↻</button>
+                    }
+                  </div>
+                </td>
+              }
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Cards: iPad and phone -->
+    <ul class="user-cards">
+      @for (user of users(); track user.id) {
+        <li class="user-card" [class.is-inactive]="user.status !== activeStatus">
+          <div class="user-card-head">
+            <div class="user-card-identity">
+              @if (avatarOf(user); as avatar) {
+                <span class="avatar avatar-lg" [attr.data-tone]="avatar.tone" aria-hidden="true">
+                  {{ avatar.initials }}
+                </span>
+              }
+              <div class="user-card-text">
+                <p class="user-card-name">{{ user.fullName }}</p>
+                <p class="user-card-email">{{ user.email }}</p>
+                <p class="user-card-username">{{ user.username }}</p>
+              </div>
+            </div>
+
+            @if (canManage()) {
+              <div class="row-actions">
+                <button type="button" class="icon-btn" matTooltip="Edit" (click)="openEdit(user)">✎</button>
+                @if (user.status === activeStatus) {
+                  <button
+                    type="button"
+                    class="icon-btn"
+                    [matTooltip]="selfActionHint(user.id, 'reset the password of')"
+                    [disabled]="user.id === currentUserId()"
+                    (click)="askResetPassword(user)">🔑</button>
+                  <button
+                    type="button"
+                    class="icon-btn icon-btn--danger"
+                    [matTooltip]="selfActionHint(user.id, 'deactivate')"
+                    [disabled]="user.id === currentUserId()"
+                    (click)="askDeactivate(user)">⊘</button>
+                } @else {
+                  <button type="button" class="icon-btn" matTooltip="Reactivate" (click)="askActivate(user)">↻</button>
+                }
+              </div>
+            }
+          </div>
+
+          <dl class="user-card-facts">
+            <div>
+              <dt>Username</dt>
+              <dd>{{ user.username }}</dd>
+            </div>
+            <div>
+              <dt>Role</dt>
+              <dd>{{ roleLabels[user.role] }}</dd>
+            </div>
+            <div>
+              <dt>Department</dt>
+              <dd>{{ user.departmentName ?? '—' }}</dd>
+            </div>
+            <div>
+              <dt>Status</dt>
+              <dd>
+                <span class="status-badge" [class.is-active]="user.status === activeStatus">
+                  {{ user.status }}
+                </span>
+              </dd>
+            </div>
+          </dl>
+
+          <div class="team-chips">
+            @for (team of user.teams; track team.teamId) {
+              <span class="code-chip" [class.is-primary]="team.primary" [matTooltip]="team.teamName">{{ team.teamCode }}</span>
+            }
+          </div>
+        </li>
+      }
+    </ul>
+
+    <mat-paginator
+      class="user-paginator"
+      [length]="pageState().total"
+      [pageIndex]="pageState().index"
+      [pageSize]="pageState().size"
+      [pageSizeOptions]="pageSizeOptions"
+      showFirstLastButtons
+      (page)="onPageChange($event)" />
+  }
+</section>
+
+<!-- Create / edit dialog -->
+@if (dialogState(); as state) {
+  <app-user-form-dialog
+    [state]="state"
+    [submitting]="saving()"
+    (created)="submitCreate($event)"
+    (updated)="submitUpdate($event)"
+    (cancelled)="closeDialog()" />
+}
+
+<!-- Deactivate dialog -->
+@if (deactivateTarget(); as target) {
+  <app-user-deactivate-dialog
+    [user]="target"
+    [submitting]="deactivating()"
+    (confirmed)="confirmDeactivate($event)"
+    (cancelled)="cancelDeactivate()" />
+}
+
+<!-- Reset password confirmation -->
+@if (resetTarget(); as target) {
+  <div class="modal-backdrop" (click)="cancelReset()">
+    <div class="modal modal-sm" role="alertdialog" aria-modal="true" (click)="$event.stopPropagation()">
+      <h2 class="modal-title">Reset password</h2>
+      <p class="modal-body">
+        Reset the password of <strong>{{ target.fullName }}</strong> ({{ target.username }})?
+      </p>
+      <ul class="effect-list">
+        <li>Their current password stops working immediately</li>
+        <li>Every session they have open is signed out</li>
+        <li>A temporary password is shown once for you to hand over</li>
+        <li>They must set a new password at the next sign-in</li>
+      </ul>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-ghost" (click)="cancelReset()" [disabled]="resetting()">Cancel</button>
+        <button type="button" class="btn btn-danger" (click)="confirmReset()" [disabled]="resetting()">
+          {{ resetting() ? 'Resetting...' : 'Reset password' }}
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- Temporary password, shown once -->
+@if (temporaryPassword(); as state) {
+  <div class="modal-backdrop">
+    <div class="modal modal-sm" role="alertdialog" aria-modal="true">
+      <h2 class="modal-title">{{ state.title }}</h2>
+      <p class="modal-body">
+        Hand this temporary password to <strong>{{ state.fullName }}</strong>.
+        It is shown once and cannot be retrieved later
+      </p>
+
+      <div class="password-box">
+        <code class="password-value">{{ state.password }}</code>
+        <button type="button" class="btn btn-ghost" (click)="copyPassword()">
+          {{ state.copied ? 'Copied' : 'Copy' }}
+        </button>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-primary" (click)="dismissPassword()">Done</button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- Reactivate confirmation -->
+@if (activateTarget(); as target) {
+  <div class="modal-backdrop" (click)="cancelActivate()">
+    <div class="modal modal-sm" role="alertdialog" aria-modal="true" (click)="$event.stopPropagation()">
+      <h2 class="modal-title">Reactivate user</h2>
+      <p class="modal-body">
+        Reactivate <strong>{{ target.fullName }}</strong>?
+        The account regains access with its existing password
+      </p>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-ghost" (click)="cancelActivate()" [disabled]="activating()">Cancel</button>
+        <button type="button" class="btn btn-primary" (click)="confirmActivate()" [disabled]="activating()">
+          {{ activating() ? 'Working...' : 'Reactivate' }}
+        </button>
+      </div>
+    </div>
+  </div>
+}

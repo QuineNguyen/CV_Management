@@ -22,7 +22,7 @@ public record UpdateUserRequest(
         UUID primaryDepartmentId,
 
         @Past
-        LocalDate dateOfbirth,
+        LocalDate dateOfBirth,
 
         @Size(max = 30)
         @Pattern(regexp = "^$|^[0-9+()\\s-]{6,30}$")

@@ -12,7 +12,7 @@ import { HttpErrorResponse } from "@angular/common/http";
 import { changePasswordGroupValidator, evaluatePassword, passwordPolicyValidator, PasswordRule } from "../../validators/password.validator";
 import { AppRoute } from "../../enums/app-route.enum";
 import { ApiError } from "../../dtos/api-error.dto";
-import { messageFor } from "../../error-messages";
+import { messageFor } from "../../models/error-messages.model";
 
 @Component({
     selector: 'app-change-password',
@@ -68,7 +68,7 @@ export class ChangePasswordComponent {
             await firstValueFrom(this.auth.changePassword(this.form.getRawValue()));
             // The server revoked every token, so the current one is already dead.
             this.auth.clearSession();
-            this.toast.success('Password changed successfully. Please sign in again.');
+            this.toast.success('Password changed successfully. Please sign in again');
             await this.router.navigate([AppRoute.Login]);
         } catch (error) {
             this.toast.error(this.extractErrorMessage(error));

@@ -3,7 +3,7 @@ import { NgTemplateOutlet } from "@angular/common";
 import { ChangeDetectionStrategy, Component, inject, OnInit, signal } from "@angular/core";
 import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { DepartmentService } from '../../services/department.service';
-import { DepartmentDialogMode } from '../../enums/department-dialog-mode.enum';
+import { DialogMode } from '../../enums/dialog-mode.enum';
 import { DepartmentNode, DepartmentRequest } from '../../dtos/department.dto';
 import { DepartmentDialogState, DepartmentDropList, DepartmentPageState } from '../../models/department.model';
 import { DepartmentFormDialogComponent } from './department-form/department-form-dialog.component';
@@ -95,7 +95,7 @@ export class DepartmentsComponent implements OnInit {
 
     openCreate(parentId: string | null): void {
         this.dialogState.set({
-            mode: DepartmentDialogMode.Create,
+            mode: DialogMode.Create,
             department: null,
             parentId
         });
@@ -103,7 +103,7 @@ export class DepartmentsComponent implements OnInit {
 
     openEdit(department: DepartmentNode): void {
         this.dialogState.set({
-            mode: DepartmentDialogMode.Edit,
+            mode: DialogMode.Edit,
             department,
             parentId: department.parentDepartmentId,
         });
@@ -120,7 +120,7 @@ export class DepartmentsComponent implements OnInit {
             return;
         }
         this.saving.set(true);
-        const isEdit = state.mode === DepartmentDialogMode.Edit && state.department;
+        const isEdit = state.mode === DialogMode.Edit && state.department;
 
         // The '$' suffix (Finnish Notation) signifies that this variable holds an RxJS Observable stream
         // rather than a plain synchronous value, indicating it needs to be subscribed to.
@@ -134,8 +134,8 @@ export class DepartmentsComponent implements OnInit {
                 this.closeDialog();
                 this.toast.success(
                     isEdit
-                        ? `Department ${saved.code} updated.`
-                        : `Department ${saved.code} created.`
+                        ? `Department ${saved.code} updated`
+                        : `Department ${saved.code} created`
                 );
 
                 this.loadTree(false);
@@ -164,7 +164,7 @@ export class DepartmentsComponent implements OnInit {
         this.departmentService.delete(target.id).subscribe({
             next: () => {
                 this.cancelDelete();
-                this.toast.success(`Deleted department ${target.code}.`);
+                this.toast.success(`Deleted department ${target.code}`);
                 this.loadTree(false);
             },
             error: () => {

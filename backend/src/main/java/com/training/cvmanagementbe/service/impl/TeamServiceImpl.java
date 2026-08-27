@@ -5,13 +5,11 @@ import com.training.cvmanagementbe.dto.request.TeamRequest;
 import com.training.cvmanagementbe.dto.response.PagedResponse;
 import com.training.cvmanagementbe.dto.response.TeamMemberResponse;
 import com.training.cvmanagementbe.dto.response.TeamResponse;
-import com.training.cvmanagementbe.entity.models.Department;
 import com.training.cvmanagementbe.entity.models.Team;
 import com.training.cvmanagementbe.entity.models.TeamMember;
 import com.training.cvmanagementbe.entity.models.User;
 import com.training.cvmanagementbe.enums.*;
 import com.training.cvmanagementbe.exception.ApiException;
-import com.training.cvmanagementbe.repository.DepartmentRepository;
 import com.training.cvmanagementbe.repository.TeamMemberRepository;
 import com.training.cvmanagementbe.repository.TeamRepository;
 import com.training.cvmanagementbe.repository.UserRepository;
@@ -36,18 +34,15 @@ public class TeamServiceImpl implements TeamService {
     private final TeamRepository teamRepository;
     private final TeamMemberRepository teamMemberRepository;
     private final UserRepository userRepository;
-    private final DepartmentRepository departmentRepository;
     private final AuditLogger auditLogger;
 
     @Override
-    public PagedResponse<TeamResponse> search(String keyword,
-                                              UUID departmentId,
-                                              Pageable pageable) {
+    public PagedResponse<TeamResponse> search(String keyword, Pageable pageable) {
         String pattern = (keyword == null || keyword.isBlank())
                 ? null
                 : "%" + keyword.trim().toLowerCase() + "%";
 
-        Page<Team> page = teamRepository.search(pattern, departmentId, pageable);
+        Page<Team> page = teamRepository.search(pattern, pageable);
         return PagedResponse.of(page, toResponses(page.getContent()));
     }
 
@@ -83,14 +78,13 @@ public class TeamServiceImpl implements TeamService {
     @Transactional
     public TeamResponse create(TeamRequest request) {
         validateCodeAvailable(request.code(), null);
-        requireDepartmentExists(request.departmentId());
         requireValidTechLead(request.techLeadId());
 
         Team team = new Team();
         applyRequest(team, request);
         team.setDisplayOrder(request.displayOrder() != null
                 ? request.displayOrder()
-                : nextDisplayOrder(request.departmentId()));
+                : nextDisplayOrder());
 
         Team saved = teamRepository.save(team);
         auditLogger.record(Action.CREATE_TEAM, TargetType.TEAM,
@@ -104,19 +98,15 @@ public class TeamServiceImpl implements TeamService {
         Team team = requireTeam(id);
 
         validateCodeAvailable(request.code(), id);
-        requireDepartmentExists(request.departmentId());
         requireValidTechLead(request.techLeadId());
 
         // Snapshot before mutating so the audit entry keeps both sides
         TeamResponse before = toFlatResponse(team);
-        boolean departmentChanged = !Objects.equals(team.getDepartmentId(), request.departmentId());
         applyRequest(team, request);
 
-        // Moving to another department puts the team at the end of its new group
+        // One flat catalogue, so an omitted order simply keeps the current one
         if (request.displayOrder() != null) {
             team.setDisplayOrder(request.displayOrder());
-        } else if (departmentChanged) {
-            team.setDisplayOrder(nextDisplayOrder(request.departmentId()));
         }
 
         Team saved = teamRepository.save(team);
@@ -228,15 +218,12 @@ public class TeamServiceImpl implements TeamService {
     }
 
     // ---------- Private helpers ----------
-    // Department names, tech lead names and member counts are resolved in bulk to avoid N + 1
+    // Tech lead names and member counts are resolved in bulk to avoid N + 1
     private List<TeamResponse> toResponses(List<Team> teams) {
         if (teams.isEmpty()) {
             return List.of();
         }
 
-        Map<UUID, Department> departmentById = findDepartments(
-                teams.stream().map(Team::getDepartmentId).collect(Collectors.toSet())
-        );
         Map<UUID, User> techLeadById = findUsers(
                 teams.stream().map(Team::getTechLeadId).collect(Collectors.toSet())
         );
@@ -246,15 +233,9 @@ public class TeamServiceImpl implements TeamService {
 
         return teams.stream()
                 .map(team -> toResponse(team,
-                        departmentById.get(team.getDepartmentId()),
                         techLeadById.get(team.getTechLeadId()),
                         memberCountByTeamId.getOrDefault(team.getId(), 0L)))
                 .toList();
-    }
-
-    private Map<UUID, Department> findDepartments(Collection<UUID> ids) {
-        return ids.isEmpty() ? Map.of() : departmentRepository.findAllById(ids).stream()
-                .collect(Collectors.toMap(Department::getId, Function.identity()));
     }
 
     private Map<UUID, User> findUsers(Collection<UUID> ids) {
@@ -270,15 +251,14 @@ public class TeamServiceImpl implements TeamService {
         return counts;
     }
 
-    private int nextDisplayOrder(UUID departmentId) {
-        return teamRepository.findMaxDisplayOrderByDepartmentId(departmentId) + ORDER_STEP;
+    private int nextDisplayOrder() {
+        return teamRepository.findMaxDisplayOrder() + ORDER_STEP;
     }
 
     private void applyRequest(Team target, TeamRequest request) {
         target.setCode(normalizeCode(request.code()));
         target.setName(request.name().trim());
         target.setDescription(trimToNull(request.description()));
-        target.setDepartmentId(request.departmentId());
         target.setTechLeadId(request.techLeadId());
     }
 
@@ -300,26 +280,17 @@ public class TeamServiceImpl implements TeamService {
                 .orElseThrow(() -> new ApiException.NotFoundException("user", id));
     }
 
-    private void requireDepartmentExists(UUID departmentId) {
-        if (!departmentRepository.existsById(departmentId)) {
-            throw new ApiException.NotFoundException("department", departmentId);
-        }
-    }
-
     // Audit snapshot: joined names are not needed and would cost extra queries
     private TeamResponse toFlatResponse(Team team) {
-        return toResponse(team, null, null, 0L);
+        return toResponse(team, null, 0L);
     }
 
-    private TeamResponse toResponse(Team team, Department department, User techLead, long memberCount) {
+    private TeamResponse toResponse(Team team, User techLead, long memberCount) {
         return new TeamResponse(
                 team.getId(),
                 team.getCode(),
                 team.getName(),
                 team.getDescription(),
-                team.getDepartmentId(),
-                department == null ? null : department.getCode(),
-                department == null ? null : department.getName(),
                 team.getTechLeadId(),
                 techLead == null ? null : techLead.getFullName(),
                 team.getDisplayOrder(),

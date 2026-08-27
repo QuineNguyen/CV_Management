@@ -99,7 +99,7 @@ class PresignedUrlTest {
         assertThat(signatureOf(internalUrl))
                 .as("same bucket, same object, different signature - because the host is part of "
                         + "what was signed. Patching the host on the client would produce a URL "
-                        + "the object store rejects.")
+                        + "the object store rejects")
                 .isNotEqualTo(signatureOf(publicUrl));
     }
 

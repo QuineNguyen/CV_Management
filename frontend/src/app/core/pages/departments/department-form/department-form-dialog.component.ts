@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, DestroyRef, inject, input
 import { FormBuilder, FormControl, ReactiveFormsModule, Validators } from "@angular/forms";
 import { DepartmentDialogState } from "../../../models/department.model";
 import { DepartmentNode, DepartmentRequest } from "../../../dtos/department.dto";
-import { DepartmentDialogMode } from "../../../enums/department-dialog-mode.enum";
+import { DialogMode } from "../../../enums/dialog-mode.enum";
 import { DepartmentService } from "../../../services/department.service";
 import { takeUntilDestroyed, toSignal } from "@angular/core/rxjs-interop";
 import { catchError, debounceTime, distinctUntilChanged, EMPTY, map, merge, startWith, Subject, switchMap, tap } from "rxjs";
@@ -44,7 +44,7 @@ export class DepartmentFormDialogComponent implements OnInit {
     readonly lookupLoading = signal(false);
     readonly lookupTotal = signal(0);
 
-    readonly isEdit = computed(() => this.state().mode === DepartmentDialogMode.Edit);
+    readonly isEdit = computed(() => this.state().mode === DialogMode.Edit);
 
     readonly title = computed(() => (this.isEdit() ? 'Edit department' : 'Add department'));
 

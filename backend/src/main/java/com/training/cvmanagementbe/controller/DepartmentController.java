@@ -21,12 +21,10 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
-import java.util.List;
 import java.util.UUID;
 
 @RestController
 @RequestMapping(ApiPath.DEPARTMENTS)
-@PreAuthorize(AuthorityExpression.ADMIN)
 @RequiredArgsConstructor
 @Tag(name = "Departments", description = "Department tree management")
 public class DepartmentController {
@@ -39,6 +37,7 @@ public class DepartmentController {
     private final DepartmentService departmentService;
 
     @GetMapping(ApiPath.TREE)
+    @PreAuthorize(AuthorityExpression.DIRECTORY_READER)
     @Operation(summary = "Get the whole department tree")
     public ResponseEntity<PagedResponse<DepartmentResponse>> getTree(
             @RequestParam(defaultValue = PageDefaults.PAGE) int page,
@@ -49,13 +48,14 @@ public class DepartmentController {
     }
 
     @GetMapping
+    @PreAuthorize(AuthorityExpression.DIRECTORY_READER)
     @Operation(summary = "Flat paginated lookup, used by the parent picker")
     public ResponseEntity<PagedResponse<DepartmentResponse>> search(
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) UUID excludeSubtreeOf,
             @RequestParam(defaultValue = PageDefaults.PAGE) int page,
             @RequestParam(defaultValue = PageDefaults.SIZE) int size,
-            @RequestParam(defaultValue = "DISPLAY_ORDER") DepartmentSortField sortBy,
+            @RequestParam(defaultValue = "CODE") DepartmentSortField sortBy,
             @RequestParam(defaultValue = "ASC") Sort.Direction direction
     ) {
         Sort sort = Sort.by(direction, sortBy.getProperty())
@@ -66,12 +66,14 @@ public class DepartmentController {
     }
 
     @GetMapping(ApiPath.BY_ID)
+    @PreAuthorize(AuthorityExpression.DIRECTORY_READER)
     @Operation(summary = "Get one department")
     public ResponseEntity<DepartmentResponse> getById(@PathVariable UUID id) {
         return ResponseEntity.ok(departmentService.getById(id));
     }
 
     @PostMapping
+    @PreAuthorize(AuthorityExpression.ADMIN)
     @Operation(summary = "Create a department")
     public ResponseEntity<DepartmentResponse> create(@Valid @RequestBody DepartmentRequest request) {
         DepartmentResponse created = departmentService.create(request);
@@ -81,6 +83,7 @@ public class DepartmentController {
     }
 
     @PutMapping(ApiPath.BY_ID)
+    @PreAuthorize(AuthorityExpression.ADMIN)
     @Operation(summary = "Update a department")
     public ResponseEntity<DepartmentResponse> update(@PathVariable UUID id,
                                                      @Valid @RequestBody DepartmentRequest request) {
@@ -88,6 +91,7 @@ public class DepartmentController {
     }
 
     @DeleteMapping(ApiPath.BY_ID)
+    @PreAuthorize(AuthorityExpression.ADMIN)
     @Operation(summary = "Delete an empty department")
     public ResponseEntity<Void> delete(@PathVariable UUID id) {
         departmentService.delete(id);
@@ -95,6 +99,7 @@ public class DepartmentController {
     }
 
     @PutMapping(ApiPath.MOVE)
+    @PreAuthorize(AuthorityExpression.ADMIN)
     @Operation(summary = "Reposition a department relative to its neighbours")
     public ResponseEntity<Void> move(@PathVariable UUID id,
                                      @Valid @RequestBody MoveDepartmentRequest request) {

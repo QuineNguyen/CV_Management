@@ -40,6 +40,12 @@ public class UserController {
     @GetMapping
     @PreAuthorize(AuthorityExpression.DIRECTORY_READER)
     @Operation(summary = "List users, narrowed by the caller data scope")
+    /*
+     * Open to every signed-in role by design. RBAC decides who may call the endpoint;
+     * AuthScope in the service decides which rows come back. HR and Admin see everyone,
+     * a tech lead sees their team members plus themselves, an employee sees only themselves.
+     * The admin management screen is a separate concern, gated in the frontend router.
+     */
     public ResponseEntity<PagedResponse<UserResponse>> search(
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) Role role,
@@ -49,8 +55,8 @@ public class UserController {
             @RequestParam(defaultValue = "ASC") Sort.Direction direction,
             @RequestParam(defaultValue = PageDefaults.PAGE) int page,
             @RequestParam(defaultValue = PageDefaults.SIZE) int size) {
-        Sort sort = Sort.by(direction, sortBy.getProperty())
-                .and(Sort.by(Sort.Order.asc(UserSortField.FULL_NAME.getProperty())));
+        Sort sort = PageDefaults.sortBy(direction, sortBy.getProperty(),
+                UserSortField.FULL_NAME.getProperty());
         Pageable pageable = PageRequest.of(PageDefaults.clampPage(page), PageDefaults.clampSize(size), sort);
         return ResponseEntity.ok(userService.search(keyword, role, status, departmentId, pageable));
     }

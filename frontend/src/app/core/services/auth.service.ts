@@ -1,16 +1,16 @@
 import { Injectable, computed, inject, signal, PLATFORM_ID } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
-import { finalize, firstValueFrom, map, Observable } from 'rxjs';
+import { finalize, map, Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
-import { CurrentUser, Role } from '../models/user.model';
-import { AuthenticatedUser, ChangePasswordRequest, LoginRequest, LoginResponse } from '../dtos/auth.dto';
+import { CurrentUser } from '../models/user.model';
+import { AuthenticatedUser, ChangePasswordRequest, LoginRequest, LoginResponse, ResetPasswordResponse } from '../dtos/auth.dto';
 import { GoogleIdentityService } from './google-identity.service';
 import { ApiEndpoint } from '../enums/api-endpoint.enum';
 import { StorageKey } from '../enums/storage-key.enum';
 import { UserRole } from '../enums/user-role.enum';
 
-export type { Role, CurrentUser };
+export type { CurrentUser };
 
 /** Manages user session state, authentication token, and current user profile. */
 @Injectable({ providedIn: 'root' })
@@ -76,6 +76,10 @@ export class AuthService {
     return this.http.post<void>(this.url(ApiEndpoint.ChangePassword), request);
   }
 
+  resetPassword(id: string): Observable<ResetPasswordResponse> {
+    return this.http.post<ResetPasswordResponse>(this.url(`${ApiEndpoint.ResetPassword}/${id}/reset-password`), null);
+  }
+
   // ---------- Session persistence ----------
   restoreSession(): void {
     if (!this.isBrowser) {
@@ -117,7 +121,7 @@ export class AuthService {
     return isPlatformBrowser(this.platformId);
   }
 
-  private url(endpoint: ApiEndpoint): string {
+  private url(endpoint: string): string {
     return `${environment.apiBaseUrl}${endpoint}`;
   }
 }

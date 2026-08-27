@@ -12,10 +12,10 @@
         <input id="dept-code" class="field-input" type="text" formControlName="code"
                placeholder="e.g. TECH" autocomplete="off" />
         @if (hasError('code', 'required')) {
-          <span class="field-error">Code is required.</span>
+          <span class="field-error">Code is required</span>
         }
         @if (hasError('code', 'maxlength')) {
-          <span class="field-error">Code must be at most 50 characters.</span>
+          <span class="field-error">Code must be at most 50 characters</span>
         }
       </div>
 
@@ -26,22 +26,21 @@
         <input id="dept-name" class="field-input" type="text" formControlName="name"
                placeholder="e.g. Technology Division" autocomplete="off" />
         @if (hasError('name', 'required')) {
-          <span class="field-error">Name is required.</span>
+          <span class="field-error">Name is required</span>
         }
         @if (hasError('name', 'maxlength')) {
-          <span class="field-error">Name must be at most 255 characters.</span>
+          <span class="field-error">Name must be at most 255 characters</span>
         }
       </div>
 
       <div class="field">
         <label class="field-label" for="dept-parent-search">Parent Department</label>
-        <button type="button" class="field-input picker-trigger" (click)="togglePicker()">
+        <button type="button" class="field-input picker-trigger custom-select-trigger" (click)="togglePicker()">
           @if (selectedParent(); as parent) {
             <span class="picker-value">{{ parent.code }} — {{ parent.name }}</span>
           } @else {
             <span class="picker-value picker-value-empty">— Root level —</span>
           }
-          <span class="picker-caret" aria-hidden="true">▾</span>
         </button>
 
         @if (pickerOpen()) {
@@ -60,7 +59,7 @@
               @if (lookupLoading()) {
                 <li class="picker-status">Loading...</li>
               } @else if (!parentOptions().length) {
-                <li class="picker-status">No suitable department found.</li>
+                <li class="picker-status">No suitable department found</li>
               }
 
               @for (item of parentOptions(); track item.id) {
@@ -80,7 +79,7 @@
             }
           </div>
         }
-        <span class="field-hint">Leave empty if this is a root-level department.</span>
+        <span class="field-hint">Leave empty if this is a root-level department</span>
       </div>
 
       <div class="modal-footer">

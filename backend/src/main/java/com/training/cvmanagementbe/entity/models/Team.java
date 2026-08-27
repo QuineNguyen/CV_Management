@@ -23,9 +23,6 @@ public class Team extends BaseEntity {
     @Column(name = "description")
     private String description;
 
-    @Column(name = "department_id", nullable = false)
-    private UUID departmentId;
-
     @Column(name = "tech_lead_id", nullable = false)
     private UUID techLeadId;
 

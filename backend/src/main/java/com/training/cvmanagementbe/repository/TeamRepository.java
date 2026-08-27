@@ -21,19 +21,14 @@ public interface TeamRepository extends JpaRepository<Team, UUID> {
             WHERE (:keyword IS NULL
                    OR LOWER(t.code) LIKE :keyword
                    OR LOWER(t.name) LIKE :keyword)
-              AND (:departmentId IS NULL OR t.departmentId = :departmentId)
             """)
-    Page<Team> search(@Param("keyword") String keyword,
-                      @Param("departmentId") UUID departmentId,
-                      Pageable pageable);
+    Page<Team> search(@Param("keyword") String keyword, Pageable pageable);
 
     boolean existsByCode(String code);
 
     boolean existsByCodeAndIdNot(String code, UUID id);
 
     boolean existsByTechLeadId(UUID techLeadId);
-
-    boolean existsByDepartmentId(UUID departmentId);
 
     List<Team> findByTechLeadId(UUID techLeadId);
 
@@ -53,7 +48,8 @@ public interface TeamRepository extends JpaRepository<Team, UUID> {
     long countActiveProfilesByTeamIdAndUserId(@Param("teamId") UUID teamId,
                                               @Param("userId") UUID userId);
 
-    // Highest display order inside a department, used to append new teams (step 10).
-    @Query("SELECT COALESCE(MAX(t.displayOrder), 0) FROM Team t WHERE t.departmentId = :departmentId")
-    int findMaxDisplayOrderByDepartmentId(@Param("departmentId") UUID departmentId);
+    // Highest display order across the whole catalogue, used to append new teams (step 10).
+    // The scope is the whole table, not a department: teams do not belong to one [QD-66].
+    @Query("SELECT COALESCE(MAX(t.displayOrder), 0) FROM Team t")
+    int findMaxDisplayOrder();
 }
