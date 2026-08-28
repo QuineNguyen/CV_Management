@@ -1,7 +1,7 @@
 :host {
   color: var(--vt-ink);
   --vt-modal-w: min(46rem, 100%);
-  --vt-modal-h: min(98vh, 52rem);
+  --vt-modal-h: min(99vh, 52rem);
   --vt-modal-z: 60;
 }
 

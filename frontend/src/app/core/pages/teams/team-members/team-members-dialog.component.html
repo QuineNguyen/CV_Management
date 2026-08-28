@@ -1,4 +1,4 @@
-<div class="modal-backdrop" (click)="onClose()">
+<div class="modal-backdrop" [class.is-closing]="isClosing()" (click)="onClose()">
   <div class="modal" role="dialog" aria-modal="true" (click)="$event.stopPropagation()">
 
     <header class="modal-head">
@@ -67,7 +67,7 @@
               type="button"
               class="icon-btn icon-btn--danger"
               [disabled]="member.primaryTeam || busyUserId() === member.userId"
-              [title]="member.primaryTeam
+              [matTooltip]="member.primaryTeam
                 ? 'Change the primary team from the user form first'
                 : 'Remove from team'"
               (click)="askRemove(member)">
@@ -86,7 +86,7 @@
 
 <!-- Remove confirmation -->
 @if (removeTarget(); as target) {
-  <div class="modal-backdrop modal-backdrop--stacked" (click)="cancelRemove()">
+  <div class="modal-backdrop modal-backdrop--stacked" [class.is-closing]="isRemoveClosing()" (click)="cancelRemove()">
     <div class="modal modal-sm" role="alertdialog" aria-modal="true" (click)="$event.stopPropagation()">
       <h2 class="modal-title">Remove member</h2>
       <p class="modal-body">

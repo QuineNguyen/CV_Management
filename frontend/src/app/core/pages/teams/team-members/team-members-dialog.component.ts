@@ -1,5 +1,6 @@
-import { ChangeDetectionStrategy, Component, computed, DestroyRef, inject, input, OnInit, output, signal } from "@angular/core";
+import { ChangeDetectionStrategy, Component, computed, DestroyRef, HostListener, inject, input, OnInit, output, signal } from "@angular/core";
 import { FormControl, ReactiveFormsModule } from "@angular/forms";
+import { MatTooltipModule } from "@angular/material/tooltip";
 import { TeamService } from "../../../services/team.service";
 import { UserService } from "../../../services/user.service";
 import { ToastService } from "../../../services/toast.service";
@@ -13,7 +14,7 @@ import { AccountStatus } from "../../../enums/account-status.enum";
 @Component({
     selector: 'app-team-members-dialog',
     standalone: true,
-    imports: [ReactiveFormsModule],
+    imports: [ReactiveFormsModule, MatTooltipModule],
     templateUrl: './team-members-dialog.component.html',
     styleUrl: './team-members-dialog.component.css',
     changeDetection: ChangeDetectionStrategy.OnPush,
@@ -37,6 +38,9 @@ export class TeamMembersDialogComponent implements OnInit {
     readonly closed = output<boolean>();
 
     readonly roleLabels = ROLE_LABELS;
+
+    readonly isClosing = signal(false);
+    readonly isRemoveClosing = signal(false);
 
     readonly members = signal<TeamMemberResponse[]>([]);
     readonly loading = signal(false);
@@ -93,12 +97,29 @@ export class TeamMembersDialogComponent implements OnInit {
 
     // ---------- Remove ----------
     
+    @HostListener('document:keydown.escape')
+    onEscape(): void {
+        if (this.removeTarget()) {
+            this.cancelRemove();
+            return;
+        }
+        this.onClose();
+    }
+
     askRemove(member: TeamMemberResponse): void {
+        this.isRemoveClosing.set(false);
         this.removeTarget.set(member);
     }
 
     cancelRemove(): void {
-        this.removeTarget.set(null);
+        if (this.isRemoveClosing() || (this.removeTarget() && this.busyUserId() === this.removeTarget()?.userId)) {
+            return;
+        }
+        this.isRemoveClosing.set(true);
+        setTimeout(() => {
+            this.removeTarget.set(null);
+            this.isRemoveClosing.set(false);
+        }, 500);
     }
 
     confirmRemove(): void {
@@ -112,6 +133,7 @@ export class TeamMembersDialogComponent implements OnInit {
             next: () => {
                 this.busyUserId.set(null);
                 this.removeTarget.set(null);
+                this.isRemoveClosing.set(false);
                 this.changed = true;
                 this.toast.success(`${target.fullName} removed from ${this.team().code}`);
                 this.loadMembers(false);
@@ -119,12 +141,19 @@ export class TeamMembersDialogComponent implements OnInit {
             error: () => {
                 this.busyUserId.set(null);
                 this.removeTarget.set(null);
+                this.isRemoveClosing.set(false);
             },
         });
     }
 
     onClose(): void {
-        this.closed.emit(this.changed);
+        if (this.isClosing()) {
+            return;
+        }
+        this.isClosing.set(true);
+        setTimeout(() => {
+            this.closed.emit(this.changed);
+        }, 500);
     }
 
     // ---------- Internals ----------

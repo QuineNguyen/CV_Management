@@ -284,7 +284,7 @@ public class UserServiceImpl implements UserService {
                 && findMemberIdsOfLedTeams(callerId).contains(targetUserId)) {
             return;
         }
-        throw new ApiException.BusinessRuleException(ErrorCode.OUT_OF_SCOPE);
+        throw new ApiException.ForbiddenException(ErrorCode.OUT_OF_SCOPE);
     }
 
     // ---------- Private helpers ----------

@@ -24,3 +24,9 @@
 .cell-muted {
   max-width: 25rem;
 }
+
+.data-card-head {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+}

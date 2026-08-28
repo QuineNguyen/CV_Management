@@ -1,7 +1,8 @@
 import { CdkDragDrop, DragDropModule, moveItemInArray } from '@angular/cdk/drag-drop';
 import { NgTemplateOutlet } from "@angular/common";
-import { ChangeDetectionStrategy, Component, inject, OnInit, signal } from "@angular/core";
+import { ChangeDetectionStrategy, Component, HostListener, inject, OnInit, signal } from "@angular/core";
 import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { DepartmentService } from '../../services/department.service';
 import { DialogMode } from '../../enums/dialog-mode.enum';
 import { DepartmentNode, DepartmentRequest } from '../../dtos/department.dto';
@@ -12,7 +13,7 @@ import { ToastService } from '../../services/toast.service';
 @Component({
     selector: 'app-departments',
     standalone: true,
-    imports: [MatPaginatorModule, NgTemplateOutlet, DragDropModule, DepartmentFormDialogComponent],
+    imports: [MatPaginatorModule, MatTooltipModule, NgTemplateOutlet, DragDropModule, DepartmentFormDialogComponent],
     templateUrl: './departments.component.html',
     styleUrl: './departments.component.css',
     changeDetection: ChangeDetectionStrategy.OnPush,
@@ -41,6 +42,7 @@ export class DepartmentsComponent implements OnInit {
 
     readonly deleteTarget = signal<DepartmentNode | null>(null);
     readonly deleting = signal(false);
+    readonly isDeleteClosing = signal(false);
 
     ngOnInit(): void {
         this.loadTree(true);
@@ -59,7 +61,6 @@ export class DepartmentsComponent implements OnInit {
             next: result => {
                 this.tree.set(result.content);
                 this.pageState.update(state => ({ ...state, total: result.totalElements }));
-                this.expandAllByDefault(result.content);
                 this.loading.set(false);
             },
             error: () => this.loading.set(false),
@@ -146,13 +147,28 @@ export class DepartmentsComponent implements OnInit {
 
     // ---------- Delete ----------
 
+    @HostListener('document:keydown.escape')
+    onEscape(): void {
+        if (this.deleteTarget()) {
+            this.cancelDelete();
+        }
+    }
+
     askDelete(department: DepartmentNode): void {
+        this.isDeleteClosing.set(false);
         this.deleteTarget.set(department);
     }
 
     cancelDelete(): void {
-        this.deleteTarget.set(null);
-        this.deleting.set(false);
+        if (this.isDeleteClosing() || this.deleting()) {
+            return;
+        }
+        this.isDeleteClosing.set(true);
+        setTimeout(() => {
+            this.deleteTarget.set(null);
+            this.deleting.set(false);
+            this.isDeleteClosing.set(false);
+        }, 500);
     }
 
     confirmDelete(): void {
@@ -163,13 +179,16 @@ export class DepartmentsComponent implements OnInit {
         this.deleting.set(true);
         this.departmentService.delete(target.id).subscribe({
             next: () => {
-                this.cancelDelete();
+                this.deleteTarget.set(null);
+                this.deleting.set(false);
+                this.isDeleteClosing.set(false);
                 this.toast.success(`Deleted department ${target.code}`);
                 this.loadTree(false);
             },
             error: () => {
                 this.deleting.set(false);
                 this.deleteTarget.set(null);
+                this.isDeleteClosing.set(false);
             },
         });
     }

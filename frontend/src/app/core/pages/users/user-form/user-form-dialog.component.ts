@@ -37,6 +37,8 @@ export class UserFormDialogComponent implements OnInit {
     readonly updated = output<UpdateUserRequest>();
     readonly cancelled = output<void>();
 
+    readonly isClosing = signal(false);
+
     readonly roleLabels = ROLE_LABELS;
     readonly roleOptions = Object.values(UserRole);
     readonly roleOpen = signal(false);
@@ -147,8 +149,13 @@ export class UserFormDialogComponent implements OnInit {
 
     @HostListener('document:keydown.escape')
     onEscape(): void {
-        this.roleOpen.set(false);
-        this.teamPanelOpen.set(false);
+        if (this.roleOpen() || this.pickerOpen() || this.teamPanelOpen()) {
+            this.roleOpen.set(false);
+            this.pickerOpen.set(false);
+            this.teamPanelOpen.set(false);
+            return;
+        }
+        this.onCancel();
     }
 
     // ---------- Department picker ----------
@@ -276,7 +283,13 @@ export class UserFormDialogComponent implements OnInit {
     }
 
     onCancel(): void {
-        this.cancelled.emit();
+        if (this.isClosing() || this.submitting()) {
+            return;
+        }
+        this.isClosing.set(true);
+        setTimeout(() => {
+            this.cancelled.emit();
+        }, 500);
     }
 
     // ---------- Internals ----------

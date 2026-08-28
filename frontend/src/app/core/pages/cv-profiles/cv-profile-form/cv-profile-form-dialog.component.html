@@ -1,0 +1,106 @@
+<div class="modal-backdrop" [class.is-closing]="isClosing()" (click)="onBackdropClick($event)">
+  <div class="modal" role="dialog" aria-modal="true">
+
+    <h2 class="modal-title">{{ title() }}</h2>
+    @if (employeeName(); as employee) {
+      <p class="modal-owner">Employee: <strong>{{ employee }}</strong></p>
+    }
+    <p class="modal-subtitle">
+      A profile is one professional persona, with its own CVs and its own reviewing team
+    </p>
+
+    <form class="form" [formGroup]="form" (ngSubmit)="onSubmit()">
+
+      <div class="field">
+        <label class="field-label" for="profile-name">
+          Profile name <span class="field-required">*</span>
+        </label>
+        <input id="profile-name" class="field-input" type="text" formControlName="name"
+               placeholder="e.g. AI Engineer" autocomplete="off" />
+        @if (hasError('name', 'required')) {
+          <span class="field-error">Profile name is required</span>
+        }
+        @if (hasError('name', 'maxlength')) {
+          <span class="field-error">Profile name must be at most 255 characters</span>
+        }
+        <span class="field-hint">Must be unique among your active profiles</span>
+      </div>
+
+      <div class="field">
+        <label class="field-label" for="profile-description">Description</label>
+        <textarea id="profile-description" class="field-input profile-textarea" rows="3"
+                  formControlName="description"
+                  placeholder="What this profile is used for"></textarea>
+        @if (hasError('description', 'maxlength')) {
+          <span class="field-error">Description must be at most 1000 characters</span>
+        }
+      </div>
+
+      <div class="field custom-select-wrap">
+        <label class="field-label" for="profile-team">
+          Linked team <span class="field-required">*</span>
+        </label>
+
+        <button id="profile-team" type="button"
+                class="field-input custom-select-trigger"
+                [class.is-open]="teamPickerOpen()"
+                [disabled]="teamsLoading() || !teamOptions().length"
+                (click)="toggleTeamPicker($event)"
+                aria-haspopup="listbox"
+                [attr.aria-expanded]="teamPickerOpen()">
+          @if (selectedTeam(); as team) {
+            <span class="custom-select-label">
+              <span class="code-chip is-primary">{{ team.code }}</span>
+              <span class="team-option-name">{{ team.name }}</span>
+            </span>
+          } @else {
+            <span class="custom-select-label picker-value--empty">
+              {{ teamsLoading() ? 'Loading teams...' : 'Select a team' }}
+            </span>
+          }
+        </button>
+
+        @if (teamPickerOpen()) {
+          <div class="custom-select-panel" (click)="$event.stopPropagation()">
+            <ul class="custom-select-list" role="listbox">
+              @for (team of teamOptions(); track team.id) {
+                <li role="option" [attr.aria-selected]="team.id === selectedTeamId()">
+                  <button type="button" class="custom-select-option"
+                          [class.is-selected]="team.id === selectedTeamId()"
+                          (click)="selectTeam(team)">
+                    <span class="code-chip is-primary">{{ team.code }}</span>
+                    <span class="team-option-name">
+                      {{ team.name }}
+                      @if (team.primaryTeam) {
+                        <span class="team-primary-tag">(primary team)</span>
+                      }
+                    </span>
+                  </button>
+                </li>
+              }
+            </ul>
+          </div>
+        }
+
+        @if (teamMissing()) {
+          <span class="field-error">A linked team is required.</span>
+        }
+        @if (!teamsLoading() && !teamOptions().length) {
+          <span class="field-error">
+            This employee belongs to no team yet, so no profile can be created
+          </span>
+        }
+        <span class="field-hint">
+          The team's tech lead reviews CVs of this profile at level 1
+        </span>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-ghost" (click)="onCancel()" [disabled]="submitting()">Cancel</button>
+        <button type="submit" class="btn btn-primary" [disabled]="submitting()">
+          {{ submitting() ? 'Saving...' : 'Save' }}
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

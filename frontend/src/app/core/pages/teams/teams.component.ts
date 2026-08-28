@@ -1,6 +1,7 @@
-import { ChangeDetectionStrategy, Component, computed, DestroyRef, inject, OnInit, signal } from "@angular/core";
+import { ChangeDetectionStrategy, Component, computed, DestroyRef, HostListener, inject, OnInit, signal } from "@angular/core";
 import { FormControl, ReactiveFormsModule } from "@angular/forms";
 import { MatPaginatorModule, PageEvent } from "@angular/material/paginator";
+import { MatTooltipModule } from "@angular/material/tooltip";
 import { TeamService } from "../../services/team.service";
 import { ToastService } from "../../services/toast.service";
 import { TeamDialogState, TeamPageState } from "../../models/team.model";
@@ -19,6 +20,7 @@ import { SortState } from "../../models/sort-state.model";
     imports: [
         ReactiveFormsModule,
         MatPaginatorModule,
+        MatTooltipModule,
         TeamFormDialogComponent,
         TeamMembersDialogComponent,
     ],
@@ -55,6 +57,7 @@ export class TeamsComponent implements OnInit {
 
     readonly deleteTarget = signal<TeamResponse | null>(null);
     readonly deleting = signal(false);
+    readonly isDeleteClosing = signal(false);
 
     readonly isEmpty = computed(() => !this.loading() && this.teams().length === 0);
 
@@ -200,13 +203,29 @@ export class TeamsComponent implements OnInit {
     }
 
     // ---------- Delete ----------
+
+    @HostListener('document:keydown.escape')
+    onEscape(): void {
+        if (this.deleteTarget()) {
+            this.cancelDelete();
+        }
+    }
+
     askDelete(team: TeamResponse): void {
+        this.isDeleteClosing.set(false);
         this.deleteTarget.set(team);
     }
 
     cancelDelete(): void {
-        this.deleteTarget.set(null);
-        this.deleting.set(false);
+        if (this.isDeleteClosing() || this.deleting()) {
+            return;
+        }
+        this.isDeleteClosing.set(true);
+        setTimeout(() => {
+            this.deleteTarget.set(null);
+            this.deleting.set(false);
+            this.isDeleteClosing.set(false);
+        }, 500);
     }
 
     confirmDelete(): void {
@@ -218,13 +237,16 @@ export class TeamsComponent implements OnInit {
         this.deleting.set(true);
         this.teamService.delete(target.id).subscribe({
             next: () => {
-                this.cancelDelete();
+                this.deleteTarget.set(null);
+                this.deleting.set(false);
+                this.isDeleteClosing.set(false);
                 this.toast.success(`Deleted team ${target.code}`);
                 this.loadTeams(false);
             },
             error: () => {
                 this.deleting.set(false);
                 this.deleteTarget.set(null);
+                this.isDeleteClosing.set(false);
             }
         });
     }

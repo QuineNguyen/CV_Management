@@ -1,5 +1,5 @@
-<div class="modal-backdrop" (click)="onCancel()">
-  <div class="modal" role="dialog" aria-modal="true" (click)="$event.stopPropagation()">
+<div class="modal-backdrop" [class.is-closing]="isClosing()" (click)="onBackdropClick($event)">
+  <div class="modal" role="dialog" aria-modal="true">
     <h2 class="modal-title">{{ title() }}</h2>
 
     <form [formGroup]="form" (ngSubmit)="onSubmit()" novalidate>

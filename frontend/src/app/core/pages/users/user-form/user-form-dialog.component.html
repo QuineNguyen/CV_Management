@@ -1,4 +1,4 @@
-<div class="modal-backdrop" (click)="onBackdropClick($event)">
+<div class="modal-backdrop" [class.is-closing]="isClosing()" (click)="onBackdropClick($event)">
   <div class="modal" role="dialog" aria-modal="true">
     <h2 class="modal-title">{{ title() }}</h2>
 

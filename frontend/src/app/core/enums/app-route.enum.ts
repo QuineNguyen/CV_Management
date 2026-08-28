@@ -9,4 +9,5 @@ export enum AppRoute {
     Users = 'users',
     Departments = 'departments',
     Teams = 'teams',
+    Profiles = 'cv-profiles',
 }

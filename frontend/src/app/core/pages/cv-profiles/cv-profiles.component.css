@@ -1,0 +1,82 @@
+:host {
+  display: block;
+  color: var(--vt-ink);
+}
+
+/* ---------- Column widths ---------- */
+.col-profile  { width: 34%; max-width: 18rem; }
+.col-team     { width: 28%; min-width: 13rem; }
+.col-cvs      { width: 5rem; }
+.col-updated  { width: 11rem; }
+.col-actions  { width: 7rem; }
+
+.data-table td.col-team,
+.data-table td.col-cvs,
+.data-table td.col-updated {
+  text-align: center;
+  white-space: nowrap;
+}
+
+.data-table td.col-actions {
+  text-align: center;
+}
+
+.row-actions {
+  justify-content: center;
+}
+
+/* ---------- Profile name & badge (inline side-by-side) ---------- */
+.profile-title-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.profile-title-row .cell-strong,
+.profile-title-row .data-card-title {
+  display: inline;
+  margin: 0;
+  font-weight: 700;
+  color: var(--vt-ink);
+}
+
+.data-table .cell-muted {
+  margin-block-start: 0.25rem;
+  white-space: normal;
+  max-width: 100%;
+}
+
+/* ---------- Team cell (1-line) ---------- */
+.team-cell {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  white-space: nowrap;
+  max-width: 100%;
+}
+
+.team-name {
+  font-size: var(--vt-fs-sm);
+  color: var(--vt-ink-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ---------- Updated date ---------- */
+.cell-date {
+  font-size: var(--vt-fs-sm);
+  color: var(--vt-ink-muted);
+  white-space: nowrap;
+}
+
+.profile-count-cell {
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.btn-primary {
+  margin: 0.75rem 0 0;
+}

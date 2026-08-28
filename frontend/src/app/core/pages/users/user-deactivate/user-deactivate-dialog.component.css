@@ -1,40 +1,8 @@
-.modal-backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 60;
-  display: grid;
-  place-items: center;
-  padding: var(--vt-pad);
-  background: rgba(31, 41, 51, 0.45);
-}
-
-.modal {
-  box-sizing: border-box;
-  width: min(36rem, 100%);
-  max-height: min(90vh, 46rem);
-  overflow-y: auto;
-  padding: var(--vt-pad);
-  background: var(--vt-surface);
-  border-radius: var(--vt-radius-md);
-  box-shadow: 0 1rem 2.5rem rgba(31, 41, 51, 0.24);
-}
-
-.modal-title {
-  margin: 0 0 var(--vt-gap);
-  font-size: var(--vt-fs-lg);
-}
-
-.modal-body {
-  margin: 0 0 calc(var(--vt-gap) * 0.5);
-  font-size: var(--vt-fs-md);
-  line-height: 1.6;
-}
-
-.modal-footer {
-  display: flex;
-  justify-content: flex-end;
-  gap: calc(var(--vt-gap) * 0.5);
-  margin-block-start: var(--vt-gap);
+:host {
+  color: var(--vt-ink);
+  --vt-modal-w: min(36rem, 100%);
+  --vt-modal-h: min(90vh, 46rem);
+  --vt-modal-z: 60;
 }
 
 .effect-list {

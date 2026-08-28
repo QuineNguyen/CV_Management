@@ -19,6 +19,9 @@ import { UserFormDialogComponent } from "./user-form/user-form-dialog.component"
 import { UserDeactivateDialogComponent } from "./user-deactivate/user-deactivate-dialog.component";
 import { AriaSortDirection, SortDirection, SortIcon, UserSortField } from "../../enums/sort-field.enum";
 import { SortState } from "../../models/sort-state.model";
+import { Router } from "@angular/router";
+import { AppRoute } from "../../enums/app-route.enum";
+import { QueryParam } from "../../enums/query-param.enum";
 
 @Component({
     selector: 'app-users',
@@ -46,6 +49,7 @@ export class UsersComponent implements OnInit {
     private readonly auth = inject(AuthService);
     private readonly toast = inject(ToastService);
     private readonly destroyRef = inject(DestroyRef);
+    private readonly router = inject(Router);
 
     readonly pageSizeOptions = [5, 10, 20, 50];
     readonly roleLabels = ROLE_LABELS;
@@ -97,14 +101,23 @@ export class UsersComponent implements OnInit {
 
     readonly activateTarget = signal<UserResponse | null>(null);
     readonly activating = signal(false);
+    readonly isActivateClosing = signal(false);
 
     readonly resetTarget = signal<UserResponse | null>(null);
     readonly resetting = signal(false);
+    readonly isResetClosing = signal(false);
 
     readonly temporaryPassword = signal<TemporaryPasswordState | null>(null);
+    readonly isPasswordClosing = signal(false);
 
     // HR reaches this page read-only; every write action is hidden for them
     readonly canManage = computed(() => this.auth.hasRole(UserRole.Admin));
+
+    // Admin and HR read anyone's profiles; a tech lead reaching this page does not
+    readonly canViewProfiles = computed(() => this.auth.hasRole(UserRole.Admin, UserRole.HR));
+
+    // The actions column exists when the viewer has at least one action available in it
+    readonly showActionsColumn = computed(() => this.canManage() || this.canViewProfiles());
 
     // Tech leads see a narrow set, so the empty state must not read like a missing record
     readonly isScopedView = computed(() => this.auth.hasRole(UserRole.TechLead));
@@ -214,7 +227,22 @@ export class UsersComponent implements OnInit {
 
     @HostListener('document:keydown.escape')
     onEscape(): void {
-        this.closeDropdowns();
+        if (this.roleOpen() || this.statusOpen() || this.departmentOpen()) {
+            this.closeDropdowns();
+            return;
+        }
+        if (this.temporaryPassword()) {
+            this.dismissPassword();
+            return;
+        }
+        if (this.resetTarget()) {
+            this.cancelReset();
+            return;
+        }
+        if (this.activateTarget()) {
+            this.cancelActivate();
+            return;
+        }
     }
 
     clearFilters(): void {
@@ -279,6 +307,12 @@ export class UsersComponent implements OnInit {
         this.dialogState.set({ mode: DialogMode.Edit, user });
     }
 
+    openProfiles(user: UserResponse): void {
+        void this.router.navigate([AppRoute.Profiles], {
+            queryParams: { [QueryParam.EmployeeId]: user.id },
+        })
+    }
+
     closeDialog(): void {
         this.dialogState.set(null);
         this.saving.set(false);
@@ -339,7 +373,14 @@ export class UsersComponent implements OnInit {
     }
 
     dismissPassword(): void {
-        this.temporaryPassword.set(null);
+        if (this.isPasswordClosing()) {
+            return;
+        }
+        this.isPasswordClosing.set(true);
+        setTimeout(() => {
+            this.temporaryPassword.set(null);
+            this.isPasswordClosing.set(false);
+        }, 500);
     }
 
     // ---------- Deactivate ----------
@@ -377,12 +418,20 @@ export class UsersComponent implements OnInit {
 
     // ---------- Activate ----------
     askActivate(user: UserResponse): void {
+        this.isActivateClosing.set(false);
         this.activateTarget.set(user);
     }
 
     cancelActivate(): void {
-        this.activateTarget.set(null);
-        this.activating.set(false);
+        if (this.isActivateClosing() || this.activating()) {
+            return;
+        }
+        this.isActivateClosing.set(true);
+        setTimeout(() => {
+            this.activateTarget.set(null);
+            this.activating.set(false);
+            this.isActivateClosing.set(false);
+        }, 500);
     }
 
     confirmActivate(): void {
@@ -394,13 +443,16 @@ export class UsersComponent implements OnInit {
         this.activating.set(true);
         this.userService.activate(target.id).subscribe({
             next: () => {
-                this.cancelActivate();
+                this.activateTarget.set(null);
+                this.activating.set(false);
+                this.isActivateClosing.set(false);
                 this.toast.success(`User ${target.username} reactivated`);
                 this.loadUsers(false);
             },
             error: () => {
                 this.activating.set(false);
                 this.activateTarget.set(null);
+                this.isActivateClosing.set(false);
             },
         });
     }
@@ -408,12 +460,20 @@ export class UsersComponent implements OnInit {
     // ---------- Reset password ----------
 
     askResetPassword(user: UserResponse): void {
+        this.isResetClosing.set(false);
         this.resetTarget.set(user);
     }
 
     cancelReset(): void {
-        this.resetTarget.set(null);
-        this.resetting.set(false);
+        if (this.isResetClosing() || this.resetting()) {
+            return;
+        }
+        this.isResetClosing.set(true);
+        setTimeout(() => {
+            this.resetTarget.set(null);
+            this.resetting.set(false);
+            this.isResetClosing.set(false);
+        }, 500);
     }
 
     confirmReset(): void {
@@ -425,7 +485,9 @@ export class UsersComponent implements OnInit {
         this.resetting.set(true);
         this.auth.resetPassword(target.id).subscribe({
             next: result => {
-                this.cancelReset();
+                this.resetTarget.set(null);
+                this.resetting.set(false);
+                this.isResetClosing.set(false);
                 // The password is showwn once and never returned again
                 this.temporaryPassword.set({
                     title: 'Password reset',
@@ -435,7 +497,10 @@ export class UsersComponent implements OnInit {
                 });
                 this.loadUsers(false);
             },
-            error: () => this.resetting.set(false),
+            error: () => {
+                this.resetting.set(false);
+                this.isResetClosing.set(false);
+            },
         });
     }
 

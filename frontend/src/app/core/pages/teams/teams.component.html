@@ -64,7 +64,7 @@
               <button
                 type="button"
                 class="sort-header"
-                [title]="sortHint(sortField.Code)"
+                [matTooltip]="sortHint(sortField.Code)"
                 (click)="toggleSort(sortField.Code)">
                 Code
                 <span class="material-symbols-outlined sort-icon" aria-hidden="true">
@@ -76,7 +76,7 @@
               <button
                 type="button"
                 class="sort-header"
-                [title]="sortHint(sortField.Name)"
+                [matTooltip]="sortHint(sortField.Name)"
                 (click)="toggleSort(sortField.Name)">
                 Name
                 <span class="material-symbols-outlined sort-icon" aria-hidden="true">
@@ -86,7 +86,7 @@
             </th>
             <th scope="col" class="col-lead">Tech Lead</th>
             <th scope="col" class="col-members">Members</th>
-            <th scope="col" class="col-actions"><span class="sr-only">Actions</span></th>
+            <th scope="col" class="col-actions">Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -107,9 +107,9 @@
               </td>
               <td class="col-actions">
                 <div class="row-actions">
-                  <button type="button" class="icon-btn" title="Members" (click)="openMembers(team)">👥</button>
-                  <button type="button" class="icon-btn" title="Edit" (click)="openEdit(team)">✎</button>
-                  <button type="button" class="icon-btn icon-btn--danger" title="Delete" (click)="askDelete(team)">🗑</button>
+                  <button type="button" class="icon-btn" matTooltip="Members" (click)="openMembers(team)">👥</button>
+                  <button type="button" class="icon-btn" matTooltip="Edit" (click)="openEdit(team)">✎</button>
+                  <button type="button" class="icon-btn icon-btn--danger" matTooltip="Delete" (click)="askDelete(team)">🗑</button>
                 </div>
               </td>
             </tr>
@@ -125,9 +125,9 @@
           <div class="data-card-head">
             <span class="code-chip is-primary">{{ team.code }}</span>
             <div class="row-actions">
-              <button type="button" class="icon-btn" title="Members" (click)="openMembers(team)">👥</button>
-              <button type="button" class="icon-btn" title="Edit" (click)="openEdit(team)">✎</button>
-              <button type="button" class="icon-btn icon-btn--danger" title="Delete" (click)="askDelete(team)">🗑</button>
+              <button type="button" class="icon-btn" matTooltip="Members" (click)="openMembers(team)">👥</button>
+              <button type="button" class="icon-btn" matTooltip="Edit" (click)="openEdit(team)">✎</button>
+              <button type="button" class="icon-btn icon-btn--danger" matTooltip="Delete" (click)="askDelete(team)">🗑</button>
             </div>
           </div>
 
@@ -180,7 +180,7 @@
 
 <!-- Delete confirmation -->
 @if (deleteTarget(); as target) {
-  <div class="modal-backdrop" (click)="cancelDelete()">
+  <div class="modal-backdrop" [class.is-closing]="isDeleteClosing()" (click)="cancelDelete()">
     <div class="modal modal-sm" role="alertdialog" aria-modal="true" (click)="$event.stopPropagation()">
       <h2 class="modal-title">Delete team</h2>
       <p class="modal-body">
