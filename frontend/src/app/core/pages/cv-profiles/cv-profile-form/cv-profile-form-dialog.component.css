@@ -1,0 +1,59 @@
+.profile-textarea {
+  min-height: clamp(4rem, 12vh, 6rem);
+  resize: vertical;
+  line-height: 1.5;
+}
+
+.custom-select-panel {
+  max-height: min(16rem, 40vh);
+}
+
+.modal-subtitle {
+  margin-bottom: 0.75rem;
+}
+
+.modal-owner {
+  margin: 0 0 0.25rem;
+  font-size: var(--vt-fs-md);
+}
+
+/* ---------- Team select alignment & spacing ---------- */
+.custom-select-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3125rem;
+  min-width: 0;
+  width: 100%;
+}
+
+.custom-select-option {
+  display: flex;
+  align-items: center;
+  gap: 0.3125rem;
+  width: 100%;
+  text-align: start;
+}
+
+.custom-select-option .code-chip,
+.custom-select-label .code-chip {
+  flex-shrink: 0;
+}
+
+.team-option-name {
+  flex: 1 1 auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.team-primary-tag {
+  font-weight: normal;
+  font-size: var(--vt-fs-sm);
+  color: var(--vt-ink-muted);
+  margin-inline-start: 0.25rem;
+}
+
+.custom-select-option.is-selected .team-primary-tag {
+  color: inherit;
+  opacity: 0.85;
+}

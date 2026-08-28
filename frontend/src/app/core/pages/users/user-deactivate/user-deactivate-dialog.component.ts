@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, DestroyRef, inject, input, OnInit, output, signal } from "@angular/core";
+import { ChangeDetectionStrategy, Component, computed, DestroyRef, HostListener, inject, input, OnInit, output, signal } from "@angular/core";
 import { UserService } from "../../../services/user.service";
 import { DeactivateUserRequest, TeamReplacement, TechLeadOption, UserResponse } from "../../../dtos/user.dto";
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
@@ -21,6 +21,8 @@ export class UserDeactivateDialogComponent implements OnInit {
 
     readonly confirmed = output<DeactivateUserRequest>();
     readonly cancelled = output<void>();
+
+    readonly isClosing = signal(false);
 
     readonly techLeads = signal<TechLeadOption[]>([]);
 
@@ -72,8 +74,19 @@ export class UserDeactivateDialogComponent implements OnInit {
         this.confirmed.emit({ replacements: payload });
     }
 
+    @HostListener('document:keydown.escape')
+    onEscape(): void {
+        this.onCancel();
+    }
+
     onCancel(): void {
-        this.cancelled.emit();
+        if (this.isClosing() || this.submitting()) {
+            return;
+        }
+        this.isClosing.set(true);
+        setTimeout(() => {
+            this.cancelled.emit();
+        }, 500);
     }
 
     private loadTechLeads(): void {

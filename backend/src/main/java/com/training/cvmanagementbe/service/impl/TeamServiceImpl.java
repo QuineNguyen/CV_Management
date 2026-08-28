@@ -137,7 +137,7 @@ public class TeamServiceImpl implements TeamService {
         TeamMember membership = TeamMember.builder()
                 .userId(userId)
                 .teamId(teamId)
-                .primaryTeam(teamMemberRepository.countByTeamId(userId) == 0)
+                .primaryTeam(teamMemberRepository.countByUserId(userId) == 0)
                 .build();
 
         TeamMember saved = teamMemberRepository.save(membership);
@@ -204,7 +204,7 @@ public class TeamServiceImpl implements TeamService {
 
     private void validateRemovable(UUID teamId, UUID userId, TeamMember membership) {
         // Removing the last membership would leave the user without any team
-        if (teamMemberRepository.countByTeamId(userId) <= 1) {
+        if (teamMemberRepository.countByUserId(userId) <= 1) {
             throw new ApiException.BusinessRuleException(ErrorCode.CANNOT_REMOVE_ONLY_TEAM);
         }
         // Primary team is reassigned through the user form, not here

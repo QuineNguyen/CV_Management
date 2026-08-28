@@ -68,6 +68,7 @@ export class ShellComponent {
     { label: 'Users', icon: NavIconEnum.People, route: AppRoute.Users, roles: [UserRole.Admin, UserRole.HR, UserRole.TechLead] },
     { label: 'Departments', icon: NavIconEnum.Departments, route: AppRoute.Departments, roles: [UserRole.Admin] },
     { label: 'Teams', icon: NavIconEnum.Teams, route: AppRoute.Teams, roles: [UserRole.Admin] },
+    { label: 'Competency Profiles', icon: NavIconEnum.Profiles, route: AppRoute.Profiles },
     // Later stages add their entries here. Each one declares the roles it is offered to; the
     // server still enforces access independently.
   ];

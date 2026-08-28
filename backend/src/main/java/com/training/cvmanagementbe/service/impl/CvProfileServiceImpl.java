@@ -92,7 +92,7 @@ public class CvProfileServiceImpl implements CvProfileService {
     @Override
     @Transactional
     public CvProfileResponse create(UUID employeeId, CvProfileRequest request) {
-        requireCanManage(employeeId);
+        requireOwner(employeeId);
 
         String name = request.name().trim();
         validateNameAvailable(employeeId, name, null);
@@ -117,7 +117,7 @@ public class CvProfileServiceImpl implements CvProfileService {
     @Transactional
     public CvProfileResponse update(UUID id, CvProfileRequest request) {
         CvProfile profile = requireActiveProfile(id);
-        requireCanManage(profile.getEmployeeId());
+        requireOwner(profile.getEmployeeId());
 
         String name = request.name().trim();
         validateNameAvailable(profile.getEmployeeId(), name, id);
@@ -138,7 +138,7 @@ public class CvProfileServiceImpl implements CvProfileService {
     @Transactional
     public void delete(UUID id) {
         CvProfile profile = requireActiveProfile(id);
-        requireCanManage(profile.getEmployeeId());
+        requireAdminOrHr();
         validateDeletable(profile);
 
         CvProfileResponse before = toResponse(profile, teamRepository.findById(profile.getLinkedTeamId()).orElse(null));
@@ -161,7 +161,7 @@ public class CvProfileServiceImpl implements CvProfileService {
     @Transactional
     public CvProfileResponse setPrimary(UUID id) {
         CvProfile target = requireActiveProfile(id);
-        requireCanManage(target.getEmployeeId());
+        requireOwner(target.getEmployeeId());
 
         Team team = teamRepository.findById(target.getLinkedTeamId()).orElse(null);
         if (target.isPrimary()) {
@@ -182,7 +182,7 @@ public class CvProfileServiceImpl implements CvProfileService {
     @Override
     @Transactional
     public CvProfileResponse ensureProfileExists(UUID employeeId) {
-        requireCanManage(employeeId);
+        requireOwner(employeeId);
 
         List<CvProfile> existing = cvProfileRepository
                 .findByEmployeeIdAndLifecycleStatus(employeeId, LifecycleStatus.ACTIVE);
@@ -250,18 +250,24 @@ public class CvProfileServiceImpl implements CvProfileService {
         if (role == Role.ADMIN || role == Role.HR) {
             return;
         }
-        requireSelf(employeeId);
+        requireOwner(employeeId);
     }
 
-    private void requireCanManage(UUID employeeId) {
-        if (CurrentActor.requireRole() == Role.ADMIN) {
-            return;
-        }
-        requireSelf(employeeId);
-    }
-
-    private void requireSelf(UUID employeeId) {
+    // Naming a professional persona belongs to the employee; nobody writes one for them.
+    private void requireOwner(UUID employeeId) {
         if (!CurrentActor.requireUserId().equals(employeeId)) {
+            throw new ApiException.ForbiddenException(ErrorCode.OUT_OF_SCOPE);
+        }
+    }
+
+    /*
+     * Deleting a profile soft-deletes every CV inside it, including approved ones already sent to
+     * customers. That is a decision about company data, not personal cleanup, so the owner is
+     * deliberately excluded.
+     */
+    private void requireAdminOrHr() {
+        Role role = CurrentActor.requireRole();
+        if (role != Role.ADMIN && role != Role.HR) {
             throw new ApiException.ForbiddenException(ErrorCode.OUT_OF_SCOPE);
         }
     }

@@ -1,4 +1,4 @@
-<div class="modal-backdrop" (click)="onCancel()">
+<div class="modal-backdrop" [class.is-closing]="isClosing()" (click)="onCancel()">
   <div class="modal" role="alertdialog" aria-modal="true" (click)="$event.stopPropagation()">
     <h2 class="modal-title">Deactivate user</h2>
 

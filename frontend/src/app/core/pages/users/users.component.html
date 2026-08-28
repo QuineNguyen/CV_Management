@@ -123,50 +123,48 @@
       }
     </div>
 
-    <!-- Department: the listing endpoint is admin-only, so the filter is hidden for HR and tech leads -->
-    @if (canManage()) {
-      <div class="field custom-select-wrap">
-        <span class="field-label">Department</span>
-        <button
-          type="button"
-          class="field-input custom-select-trigger"
-          [class.is-open]="departmentOpen()"
-          (click)="toggleDepartmentDropdown($event)"
-          aria-haspopup="listbox"
-          [attr.aria-expanded]="departmentOpen()">
-          <span class="custom-select-label">
-            {{ selectedDepartmentLabel() }}
-          </span>
-        </button>
+    <!-- Department -->
+    <div class="field custom-select-wrap">
+      <span class="field-label">Department</span>
+      <button
+        type="button"
+        class="field-input custom-select-trigger"
+        [class.is-open]="departmentOpen()"
+        (click)="toggleDepartmentDropdown($event)"
+        aria-haspopup="listbox"
+        [attr.aria-expanded]="departmentOpen()">
+        <span class="custom-select-label">
+          {{ selectedDepartmentLabel() }}
+        </span>
+      </button>
 
-        @if (departmentOpen()) {
-          <div class="custom-select-panel" (click)="$event.stopPropagation()">
-            <ul class="custom-select-list" role="listbox">
-              <li role="option" [attr.aria-selected]="departmentFilter() === null">
+      @if (departmentOpen()) {
+        <div class="custom-select-panel" (click)="$event.stopPropagation()">
+          <ul class="custom-select-list" role="listbox">
+            <li role="option" [attr.aria-selected]="departmentFilter() === null">
+              <button
+                type="button"
+                class="custom-select-option"
+                [class.is-selected]="departmentFilter() === null"
+                (click)="selectDepartment(null)">
+                All departments
+              </button>
+            </li>
+            @for (department of departments(); track department.id) {
+              <li role="option" [attr.aria-selected]="departmentFilter() === department.id">
                 <button
                   type="button"
                   class="custom-select-option"
-                  [class.is-selected]="departmentFilter() === null"
-                  (click)="selectDepartment(null)">
-                  All departments
+                  [class.is-selected]="departmentFilter() === department.id"
+                  (click)="selectDepartment(department.id)">
+                  {{ department.code }} — {{ department.name }}
                 </button>
               </li>
-              @for (department of departments(); track department.id) {
-                <li role="option" [attr.aria-selected]="departmentFilter() === department.id">
-                  <button
-                    type="button"
-                    class="custom-select-option"
-                    [class.is-selected]="departmentFilter() === department.id"
-                    (click)="selectDepartment(department.id)">
-                    {{ department.code }} — {{ department.name }}
-                  </button>
-                </li>
-              }
-            </ul>
-          </div>
-        }
-      </div>
-    }
+            }
+          </ul>
+        </div>
+      }
+    </div>
 
     <button type="button" class="btn btn-ghost" (click)="clearFilters()">Clear</button>
   </div>
@@ -217,7 +215,7 @@
               </button>
             </th>
             <!-- Joined data is outside the backend sort whitelist -->
-            <th scope="col" class="col-dept">Department</th>
+              <th scope="col" class="col-dept">Department</th>
             <th scope="col" class="col-teams">Teams</th>
             <th scope="col" class="col-status" [attr.aria-sort]="ariaSort(sortField.Status)">
               <button type="button" class="sort-header" (click)="toggleSort(sortField.Status)">
@@ -227,8 +225,8 @@
                 </span>
               </button>
             </th>
-            @if (canManage()) {
-              <th scope="col" class="col-actions"><span class="sr-only">Actions</span></th>
+            @if (showActionsColumn()) {
+              <th scope="col" class="col-actions">Actions</th>
             }
           </tr>
         </thead>
@@ -249,7 +247,7 @@
                 <span class="cell-username">{{ user.username }}</span>
               </td>
               <td class="col-role">{{ roleLabels[user.role] }}</td>
-              <td class="col-dept">{{ user.departmentName ?? '—' }}</td>
+                <td class="col-dept">{{ user.departmentName ?? '—' }}</td>
               <td class="col-teams">
                 <div class="chip-list">
                   @for (team of user.teams; track team.teamId) {
@@ -266,25 +264,31 @@
                   {{ user.status }}
                 </span>
               </td>
-              @if (canManage()) {
+              @if (showActionsColumn()) {
                 <td class="col-actions">
                   <div class="row-actions">
-                    <button type="button" class="icon-btn" matTooltip="Edit" (click)="openEdit(user)">✎</button>
-                    @if (user.status === activeStatus) {
-                      <button
-                        type="button"
-                        class="icon-btn"
-                        [matTooltip]="selfActionHint(user.id, 'reset the password')"
-                        [disabled]="user.id === currentUserId()"
-                        (click)="askResetPassword(user)">🔑</button>
-                      <button
-                        type="button"
-                        class="icon-btn icon-btn--danger"
-                        [matTooltip]="selfActionHint(user.id, 'deactivate')"
-                        [disabled]="user.id === currentUserId()"
-                        (click)="askDeactivate(user)">⊘</button>
-                    } @else {
-                      <button type="button" class="icon-btn" matTooltip="Reactivate" (click)="askActivate(user)">↻</button>
+                    @if (canViewProfiles()) {
+                      <button type="button" class="icon-btn" matTooltip="Competency profiles"
+                              (click)="openProfiles(user)">🪪</button>
+                    }
+                    @if (canManage()) {
+                      <button type="button" class="icon-btn" matTooltip="Edit" (click)="openEdit(user)">✎</button>
+                      @if (user.status === activeStatus) {
+                        <button
+                          type="button"
+                          class="icon-btn"
+                          [matTooltip]="selfActionHint(user.id, 'reset the password')"
+                          [disabled]="user.id === currentUserId()"
+                          (click)="askResetPassword(user)">🔑</button>
+                        <button
+                          type="button"
+                          class="icon-btn icon-btn--danger"
+                          [matTooltip]="selfActionHint(user.id, 'deactivate')"
+                          [disabled]="user.id === currentUserId()"
+                          (click)="askDeactivate(user)">⊘</button>
+                      } @else {
+                        <button type="button" class="icon-btn" matTooltip="Reactivate" (click)="askActivate(user)">↻</button>
+                      }
                     }
                   </div>
                 </td>
@@ -313,24 +317,30 @@
               </div>
             </div>
 
-            @if (canManage()) {
+            @if (showActionsColumn()) {
               <div class="row-actions">
-                <button type="button" class="icon-btn" matTooltip="Edit" (click)="openEdit(user)">✎</button>
-                @if (user.status === activeStatus) {
-                  <button
-                    type="button"
-                    class="icon-btn"
-                    [matTooltip]="selfActionHint(user.id, 'reset the password')"
-                    [disabled]="user.id === currentUserId()"
-                    (click)="askResetPassword(user)">🔑</button>
-                  <button
-                    type="button"
-                    class="icon-btn icon-btn--danger"
-                    [matTooltip]="selfActionHint(user.id, 'deactivate')"
-                    [disabled]="user.id === currentUserId()"
-                    (click)="askDeactivate(user)">⊘</button>
-                } @else {
-                  <button type="button" class="icon-btn" matTooltip="Reactivate" (click)="askActivate(user)">↻</button>
+                @if (canViewProfiles()) {
+                  <button type="button" class="icon-btn" matTooltip="Competency profiles"
+                          (click)="openProfiles(user)">🪪</button>
+                }
+                @if (canManage()) {
+                  <button type="button" class="icon-btn" matTooltip="Edit" (click)="openEdit(user)">✎</button>
+                  @if (user.status === activeStatus) {
+                    <button
+                      type="button"
+                      class="icon-btn"
+                      [matTooltip]="selfActionHint(user.id, 'reset the password')"
+                      [disabled]="user.id === currentUserId()"
+                      (click)="askResetPassword(user)">🔑</button>
+                    <button
+                      type="button"
+                      class="icon-btn icon-btn--danger"
+                      [matTooltip]="selfActionHint(user.id, 'deactivate')"
+                      [disabled]="user.id === currentUserId()"
+                      (click)="askDeactivate(user)">⊘</button>
+                  } @else {
+                    <button type="button" class="icon-btn" matTooltip="Reactivate" (click)="askActivate(user)">↻</button>
+                  }
                 }
               </div>
             }
@@ -345,10 +355,10 @@
               <dt>Role</dt>
               <dd>{{ roleLabels[user.role] }}</dd>
             </div>
-            <div>
-              <dt>Department</dt>
-              <dd>{{ user.departmentName ?? '—' }}</dd>
-            </div>
+              <div>
+                <dt>Department</dt>
+                <dd>{{ user.departmentName ?? '—' }}</dd>
+              </div>
             <div>
               <dt>Status</dt>
               <dd>
@@ -400,7 +410,7 @@
 
 <!-- Reset password confirmation -->
 @if (resetTarget(); as target) {
-  <div class="modal-backdrop" (click)="cancelReset()">
+  <div class="modal-backdrop" [class.is-closing]="isResetClosing()" (click)="cancelReset()">
     <div class="modal modal-sm" role="alertdialog" aria-modal="true" (click)="$event.stopPropagation()">
       <h2 class="modal-title">Reset password</h2>
       <p class="modal-body">
@@ -424,8 +434,8 @@
 
 <!-- Temporary password, shown once -->
 @if (temporaryPassword(); as state) {
-  <div class="modal-backdrop">
-    <div class="modal modal-sm" role="alertdialog" aria-modal="true">
+  <div class="modal-backdrop" [class.is-closing]="isPasswordClosing()" (click)="dismissPassword()">
+    <div class="modal modal-sm" role="alertdialog" aria-modal="true" (click)="$event.stopPropagation()">
       <h2 class="modal-title">{{ state.title }}</h2>
       <p class="modal-body">
         Hand this temporary password to <strong>{{ state.fullName }}</strong>.
@@ -448,7 +458,7 @@
 
 <!-- Reactivate confirmation -->
 @if (activateTarget(); as target) {
-  <div class="modal-backdrop" (click)="cancelActivate()">
+  <div class="modal-backdrop" [class.is-closing]="isActivateClosing()" (click)="cancelActivate()">
     <div class="modal modal-sm" role="alertdialog" aria-modal="true" (click)="$event.stopPropagation()">
       <h2 class="modal-title">Reactivate user</h2>
       <p class="modal-body">

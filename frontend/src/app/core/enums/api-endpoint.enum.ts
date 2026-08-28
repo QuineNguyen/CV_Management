@@ -19,4 +19,8 @@ export enum ApiEndpoint {
 
     // Active tech lead options for dropdowns
     TechLead = '/users/tech-leads',
+
+    // Profile routes
+    Profiles = '/cv-profiles',
+    Employees = '/employees',
 }

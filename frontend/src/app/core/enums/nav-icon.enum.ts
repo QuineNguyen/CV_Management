@@ -8,4 +8,5 @@ export enum NavIconEnum {
   People = 'people',
   Teams = 'groups',
   Password = 'lock_reset',
+  Profiles = 'badge',
 }

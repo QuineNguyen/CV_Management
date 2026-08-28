@@ -58,6 +58,12 @@ export const routes: Routes = [
           import('./core/pages/users/users.component')
             .then((m) => m.UsersComponent),
       },
+      {
+        path: AppRoute.Profiles,
+        loadComponent: () =>
+          import('./core/pages/cv-profiles/cv-profiles.component').then(m => m.CVProfilesComponent),
+        canActivate: [authGuard],
+      }
     ],
   },
   { path: '**', redirectTo: '' },

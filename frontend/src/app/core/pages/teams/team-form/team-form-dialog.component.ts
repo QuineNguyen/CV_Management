@@ -27,6 +27,8 @@ export class TeamFormDialogComponent implements OnInit {
     readonly submitted = output<TeamRequest>();
     readonly cancelled = output<void>();
 
+    readonly isClosing = signal(false);
+
     readonly form = this.fb.nonNullable.group({
         code: ['', [Validators.required, Validators.maxLength(50)]],
         name: ['', [Validators.required, Validators.maxLength(200)]],
@@ -86,7 +88,11 @@ export class TeamFormDialogComponent implements OnInit {
 
     @HostListener('document:keydown.escape')
     onEscape(): void {
-        this.techLeadOpen.set(false);
+        if (this.techLeadOpen()) {
+            this.techLeadOpen.set(false);
+            return;
+        }
+        this.onCancel();
     }
 
     hasError(control: 'code' | 'name' | 'techLeadId', error: string): boolean {
@@ -109,8 +115,20 @@ export class TeamFormDialogComponent implements OnInit {
         });
     }
 
+    onBackdropClick(event: MouseEvent): void {
+        if (event.target === event.currentTarget) {
+            this.onCancel();
+        }
+    }
+
     onCancel(): void {
-        this.cancelled.emit();
+        if (this.isClosing() || this.submitting()) {
+            return;
+        }
+        this.isClosing.set(true);
+        setTimeout(() => {
+            this.cancelled.emit();
+        }, 500);
     }
 
     // ---------- Internals ----------

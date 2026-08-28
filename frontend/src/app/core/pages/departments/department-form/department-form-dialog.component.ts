@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, DestroyRef, inject, input, OnInit, output, signal } from "@angular/core";
+import { ChangeDetectionStrategy, Component, computed, DestroyRef, HostListener, inject, input, OnInit, output, signal } from "@angular/core";
 import { FormBuilder, FormControl, ReactiveFormsModule, Validators } from "@angular/forms";
 import { DepartmentDialogState } from "../../../models/department.model";
 import { DepartmentNode, DepartmentRequest } from "../../../dtos/department.dto";
@@ -31,6 +31,8 @@ export class DepartmentFormDialogComponent implements OnInit {
 
     readonly submitted = output<DepartmentRequest>();
     readonly cancelled = output<void>();
+
+    readonly isClosing = signal(false);
 
     readonly form = this.fb.nonNullable.group({
         code: ['', [Validators.required, Validators.maxLength(50)]],
@@ -121,8 +123,23 @@ export class DepartmentFormDialogComponent implements OnInit {
         })
     }
 
+    @HostListener('document:keydown.escape')
+    onEscape(): void {
+        if (this.pickerOpen()) {
+            this.pickerOpen.set(false);
+            return;
+        }
+        this.onCancel();
+    }
+
     onCancel(): void {
-        this.cancelled.emit();
+        if (this.isClosing() || this.submitting()) {
+            return;
+        }
+        this.isClosing.set(true);
+        setTimeout(() => {
+            this.cancelled.emit();
+        }, 500);
     }
 
     // ---------- Internals ----------

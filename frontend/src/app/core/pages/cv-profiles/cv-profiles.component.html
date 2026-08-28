@@ -1,0 +1,206 @@
+<section class="page">
+
+  <!-- Toolbar -->
+  <header class="page-toolbar">
+    <div>
+      <h1 class="page-title">Competency Profiles</h1>
+      <p class="page-subtitle">
+        @if (isOwnPage()) {
+          Your professional personas
+        } @else {
+          Profile(s) of {{ employeeName() ?? 'the selected employee' }}
+        }
+        · {{ pageState().total }} active
+      </p>
+    </div>
+
+    @if (canEdit()) {
+      <div class="page-toolbar-actions">
+        <button type="button" class="btn btn-primary" (click)="openCreate()">
+          <span aria-hidden="true">＋</span> Add Profile
+        </button>
+      </div>
+    }
+  </header>
+
+  <!-- Body -->
+  @if (loading()) {
+    <div class="skeleton-stack" aria-busy="true">
+      @for (row of [1, 2, 3]; track row) {
+        <div class="skeleton-row"></div>
+      }
+    </div>
+  } @else if (!profiles().length) {
+    <div class="empty-state">
+      <p class="empty-state-title">No profiles yet</p>
+      <p class="empty-state-hint">
+        A profile is one professional persona — "Software Developer" and "AI Engineer" are two
+        profiles of the same person, each with its own CVs and its own reviewing team
+      </p>
+      @if (canEdit()) {
+        <button type="button" class="btn btn-primary" (click)="openCreate()">Create the first profile</button>
+      }
+    </div>
+  } @else {
+
+    <!-- Table: desktop -->
+    <div class="data-table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th scope="col" class="col-profile">Profile</th>
+            <th scope="col" class="col-team">Linked team</th>
+            <th scope="col" class="col-cvs">CVs</th>
+            <th scope="col" class="col-updated">Updated</th>
+            <th scope="col" class="col-actions">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (profile of profiles(); track profile.id) {
+            <tr>
+              <td class="col-profile">
+                <div class="profile-title-row">
+                  <span class="cell-strong">{{ profile.name }}</span>
+                  @if (profile.primary) {
+                    <span class="status-badge is-active">Primary</span>
+                  }
+                </div>
+                @if (profile.description) {
+                  <span class="cell-muted" [title]="profile.description">{{ profile.description }}</span>
+                }
+              </td>
+              <td class="col-team">
+                <div class="team-cell">
+                  <span class="code-chip is-primary">{{ profile.linkedTeamCode ?? '—' }}</span>
+                  @if (profile.linkedTeamName) {
+                    <span class="team-name" [title]="profile.linkedTeamName">{{ profile.linkedTeamName }}</span>
+                  }
+                </div>
+              </td>
+              <td class="col-cvs profile-count-cell">{{ profile.cvCount }}</td>
+              <td class="col-updated">
+                <span class="cell-date">{{ profile.updatedAt | date:'dd/MM/yyyy HH:mm' }}</span>
+              </td>
+              <td class="col-actions">
+                <div class="row-actions">
+                  @if (canEdit()) {
+                    <button type="button" class="icon-btn" [matTooltip]="primaryActionHint(profile)"
+                            [disabled]="profile.primary || promotingId() === profile.id"
+                            (click)="setPrimary(profile)">★</button>
+                    <button type="button" class="icon-btn" matTooltip="Edit"
+                            (click)="openEdit(profile)">✎</button>
+                  }
+                  @if (canDelete()) {
+                    <button type="button" class="icon-btn icon-btn--danger" [matTooltip]="deleteActionHint(profile)"
+                            [disabled]="profile.primary"
+                            (click)="askDelete(profile)">🗑</button>
+                  }
+                </div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Cards: iPad and phone -->
+    <ul class="data-cards">
+      @for (profile of profiles(); track profile.id) {
+        <li class="data-card">
+          <div class="data-card-head">
+            <div class="data-card-text">
+              <div class="profile-title-row">
+                <span class="data-card-title">{{ profile.name }}</span>
+                @if (profile.primary) {
+                  <span class="status-badge is-active">Primary</span>
+                }
+              </div>
+              @if (profile.description) {
+                <p class="data-card-line">{{ profile.description }}</p>
+              }
+            </div>
+
+            <div class="row-actions">
+              @if (canEdit()) {
+                <button type="button" class="icon-btn" [matTooltip]="primaryActionHint(profile)"
+                        [disabled]="profile.primary || promotingId() === profile.id"
+                        (click)="setPrimary(profile)">★</button>
+                <button type="button" class="icon-btn" matTooltip="Edit"
+                        (click)="openEdit(profile)">✎</button>
+              }
+              @if (canDelete()) {
+                <button type="button" class="icon-btn icon-btn--danger" [matTooltip]="deleteActionHint(profile)"
+                        [disabled]="profile.primary"
+                        (click)="askDelete(profile)">🗑</button>
+              }
+            </div>
+          </div>
+
+          <dl class="data-card-facts">
+            <div>
+              <dt>Linked team</dt>
+              <dd>
+                <div class="team-cell">
+                  <span class="code-chip is-primary">{{ profile.linkedTeamCode ?? '—' }}</span>
+                  <span class="team-name">{{ profile.linkedTeamName ?? '—' }}</span>
+                </div>
+              </dd>
+            </div>
+            <div>
+              <dt>CVs</dt>
+              <dd>{{ profile.cvCount }}</dd>
+            </div>
+            <div>
+              <dt>Updated</dt>
+              <dd>{{ profile.updatedAt | date:'dd/MM/yyyy HH:mm' }}</dd>
+            </div>
+          </dl>
+        </li>
+      }
+    </ul>
+
+    <mat-paginator
+      class="page-paginator"
+      [length]="pageState().total"
+      [pageIndex]="pageState().index"
+      [pageSize]="pageState().size"
+      [pageSizeOptions]="pageSizeOptions"
+      showFirstLastButtons
+      (page)="onPageChange($event)" />
+
+    @if (canEdit() || canDelete()) {
+      <p class="text-muted">
+        The primary profile cannot be deleted — promote another profile first
+      </p>
+    }
+  }
+</section>
+
+<!-- Create / edit dialog -->
+@if (dialogState(); as state) {
+  <app-profile-form-dialog
+    [state]="state"
+    [employeeName]="employeeName()"
+    [submitting]="saving()"
+    (submitted)="submitDialog($event)"
+    (cancelled)="closeDialog()" />
+}
+
+<!-- Delete confirmation -->
+@if (deleteTarget(); as target) {
+  <div class="modal-backdrop" [class.is-closing]="isDeleteClosing()" (click)="cancelDelete()">
+    <div class="modal modal-sm" role="alertdialog" aria-modal="true" (click)="$event.stopPropagation()">
+      <h2 class="modal-title">Delete profile</h2>
+      <p class="modal-body">
+        Delete <strong>{{ target.name }}</strong>? Its {{ target.cvCount }} CV(s) are deleted with it
+        and can be restored later
+      </p>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-ghost" (click)="cancelDelete()" [disabled]="deleting()">Cancel</button>
+        <button type="button" class="btn btn-danger" (click)="confirmDelete()" [disabled]="deleting()">
+          {{ deleting() ? 'Deleting...' : 'Delete' }}
+        </button>
+      </div>
+    </div>
+  </div>
+}

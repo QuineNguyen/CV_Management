@@ -63,7 +63,7 @@
     @for (node of nodes; track node.id) {
       <li class="tree-item" role="treeitem" [attr.aria-level]="level" cdkDrag [cdkDragData]="node">
 
-        <div class="node-card" cdkDragPreview>
+        <div class="node-card" [class.is-expanded]="isExpanded(node.id)" cdkDragPreview>
           <button
             type="button"
             class="node-toggle"
@@ -82,19 +82,23 @@
           </div>
 
           <div class="node-actions">
-            <button type="button" class="icon-btn" title="Add Sub-department"
+            <button type="button" class="icon-btn" matTooltip="Add Sub-department"
                     (click)="openCreate(node.id)">＋</button>
-            <button type="button" class="icon-btn" title="Edit"
+            <button type="button" class="icon-btn" matTooltip="Edit"
                     (click)="openEdit(node)">✎</button>
-            <button type="button" class="icon-btn icon-btn--danger" title="Delete"
+            <button type="button" class="icon-btn icon-btn--danger" matTooltip="Delete"
                     (click)="askDelete(node)">🗑</button>
           </div>
         </div>
 
-        @if (isExpanded(node.id) && node.children.length) {
-          <ng-container
-            *ngTemplateOutlet="nodeList; context: { $implicit: node.children, parentId: node.id, level: level + 1 }">
-          </ng-container>
+        @if (node.children.length) {
+          <div class="tree-branch" [class.is-expanded]="isExpanded(node.id)">
+            <div class="tree-branch-inner">
+              <ng-container
+                *ngTemplateOutlet="nodeList; context: { $implicit: node.children, parentId: node.id, level: level + 1 }">
+              </ng-container>
+            </div>
+          </div>
         }
       </li>
     }
@@ -112,7 +116,7 @@
 
 <!-- Delete confirmation -->
 @if (deleteTarget(); as target) {
-  <div class="modal-backdrop" (click)="cancelDelete()">
+  <div class="modal-backdrop" [class.is-closing]="isDeleteClosing()" (click)="cancelDelete()">
     <div class="modal modal-sm" role="alertdialog" aria-modal="true" (click)="$event.stopPropagation()">
       <h2 class="modal-title">Delete department</h2>
       <p class="modal-body">
