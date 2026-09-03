@@ -1,10 +1,12 @@
 package com.training.cvmanagementbe.dto.request;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotNull;
 
 import java.util.UUID;
 
 // Hands a team over to another tech lead when the current one is deactivated.
+@Schema(name = "TeamReplacement", description = "Hands a team over to another tech lead when the current one is deactivated")
 public record TeamReplacement(
 
         @NotNull

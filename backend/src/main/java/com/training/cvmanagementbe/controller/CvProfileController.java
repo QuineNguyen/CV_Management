@@ -3,6 +3,7 @@ package com.training.cvmanagementbe.controller;
 import com.training.cvmanagementbe.constant.ApiPath;
 import com.training.cvmanagementbe.constant.PageDefaults;
 import com.training.cvmanagementbe.dto.request.CvProfileRequest;
+import com.training.cvmanagementbe.dto.response.ApiResponse;
 import com.training.cvmanagementbe.dto.response.CvProfileResponse;
 import com.training.cvmanagementbe.dto.response.EmployeeTeamResponse;
 import com.training.cvmanagementbe.dto.response.PagedResponse;
@@ -91,9 +92,9 @@ public class CvProfileController {
 
     @DeleteMapping(ApiPath.PROFILES + ApiPath.BY_ID)
     @Operation(summary = "Soft-delete a profile and its CVs")
-    public ResponseEntity<Void> delete(@PathVariable UUID id) {
+    public ResponseEntity<ApiResponse<Void>> delete(@PathVariable UUID id) {
         cvProfileService.delete(id);
-        return ResponseEntity.noContent().build();
+        return ResponseEntity.ok(ApiResponse.success());
     }
 
     @PostMapping(ApiPath.PROFILES + ApiPath.SET_PRIMARY)

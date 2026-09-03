@@ -4,6 +4,7 @@ import com.training.cvmanagementbe.constant.ApiPath;
 import com.training.cvmanagementbe.constant.AuthorityExpression;
 import com.training.cvmanagementbe.constant.PageDefaults;
 import com.training.cvmanagementbe.dto.request.DepartmentRequest;
+import com.training.cvmanagementbe.dto.response.ApiResponse;
 import com.training.cvmanagementbe.dto.response.DepartmentResponse;
 import com.training.cvmanagementbe.dto.request.MoveDepartmentRequest;
 import com.training.cvmanagementbe.dto.response.PagedResponse;
@@ -93,17 +94,17 @@ public class DepartmentController {
     @DeleteMapping(ApiPath.BY_ID)
     @PreAuthorize(AuthorityExpression.ADMIN)
     @Operation(summary = "Delete an empty department")
-    public ResponseEntity<Void> delete(@PathVariable UUID id) {
+    public ResponseEntity<ApiResponse<Void>> delete(@PathVariable UUID id) {
         departmentService.delete(id);
-        return ResponseEntity.noContent().build();
+        return ResponseEntity.ok(ApiResponse.success());
     }
 
     @PutMapping(ApiPath.MOVE)
     @PreAuthorize(AuthorityExpression.ADMIN)
     @Operation(summary = "Reposition a department relative to its neighbours")
-    public ResponseEntity<Void> move(@PathVariable UUID id,
+    public ResponseEntity<ApiResponse<Void>> move(@PathVariable UUID id,
                                      @Valid @RequestBody MoveDepartmentRequest request) {
         departmentService.move(id, request);
-        return ResponseEntity.noContent().build();
+        return ResponseEntity.ok(ApiResponse.success());
     }
 }

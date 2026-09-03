@@ -15,6 +15,7 @@ import { routes } from './app.routes';
 import { authInterceptor } from './core/interceptors/auth.interceptor';
 import { errorInterceptor } from './core/interceptors/error.interceptor';
 import { AuthService } from './core/services/auth.service';
+import { unwrapInterceptor } from './core/interceptors/unwrap.interceptor';
 
 registerLocaleData(localeVi);
 
@@ -30,7 +31,7 @@ export const appConfig: ApplicationConfig = {
 
     // Interceptors executed in order for requests and reverse order for responses.
     provideHttpClient(
-      withInterceptors([authInterceptor, errorInterceptor]),
+      withInterceptors([authInterceptor, errorInterceptor, unwrapInterceptor]),
     ),
 
     { provide: LOCALE_ID, useValue: 'vi' },

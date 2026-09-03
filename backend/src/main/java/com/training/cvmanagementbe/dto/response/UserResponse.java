@@ -2,6 +2,7 @@ package com.training.cvmanagementbe.dto.response;
 
 import com.training.cvmanagementbe.enums.AccountStatus;
 import com.training.cvmanagementbe.enums.Role;
+import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -9,6 +10,7 @@ import java.util.List;
 import java.util.UUID;
 
 // Full user detail returned by the directory endpoints
+@Schema(name = "UserResponse", description = "Full user detail returned by the directory endpoints")
 public record UserResponse(
 
         UUID id,

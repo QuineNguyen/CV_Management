@@ -5,6 +5,7 @@ import com.training.cvmanagementbe.constant.AuthorityExpression;
 import com.training.cvmanagementbe.dto.request.ChangePasswordRequest;
 import com.training.cvmanagementbe.dto.request.GoogleLoginRequest;
 import com.training.cvmanagementbe.dto.request.LoginRequest;
+import com.training.cvmanagementbe.dto.response.ApiResponse;
 import com.training.cvmanagementbe.dto.response.LoginResponse;
 import com.training.cvmanagementbe.dto.response.ResetPasswordResponse;
 import com.training.cvmanagementbe.entity.models.CurrentActor;
@@ -45,17 +46,17 @@ public class AuthController {
 
     @PostMapping(AuthPath.LOGOUT)
     @Operation(summary = "Logout and revoke the current session")
-    public ResponseEntity<Void> logout() {
+    public ResponseEntity<ApiResponse<Void>> logout() {
         authService.logout(CurrentActor.requireUserId());
-        return ResponseEntity.noContent().build();
+        return ResponseEntity.ok(ApiResponse.success());
     }
 
     // All sessions are revoked, so the frontend must force a re-login afterwards.
     @PostMapping(AuthPath.CHANGE_PASSWORD)
     @Operation(summary = "Change the current user's password")
-    public ResponseEntity<Void> changePassword(@Valid @RequestBody ChangePasswordRequest request) {
+    public ResponseEntity<ApiResponse<Void>> changePassword(@Valid @RequestBody ChangePasswordRequest request) {
         authService.changePassword(request, CurrentActor.requireUserId());
-        return ResponseEntity.noContent().build();
+        return ResponseEntity.ok(ApiResponse.success());
     }
 
     // Returns the temporary password once for the admin dialog; email is sent in parallel

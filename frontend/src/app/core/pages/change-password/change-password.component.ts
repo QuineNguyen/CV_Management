@@ -11,7 +11,7 @@ import { firstValueFrom } from "rxjs";
 import { HttpErrorResponse } from "@angular/common/http";
 import { changePasswordGroupValidator, evaluatePassword, passwordPolicyValidator, PasswordRule } from "../../validators/password.validator";
 import { AppRoute } from "../../enums/app-route.enum";
-import { ApiError } from "../../dtos/api-error.dto";
+import { ApiErrorResponse } from "../../dtos/api-error.dto";
 import { messageFor } from "../../models/error-messages.model";
 import { sanitizeReturnUrl } from "../../utils/return-url.util";
 import { QueryParam } from "../../enums/query-param.enum";
@@ -87,9 +87,9 @@ export class ChangePasswordComponent {
 
     private extractErrorMessage(error: unknown): string {
         if (error instanceof HttpErrorResponse) {
-            const apiError = error.error as ApiError | null;
-            if (apiError?.code) {
-                return messageFor(apiError.code, apiError.message);
+            const envelope = error.error as ApiErrorResponse | null;
+            if (envelope?.code) {
+                return messageFor(envelope.code, envelope.message);
             }
         }
         return messageFor('INTERNAL_ERROR');

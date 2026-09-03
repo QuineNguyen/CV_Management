@@ -1,6 +1,7 @@
 package com.training.cvmanagementbe.dto.request;
 
 import com.training.cvmanagementbe.enums.Role;
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
 
@@ -9,6 +10,7 @@ import java.util.List;
 import java.util.UUID;
 
 // Payload for updating a user. Email and username are intentionally absent (immmutable).
+@Schema(name = "UpdateUserRequest", description = "Payload for updating a user. Email and username are intentionally absent (immutable)")
 public record UpdateUserRequest(
 
         @NotBlank

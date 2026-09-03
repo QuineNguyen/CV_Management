@@ -1,5 +1,7 @@
 package com.training.cvmanagementbe.dto.response;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -9,6 +11,7 @@ import java.util.UUID;
  * - linkedTeamName and cvCount are resolved server side so the client never has to
  * join two endpoints to render a row.
  */
+@Schema(name = "CvProfileResponse", description = "CV profile details with resolved linked team and CV count")
 public record CvProfileResponse(
 
         UUID id,

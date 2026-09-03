@@ -6,10 +6,7 @@ import com.training.cvmanagementbe.constant.PageDefaults;
 import com.training.cvmanagementbe.dto.request.CreateUserRequest;
 import com.training.cvmanagementbe.dto.request.DeactivateUserRequest;
 import com.training.cvmanagementbe.dto.request.UpdateUserRequest;
-import com.training.cvmanagementbe.dto.response.CreatedUserResponse;
-import com.training.cvmanagementbe.dto.response.PagedResponse;
-import com.training.cvmanagementbe.dto.response.TechLeadOption;
-import com.training.cvmanagementbe.dto.response.UserResponse;
+import com.training.cvmanagementbe.dto.response.*;
 import com.training.cvmanagementbe.enums.AccountStatus;
 import com.training.cvmanagementbe.enums.Role;
 import com.training.cvmanagementbe.enums.UserSortField;
@@ -96,18 +93,18 @@ public class UserController {
     @PostMapping(ApiPath.DEACTIVATE)
     @PreAuthorize(AuthorityExpression.ADMIN)
     @Operation(summary = "Deactivate a user, hand over led teams and revoke tokens")
-    public ResponseEntity<Void> deactivate(
+    public ResponseEntity<ApiResponse<Void>> deactivate(
             @PathVariable UUID id,
             @Valid @RequestBody(required = false)DeactivateUserRequest request) {
         userService.deactivate(id, request);
-        return ResponseEntity.noContent().build();
+        return ResponseEntity.ok(ApiResponse.success());
     }
 
     @PostMapping(ApiPath.ACTIVATE)
     @PreAuthorize(AuthorityExpression.ADMIN)
     @Operation(summary = "Reactive a user")
-    public ResponseEntity<Void> activate(@PathVariable UUID id) {
+    public ResponseEntity<ApiResponse<Void>> activate(@PathVariable UUID id) {
         userService.activate(id);
-        return ResponseEntity.noContent().build();
+        return ResponseEntity.ok(ApiResponse.success());
     }
 }

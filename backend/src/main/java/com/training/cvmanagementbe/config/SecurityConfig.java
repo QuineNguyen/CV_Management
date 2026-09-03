@@ -2,9 +2,10 @@ package com.training.cvmanagementbe.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.training.cvmanagementbe.config.auth.JwtAuthFilter;
+import com.training.cvmanagementbe.dto.response.ApiResponse;
+import com.training.cvmanagementbe.dto.response.ErrorDetail;
 import com.training.cvmanagementbe.enums.ErrorCode;
 import com.training.cvmanagementbe.enums.PublicEndpoint;
-import com.training.cvmanagementbe.record.ApiError;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpStatus;
@@ -34,7 +35,8 @@ public class SecurityConfig {
     @Bean
     SecurityFilterChain filterChain(HttpSecurity http,
                                     JwtAuthFilter jwtAuthFilter,
-                                    ObjectMapper objectMapper) throws Exception {
+                                    RestAuthenticationEntryPoint authenticationEntryPoint,
+                                    RestAccessDeniedHandler accessDeniedHandler) throws Exception {
         http
             .csrf(csrf -> csrf.disable())
             .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
@@ -42,19 +44,18 @@ public class SecurityConfig {
                 .requestMatchers(PublicEndpoint.patterns()).permitAll()
                 .anyRequest().authenticated()
             )
-            // Without this, an unauthenticated call returns 403, not 401 — the frontend's
-            // errorInterceptor keys its redirect-to-login on 401.
-            .exceptionHandling(ex -> ex.authenticationEntryPoint(
-                (request, response, authException) -> {
-                    response.setStatus(HttpStatus.UNAUTHORIZED.value());
-                    response.setContentType(MediaType.APPLICATION_JSON_VALUE);
-                    response.getWriter().write(objectMapper.writeValueAsString(ApiError.of(
-                            HttpStatus.UNAUTHORIZED.value(),
-                            HttpStatus.UNAUTHORIZED.name(),
-                            ErrorCode.UNAUTHENTICATED.code(),
-                            ErrorCode.UNAUTHENTICATED.message(),
-                            request.getRequestURI())));
-                }))
+            /*
+             * Both handlers write the response envelope themselves. They run inside the filter
+             * chain, before a handler method is selected, so neither GlobalExceptionHandler nor
+             * ApiResponseAdvice ever sees these bodies.
+             *
+             * The split matters to the frontend: the entry point answers 401 (no usable token,
+             * errorInterceptor redirects to login) while the denied handler answers 403
+             * (authenticated but out of scope, errorInterceptor only shows a notice).
+             */
+            .exceptionHandling(ex -> ex
+                    .authenticationEntryPoint(authenticationEntryPoint)
+                    .accessDeniedHandler(accessDeniedHandler))
             // Disable default form login and HTTP basic popup
             .formLogin(form -> form.disable())
             .httpBasic(basic -> basic.disable())

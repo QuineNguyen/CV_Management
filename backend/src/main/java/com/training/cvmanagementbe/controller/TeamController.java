@@ -4,6 +4,7 @@ import com.training.cvmanagementbe.constant.ApiPath;
 import com.training.cvmanagementbe.constant.AuthorityExpression;
 import com.training.cvmanagementbe.constant.PageDefaults;
 import com.training.cvmanagementbe.dto.request.TeamRequest;
+import com.training.cvmanagementbe.dto.response.ApiResponse;
 import com.training.cvmanagementbe.dto.response.PagedResponse;
 import com.training.cvmanagementbe.dto.response.TeamMemberResponse;
 import com.training.cvmanagementbe.dto.response.TeamResponse;
@@ -72,9 +73,9 @@ public class TeamController {
 
     @DeleteMapping(ApiPath.BY_ID)
     @Operation(summary = "Delete an empty team (no member, no linked CV profile")
-    public ResponseEntity<Void> delete(@PathVariable UUID id) {
+    public ResponseEntity<ApiResponse<Void>> delete(@PathVariable UUID id) {
         teamService.delete(id);
-        return ResponseEntity.noContent().build();
+        return ResponseEntity.ok(ApiResponse.success());
     }
 
     @GetMapping(ApiPath.MEMBERS)
@@ -85,15 +86,15 @@ public class TeamController {
 
     @PostMapping(ApiPath.MEMBER_BY_USER)
     @Operation(summary = "Add an active user to the team")
-    public ResponseEntity<Void> addMember(@PathVariable UUID id, @PathVariable UUID userId) {
+    public ResponseEntity<ApiResponse<Void>> addMember(@PathVariable UUID id, @PathVariable UUID userId) {
         teamService.addMember(id, userId);
-        return ResponseEntity.noContent().build();
+        return ResponseEntity.ok(ApiResponse.success());
     }
 
     @DeleteMapping(ApiPath.MEMBER_BY_USER)
     @Operation(summary = "Remove a member from the team")
-    public ResponseEntity<Void> removeMember(@PathVariable UUID id, @PathVariable UUID userId) {
+    public ResponseEntity<ApiResponse<Void>> removeMember(@PathVariable UUID id, @PathVariable UUID userId) {
         teamService.removeMember(id, userId);
-        return ResponseEntity.noContent().build();
+        return ResponseEntity.ok(ApiResponse.success());
     }
 }

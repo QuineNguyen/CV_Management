@@ -4,7 +4,7 @@ import { Router } from '@angular/router';
 import { catchError, throwError } from 'rxjs';
 import { AuthService } from '../services/auth.service';
 import { ERROR_MESSAGES, messageFor } from '../models/error-messages.model';
-import { ApiError } from '../dtos/api-error.dto';
+import { ApiErrorResponse } from '../dtos/api-error.dto';
 import { ToastService } from '../services/toast.service';
 import { ApiEndpoint } from '../enums/api-endpoint.enum';
 import { AppRoute } from '../enums/app-route.enum';
@@ -50,9 +50,9 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
         return throwError(() => error);
       }
 
-      const body = error.error as ApiError | null;
-      const code = body?.code ?? '';
-      const message = messageFor(code, body?.message);
+      const envelope = error.error as ApiErrorResponse | null;
+      const code = envelope?.code ?? '';
+      const message = messageFor(code, envelope?.message);
 
       switch (error.status) {
         case 401:
@@ -94,7 +94,7 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
 
         case 400:
           // Skip notification if response has field-level validation errors.
-          if (!body?.fieldErrors?.length) {
+          if (!envelope?.data?.fieldErrors?.length) {
             notify(message);
           }
           break;

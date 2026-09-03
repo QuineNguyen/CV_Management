@@ -11,7 +11,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 
 import { AuthenticatedUser } from '../../dtos/auth.dto';
-import { ApiError } from '../../dtos/api-error.dto';
+import { ApiErrorResponse } from '../../dtos/api-error.dto';
 import { AppRoute } from '../../enums/app-route.enum';
 import { AuthService } from '../../services/auth.service';
 import { GoogleIdentityService } from '../../services/google-identity.service';
@@ -163,7 +163,7 @@ export class LoginComponent {
 
   private extractErrorCode(error: unknown): string | null {
     if (error instanceof HttpErrorResponse) {
-      return (error.error as ApiError | null)?.code ?? null;
+      return (error.error as ApiErrorResponse | null)?.code ?? null;
     }
     return null;
   }

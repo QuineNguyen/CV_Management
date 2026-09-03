@@ -1,8 +1,9 @@
 package com.training.cvmanagementbe.exception;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.training.cvmanagementbe.dto.response.ApiResponse;
+import com.training.cvmanagementbe.dto.response.ErrorDetail;
 import com.training.cvmanagementbe.enums.*;
-import com.training.cvmanagementbe.record.ApiError;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolationException;
 import org.slf4j.Logger;
@@ -60,15 +61,13 @@ public class GlobalExceptionHandler {
 
     // --------- 400 ---------
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    ResponseEntity<ApiError> handleValidation(MethodArgumentNotValidException ex,
-                                              HttpServletRequest req) {
-        List<ApiError.FieldError> fieldErrors = ex.getBindingResult().getFieldErrors().stream()
-                .map(fe -> new ApiError.FieldError(fe.getField(), fe.getDefaultMessage()))
+    ResponseEntity<ApiResponse<ErrorDetail>> handleValidation(MethodArgumentNotValidException ex,
+                                                              HttpServletRequest req) {
+        List<ErrorDetail.FieldError> fieldErrors = ex.getBindingResult().getFieldErrors().stream()
+                .map(fe -> new ErrorDetail.FieldError(fe.getField(), fe.getDefaultMessage()))
                 .toList();
-        ApiError body = new ApiError(OffsetDateTime.now(), HttpStatus.BAD_REQUEST.value(), HttpStatus.BAD_REQUEST.name(),
-                ErrorCode.VALIDATION_FAILED.code(), ErrorCode.VALIDATION_FAILED.message(),
-                req.getRequestURI(), fieldErrors);
-        return ResponseEntity.badRequest().body(body);
+        return respond(HttpStatus.BAD_REQUEST, ErrorCode.VALIDATION_FAILED.code(),
+                ErrorCode.VALIDATION_FAILED.message(), fieldErrors, req);
     }
 
     @ExceptionHandler({
@@ -79,44 +78,44 @@ public class GlobalExceptionHandler {
             JsonProcessingException.class,
             IllegalArgumentException.class
     })
-    ResponseEntity<ApiError> handleMalformedRequest(Exception ex, HttpServletRequest req) {
+    ResponseEntity<ApiResponse<ErrorDetail>> handleMalformedRequest(Exception ex, HttpServletRequest req) {
         log.debug("400 at {}: {}", req.getRequestURI(), ex.getMessage());
         return respond(HttpStatus.BAD_REQUEST, ErrorCode.BAD_REQUEST, req);
     }
 
     // Locked account: carry the wait time in the standard Retry-After header.
     @ExceptionHandler(ApiException.AccountLockedException.class)
-    ResponseEntity<ApiError> handleAccountLocked(ApiException.AccountLockedException ex, HttpServletRequest req) {
+    ResponseEntity<ApiResponse<ErrorDetail>> handleAccountLocked(ApiException.AccountLockedException ex, HttpServletRequest req) {
         log.info("{} {} at {} - retry after {} seconds", ex.status().value(), ex.code(),
                 req.getRequestURI(), ex.retryAfterSeconds());
         return ResponseEntity.status(ex.status())
                 .header(HttpHeaders.RETRY_AFTER, String.valueOf(ex.retryAfterSeconds()))
-                .body(ApiError.of(ex.status().value(), ex.status().name(), ex.code(),
-                        ex.getMessage(), req.getRequestURI()));
+                .body(ApiResponse.failure(ex.code(), ex.getMessage(),
+                        ErrorDetail.of(ex.status(), req.getRequestURI())));
     }
 
     // --------- 403 ---------
     @ExceptionHandler({AuthorizationDeniedException.class, AccessDeniedException.class})
-    ResponseEntity<ApiError> handleAccessDenied(Exception ex, HttpServletRequest req) {
+    ResponseEntity<ApiResponse<ErrorDetail>> handleAccessDenied(Exception ex, HttpServletRequest req) {
         log.info("403 at {} - {}", req.getRequestURI(), ex.getMessage());
         return respond(HttpStatus.FORBIDDEN, ErrorCode.OUT_OF_SCOPE, req);
     }
 
     // --------- 404 ---------
     @ExceptionHandler(NoHandlerFoundException.class)
-    ResponseEntity<ApiError> handleUnknownPath(HttpServletRequest req) {
+    ResponseEntity<ApiResponse<ErrorDetail>> handleUnknownPath(HttpServletRequest req) {
         return respond(HttpStatus.NOT_FOUND, ErrorCode.NOT_FOUND, req);
     }
 
     // --------- 409 ---------
     @ExceptionHandler(OptimisticLockingFailureException.class)
-    ResponseEntity<ApiError> handleLostUpdate(HttpServletRequest req) {
+    ResponseEntity<ApiResponse<ErrorDetail>> handleLostUpdate(HttpServletRequest req) {
         return respond(HttpStatus.CONFLICT, ErrorCode.STALE_STATE, req);
     }
 
     // --------- 409 or 422 ---------
     @ExceptionHandler(DataIntegrityViolationException.class)
-    ResponseEntity<ApiError> handleConstraintViolation(DataIntegrityViolationException ex,
+    ResponseEntity<ApiResponse<ErrorDetail>> handleConstraintViolation(DataIntegrityViolationException ex,
                                                        HttpServletRequest req) {
         String cause = String.valueOf(ex.getMostSpecificCause().getMessage()).toLowerCase(Locale.ROOT);
         log.warn("Database rejected a write at {}: {}", req.getRequestURI(), cause);
@@ -137,24 +136,29 @@ public class GlobalExceptionHandler {
 
     // --------- Explicit business failures ---------
     @ExceptionHandler(ApiException.class)
-    ResponseEntity<ApiError> handleApiException(ApiException ex, HttpServletRequest req) {
+    ResponseEntity<ApiResponse<ErrorDetail>> handleApiException(ApiException ex, HttpServletRequest req) {
         log.info("{} {} at {} - {}", ex.status().value(), ex.code(), req.getRequestURI(),
                 ex.getMessage());
-        return ResponseEntity.status(ex.status()).body(ApiError.of(
-                ex.status().value(), ex.status().name(), ex.code(), ex.getMessage(),
-                req.getRequestURI()));
+        return ResponseEntity.status(ex.status()).body(ApiResponse.failure(
+                ex.code(), ex.getMessage(), ErrorDetail.of(ex.status(), req.getRequestURI())));
     }
 
     // --------- 500 ---------
     @ExceptionHandler(Exception.class)
-    ResponseEntity<ApiError> handleUnexpected(Exception ex, HttpServletRequest req) {
+    ResponseEntity<ApiResponse<ErrorDetail>> handleUnexpected(Exception ex, HttpServletRequest req) {
         log.error("Unhandled error at {}", req.getRequestURI(), ex);
         return respond(HttpStatus.INTERNAL_SERVER_ERROR, ErrorCode.INTERNAL_ERROR, req);
     }
 
-    private ResponseEntity<ApiError> respond(HttpStatus status, ErrorCode code,
-                                             HttpServletRequest req) {
-        return ResponseEntity.status(status).body(ApiError.of(
-                status.value(), status.name(), code.code(), code.message(), req.getRequestURI()));
+    private ResponseEntity<ApiResponse<ErrorDetail>> respond(HttpStatus status, ErrorCode code,
+                                                             HttpServletRequest req) {
+        return respond(status, code.code(), code.message(), null, req);
+    }
+
+    private ResponseEntity<ApiResponse<ErrorDetail>> respond(HttpStatus status, String code, String message,
+                                             List<ErrorDetail.FieldError> fieldErrors, HttpServletRequest req)  {
+        ErrorDetail detail = new ErrorDetail(OffsetDateTime.now(), status.value(), status.name(),
+                req.getRequestURI(), fieldErrors);
+        return ResponseEntity.status(status).body(ApiResponse.failure(code, message, detail));
     }
 }
