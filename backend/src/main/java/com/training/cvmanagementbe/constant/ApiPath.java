@@ -25,5 +25,13 @@ public final class ApiPath {
     public static final String PROFILE_TEAM_OPTIONS = "/{employeeId}/cv-profiles/team-options";
     public static final String SET_PRIMARY = "/{id}/set-primary";
 
+    // CVs
+    public static final String CVS_BY_PROFILE = "/{profileId}/cvs";
+    public static final String CVS = "/cvs";
+    public static final String CV_CONTENT = "/{id}/content";
+    public static final String RESTORE = "/{id}/restore";
+    public static final String DELETED = "/deleted";
+    public static final String VERSIONS = "/{id}/versions";
+
     private ApiPath() {}
 }

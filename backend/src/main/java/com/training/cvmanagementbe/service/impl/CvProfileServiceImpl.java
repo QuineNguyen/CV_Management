@@ -2,6 +2,7 @@ package com.training.cvmanagementbe.service.impl;
 
 import com.training.cvmanagementbe.common.AuditLogger;
 import com.training.cvmanagementbe.dto.request.CvProfileRequest;
+import com.training.cvmanagementbe.dto.request.CvProfileRestoreRequest;
 import com.training.cvmanagementbe.dto.response.CvProfileResponse;
 import com.training.cvmanagementbe.dto.response.EmployeeTeamResponse;
 import com.training.cvmanagementbe.dto.response.PagedResponse;
@@ -209,6 +210,37 @@ public class CvProfileServiceImpl implements CvProfileService {
         return response;
     }
 
+    @Override
+    @Transactional
+    public CvProfileResponse restore(UUID id, CvProfileRestoreRequest request) {
+        CvProfile profile = cvProfileRepository.findById(id)
+                .orElseThrow(() -> new ApiException.NotFoundException("cv profile", id));
+        requireAdminOrHr();
+
+        if (profile.getLifecycleStatus() != LifecycleStatus.DELETED) {
+            throw new ApiException.BusinessRuleException(ErrorCode.PROFILE_NOT_DELETED);
+        }
+
+        String name = resolveRestoredName(profile, request);
+        UUID teamId = resolveRestoredTeam(profile, request);
+
+        profile.setName(name);
+        profile.setLinkedTeamId(teamId);
+        profile.setLifecycleStatus(LifecycleStatus.ACTIVE);
+        // A profile that was primary before deletion does not take the crown back automatically:
+        // someone else holds it now and demoting them silently is not the system's call.
+        profile.setPrimary(false);
+        profile.setDeletedBy(null);
+        profile.setDeletedAt(null);
+
+        CvProfile saved = cvProfileRepository.save(profile);
+        CvProfileResponse after = toResponseWithTeam(saved);
+
+        auditLogger.record(Action.RESTORE_CV_PROFILE, TargetType.CV_PROFILE, id, null, after);
+        // TODO [Phase 4]: send email and in-app notification to the owner
+        return after;
+    }
+
     // ---------- Validation ----------
 
     private void validateNameAvailable(UUID employeeId, String name, UUID excludeId) {
@@ -240,6 +272,40 @@ public class CvProfileServiceImpl implements CvProfileService {
         if (cvProfileRepository.countPendingDraftsByProfileId(profile.getId()) > 0) {
             throw new ApiException.BusinessRuleException(ErrorCode.PROFILE_HAS_PENDING_DRAFTS);
         }
+    }
+
+    // The old name may have been taken while the profile was gone; the caller then supplies a new one.
+    private String resolveRestoredName(CvProfile profile, CvProfileRestoreRequest request) {
+        String requested = (request == null || request.newName() == null || request.newName().isBlank())
+                ? profile.getName()
+                : request.newName().trim();
+
+        boolean taken = cvProfileRepository.existsByEmployeeIdAndNameAndLifecycleStatusAndIdNot(
+                profile.getEmployeeId(), requested, LifecycleStatus.ACTIVE, profile.getId()
+        );
+
+        if (taken) {
+            throw new ApiException.BusinessRuleException(ErrorCode.PROFILE_NAME_CONFLICT_ON_RESTORE);
+        }
+        return requested;
+    }
+
+    /*
+     * The linked team decides the level-1 reviewer, so a stale one would restore a profile whose
+     * CVs nobody is entitled to review.
+     */
+    private UUID resolveRestoredTeam(CvProfile profile, CvProfileRestoreRequest request) {
+        UUID requested = (request == null || request.newTeamId() == null)
+                ? profile.getLinkedTeamId()
+                : request.newTeamId();
+
+        if (!teamRepository.existsById(requested)) {
+            throw new ApiException.NotFoundException("team", requested);
+        }
+        if (!teamMemberRepository.existsByUserIdAndTeamId(profile.getEmployeeId(), requested)) {
+            throw new ApiException.BusinessRuleException(ErrorCode.PROFILE_TEAM_INVALID_ON_RESTORE);
+        }
+        return requested;
     }
 
     // ---------- Access control ----------
