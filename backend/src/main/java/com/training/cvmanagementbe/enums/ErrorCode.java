@@ -47,6 +47,7 @@ public enum ErrorCode {
     CANNOT_DELETE_PRIMARY_PROFILE("Cannot delete the primary profile; assign another profile as primary first"),
     PROFILE_HAS_PENDING_DRAFTS("Cannot delete a profile that has CVs awaiting approval"),
     LINKED_TEAM_NOT_MEMBER("The linked team must be one the employee belongs to"),
+    DUPLICATE_CV_ITEM_ID("Two entries in this CV share the same item identifier"),
 
     // ---------- Approval ----------
     APPROVAL_ALREADY_ASSIGNED("This draft already has an open approval assignment"),
@@ -101,7 +102,22 @@ public enum ErrorCode {
     UNAUTHENTICATED("You are not signed in, or your session has been revoked"),
     NOT_FOUND("The requested item does not exist"),
     CONFLICT("The request conflicts with the current state of the data"),
-    INTERNAL_ERROR("Something went wrong on the server");
+    INTERNAL_ERROR("Something went wrong on the server"),
+
+    // ---------- CV delete & restore ----------
+    CV_SLOT_OCCUPIED("An active CV already exists for this profile and language"),
+    CV_PROFILE_DELETED("The parent profile has been deleted; restore it first"),
+    CV_NOT_DELETED("This CV is not in DELETED status"),
+    CV_MASTER_CONFLICT("Restoring this CV would create two masters in the same profile"),
+    MUST_DESIGNATE_NEW_MASTER("This CV is the master; designate a replacement before deleting"),
+    INVALID_NEW_MASTER("The designated master must be another active CV of the same profile"),
+    CV_HAS_PENDING_DRAFTS("Cannot delete a CV that has drafys awaiting approval"),
+    CV_HAS_NO_VERSION("This CV has no published version yet"),
+
+    // ---------- CV Profile restore ----------
+    PROFILE_NAME_CONFLICT_ON_RESTORE("Another active profile of this employee already uses that name; provide a new name"),
+    PROFILE_TEAM_INVALID_ON_RESTORE("The linked team is no longer one the employee belongs to; select a current team"),
+    PROFILE_NOT_DELETED("This profile is not in DELETED status");
 
     private final String message;
 
