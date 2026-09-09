@@ -1,0 +1,128 @@
+<section class="cv-section">
+
+  <header class="cv-section-head">
+    <div>
+      <h2 class="cv-section-title">{{ section().label }}</h2>
+      <p class="cv-section-description">{{ section().description }}</p>
+    </div>
+
+    @if (section().repeated && !readOnly()) {
+      <button type="button" class="btn btn-ghost cv-section-add" (click)="onAdd()">
+        <span aria-hidden="true">＋</span> Add {{ section().itemNoun }}
+      </button>
+    }
+  </header>
+
+  <!-- SINGLE: fields inline -->
+  @if (!section().repeated) {
+    <div class="form-grid" [formGroup]="singleGroup">
+      @for (field of section().fields; track field.key) {
+        <div class="field" [class.field-half]="field.half" [class.custom-select-wrap]="field.kind === FieldKind.Select">
+          <label class="field-label" [for]="section().key + '-' + field.key">
+            {{ field.label }}
+            @if (field.required) {
+              <span class="field-required">*</span>
+            }
+          </label>
+
+          @switch (field.kind) {
+            @case (FieldKind.Textarea) {
+              <textarea class="field-input cv-textarea" rows="5"
+                        [id]="section().key + '-' + field.key"
+                        [formControlName]="field.key"
+                        [attr.maxlength]="field.maxLength"
+                        [attr.placeholder]="field.placeholder"></textarea>
+            }
+            @case (FieldKind.Date) {
+              <input class="field-input" type="date"
+                     [id]="section().key + '-' + field.key"
+                     [formControlName]="field.key" />
+            }
+            @case (FieldKind.Select) {
+              <button
+                type="button"
+                class="field-input custom-select-trigger"
+                [id]="section().key + '-' + field.key"
+                [class.is-open]="openSelectKey() === field.key"
+                [disabled]="readOnly()"
+                (click)="toggleSelect(field.key, $event)"
+                aria-haspopup="listbox"
+                [attr.aria-expanded]="openSelectKey() === field.key">
+                <span class="custom-select-label">
+                  {{ getSelectedOptionLabel(field) }}
+                </span>
+              </button>
+
+              @if (openSelectKey() === field.key) {
+                <div class="custom-select-panel" (click)="$event.stopPropagation()">
+                  <ul class="custom-select-list" role="listbox">
+                    <li role="option" [attr.aria-selected]="!singleGroup.get(field.key)?.value">
+                      <button
+                        type="button"
+                        class="custom-select-option"
+                        [class.is-selected]="!singleGroup.get(field.key)?.value"
+                        (click)="selectOption(field.key, null)">
+                        {{ emptyOptionLabel() }}
+                      </button>
+                    </li>
+                    @for (option of options(field); track option.value) {
+                      <li role="option" [attr.aria-selected]="singleGroup.get(field.key)?.value === option.value">
+                        <button
+                          type="button"
+                          class="custom-select-option"
+                          [class.is-selected]="singleGroup.get(field.key)?.value === option.value"
+                          (click)="selectOption(field.key, option.value)">
+                          {{ option.label }}
+                        </button>
+                      </li>
+                    }
+                  </ul>
+                </div>
+              }
+            }
+            @default {
+              <input class="field-input" type="text" autocomplete="off"
+                     [id]="section().key + '-' + field.key"
+                     [formControlName]="field.key"
+                     [attr.maxlength]="field.maxLength"
+                     [attr.placeholder]="field.placeholder" />
+            }
+          }
+
+          @if (hasError(field, 'required')) {
+            <span class="field-error">{{ field.label }} is required</span>
+          }
+          @if (hasError(field, 'maxlength')) {
+            <span class="field-error">{{ field.label }} must be at most {{ field.maxLength }} characters</span>
+          }
+          @if (field.hint) {
+            <span class="field-hint">{{ field.hint }}</span>
+          }
+        </div>
+      }
+    </div>
+  }
+
+  <!-- REPEATED: reorderable list -->
+  @else {
+    @if (!itemGroups.length) {
+      <p class="cv-section-empty">
+        No {{ section().itemNoun }} added yet
+      </p>
+    } @else {
+      <ul class="cv-item-list" cdkDropList (cdkDropListDropped)="onDrop($event)">
+        @for (group of itemGroups; track group.get('item_id')!.value; let i = $index) {
+          <app-cv-item-editor
+            [section]="section()"
+            [group]="group"
+            [index]="i"
+            [expanded]="expandedIndex() === i"
+            [readOnly]="readOnly()"
+            [language]="language()"
+            (toggled)="onToggle($event)"
+            (removed)="onRemove($event)" />
+        }
+      </ul>
+    }
+  }
+</section>

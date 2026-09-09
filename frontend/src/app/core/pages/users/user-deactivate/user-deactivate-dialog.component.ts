@@ -23,6 +23,7 @@ export class UserDeactivateDialogComponent implements OnInit {
     readonly cancelled = output<void>();
 
     readonly isClosing = signal(false);
+    private backdropMouseDownTarget: EventTarget | null = null;
 
     readonly techLeads = signal<TechLeadOption[]>([]);
 
@@ -77,6 +78,17 @@ export class UserDeactivateDialogComponent implements OnInit {
     @HostListener('document:keydown.escape')
     onEscape(): void {
         this.onCancel();
+    }
+
+    onBackdropMouseDown(event: MouseEvent): void {
+        this.backdropMouseDownTarget = event.target;
+    }
+
+    onBackdropClick(event: MouseEvent): void {
+        if (event.target === event.currentTarget && this.backdropMouseDownTarget === event.currentTarget) {
+            this.onCancel();
+        }
+        this.backdropMouseDownTarget = null;
     }
 
     onCancel(): void {

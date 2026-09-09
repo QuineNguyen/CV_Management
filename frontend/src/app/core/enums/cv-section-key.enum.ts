@@ -6,7 +6,7 @@ export enum CvSectionKey {
     Experience = 'experience',
     Education = 'education',
     Certifications = 'certifications',
-    Project = 'projects',
+    Projects = 'projects',
     Languages = 'languages',
     AdditionalInfo = 'additional_info',
 }

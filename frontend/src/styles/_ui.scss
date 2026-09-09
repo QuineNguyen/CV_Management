@@ -241,7 +241,7 @@ input[type='search']::-webkit-search-cancel-button {
   color: var(--vt-red);
 }
 
-.icon-btn--danger:hover:not(:disabled) {
+.icon-btn-danger:hover:not(:disabled) {
   background: var(--vt-danger);
   color: var(--vt-surface);
 }

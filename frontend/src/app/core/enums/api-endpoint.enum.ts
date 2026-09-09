@@ -23,4 +23,7 @@ export enum ApiEndpoint {
     // Profile routes
     Profiles = '/cv-profiles',
     Employees = '/employees',
+
+    // CV routes
+    Cvs = '/cvs',
 }

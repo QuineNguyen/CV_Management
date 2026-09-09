@@ -121,4 +121,58 @@ public interface CvRepository extends JpaRepository<Cv, UUID> {
     int cancelPendingRequestsByCvId(@Param("cvId") UUID cvId,
                                     @Param("actorId") UUID actorId,
                                     @Param("cancelledAt") LocalDateTime cancelledAt);
+
+    /*
+     * Every stored snapshot of this profile, versions and drafts alike. Small by construction: a
+     * profile holds at most three CVs, and this runs once per save.
+     */
+    @Query(value = """
+            SELECT v.content_json FROM cv_versions v
+              JOIN cvs c ON c.id = v.cv_id
+             WHERE c.profile_id = :profileId
+             UNION ALL
+            SELECT d.content_json FROM cv_drafts d
+              JOIN cvs c ON c.id = d.cv_id
+             WHERE c.profile_id = :profileId
+            """, nativeQuery = true)
+    List<String> findContentSnapshotsByProfileId(@Param("profileId") UUID profileId);
+
+    /*
+     * Whether one item_id already lives under a different profile.
+     *
+     * A LIKE over content_json rather than an indexed lookup: item ids are embedded in the JSON by
+     * design, so there is no column to index. Only ids the profile does not already own
+     * are checked — the handful just added, not every entry in the CV.
+     *
+     * Returns a row count rather than EXISTS: MariaDB answers EXISTS with 1/0 as an integer, which
+     * Spring Data cannot hand back as a Boolean.
+     *
+     * Matches the bare UUID, not '"item_id":"<id>"'. A UUID is specific enough on its own, and
+     * pinning the key name would tie this to Jackson emitting no space after the colon — a
+     * formatting setting that, if it ever changed, would make every check silently pass.
+     */
+    @Query(value = """
+            SELECT COUNT(*) FROM (
+                SELECT 1 FROM cv_versions v
+                  JOIN cvs c ON c.id = v.cv_id
+                 WHERE c.profile_id <> :profileId
+                   AND v.content_json LIKE CONCAT('%', :itemId, '%')
+                 LIMIT 1
+            ) AS found
+            """, nativeQuery = true)
+    long countItemIdInVersionsOutsideProfile(@Param("profileId") UUID profileId,
+                                             @Param("itemId") String itemId);
+
+    /** Same check against open and closed drafts; a draft holds ids no version has yet. */
+    @Query(value = """
+            SELECT COUNT(*) FROM (
+                SELECT 1 FROM cv_drafts d
+                  JOIN cvs c ON c.id = d.cv_id
+                 WHERE c.profile_id <> :profileId
+                   AND d.content_json LIKE CONCAT('%', :itemId, '%')
+                 LIMIT 1
+            ) AS found
+            """, nativeQuery = true)
+    long countItemIdInDraftsOutsideProfile(@Param("profileId") UUID profileId,
+                                           @Param("itemId") String itemId);
 }

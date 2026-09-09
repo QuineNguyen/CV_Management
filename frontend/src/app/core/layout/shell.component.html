@@ -53,8 +53,10 @@
         </div>
         <mat-divider />
         <button mat-menu-item (click)="signOut()">
-          <span class="material-symbols-outlined">logout</span>
-          <span>Sign out</span>
+          <span class="shell-logout-item">
+            <span class="material-symbols-outlined">logout</span>
+            <span>Sign out</span>
+          </span>
         </button>
       </mat-menu>
     </mat-toolbar>
@@ -64,3 +66,25 @@
     </main>
   </mat-sidenav-content>
 </mat-sidenav-container>
+
+<!-- Prompts raised outside any page, drawn with the markup every other dialog uses -->
+@if (pendingConfirm(); as prompt) {
+  <div class="modal-backdrop" (mousedown)="onConfirmBackdropMouseDown($event)" (click)="onConfirmBackdropClick($event)">
+    <div class="modal modal-sm" role="alertdialog" aria-modal="true"
+         (click)="$event.stopPropagation()">
+      <h2 class="modal-title">{{ prompt.title }}</h2>
+      <p class="modal-body">{{ prompt.message }}</p>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-ghost" (click)="answerConfirm(false)">
+          {{ prompt.cancelLabel ?? 'Cancel' }}
+        </button>
+        <button type="button" class="btn"
+                [class.btn-danger]="prompt.danger"
+                [class.btn-primary]="!prompt.danger"
+                (click)="answerConfirm(true)">
+          {{ prompt.confirmLabel ?? 'Confirm' }}
+        </button>
+      </div>
+    </div>
+  </div>
+}

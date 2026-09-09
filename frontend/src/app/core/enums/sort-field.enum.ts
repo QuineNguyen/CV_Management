@@ -21,6 +21,12 @@ export enum UserSortField {
     CreatedAt = 'CREATED_AT',
 }
 
+export enum CvSortField {
+    DeletedAt = 'DELETED_AT',
+    Language = 'LANGUAGE',
+    UpdateAt = 'UPDATED_AT',
+}
+
 export enum SortDirection {
     Asc = 'ASC',
     Desc = 'DESC',

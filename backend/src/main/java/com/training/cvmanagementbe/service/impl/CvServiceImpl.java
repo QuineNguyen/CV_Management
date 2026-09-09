@@ -35,6 +35,7 @@ public class CvServiceImpl implements CvService {
     private final UserRepository userRepository;
     private final VersionPublisher versionPublisher;
     private final CvContentCodec codec;
+    private final CvItemIdGuard itemIdGuard;
     private final AuditLogger auditLogger;
 
     // ---------- Queries ----------
@@ -47,11 +48,19 @@ public class CvServiceImpl implements CvService {
 
         Optional<CvVersion> current = cvVersionRepository.findTopByCvIdOrderByVersionNumberDesc(cvId);
 
+        // The open draft rides along: the edit screen needs it and a second round trip for a
+        // row we already know exists buys nothing.
+        CvDraftResponse openDraft = cvDraftRepository
+                .findByCvIdAndStatusIn(cvId, CvDraft.OPEN_STATUSES)
+                .map(this::toDraftResponse)
+                .orElse(null);
+
         return new CvDetailResponse(
                 toResponse(cv, profile, resolveEmployeeName(profile.getEmployeeId()), current.orElse(null)),
                 current.map(this::toSummary).orElse(null),
                 current.map(version -> codec.read(version.getContentJson())).orElse(null),
-                current.map(CvVersion::getAvatarImageId).orElse(null)
+                current.map(CvVersion::getAvatarImageId).orElse(null),
+                openDraft
         );
     }
 
@@ -126,6 +135,9 @@ public class CvServiceImpl implements CvService {
                 ? codec.seedFrom(owner)
                 : codec.applyPersonalInfoSnapshot(request.content(), owner));
 
+        // Checked after ids are filled in, so a generated id is validated like any other.
+        itemIdGuard.requireOwnedOrNew(profileId, content);
+
         /*
          * Linked before publishing, not after. An Admin/HR owner publishes v1 inside
          * publishOrDraft and that is the moment a pending request becomes COMPLETED - a request
@@ -160,6 +172,9 @@ public class CvServiceImpl implements CvService {
         }
 
         if (publishedDirectly()) {
+            CvContent content = codec.normaliseItemIds(request.content());
+            itemIdGuard.requireOwnedOrNew(profile.getId(), content);
+
             CvVersion version = versionPublisher.publish(PublishCommand.directEdit(
                     cv.getId(),
                     codec.normaliseItemIds(request.content()),
@@ -187,9 +202,11 @@ public class CvServiceImpl implements CvService {
         CvProfile profile = requireProfileAnyStatus(cv.getProfileId());
         CvResponse before = toResponse(cv, profile, resolveEmployeeName(profile.getEmployeeId()), currentVersionOf(cv));
 
-        if (cv.isMaster()) {
-            handoverMastership(cv, request == null ? null : request.newMasterCvId());
-        }
+        // Resolved before anything is written: with no valid successor the whole delete is refused,
+        // rather than half-applied.
+        Cv successor = cv.isMaster()
+                ? resolveSuccessorMaster(cv, request == null ? null : request.newMasterCvId())
+                : null;
 
         UUID actorId = CurrentActor.requireUserId();
         LocalDateTime deletedAt = LocalDateTime.now();
@@ -197,7 +214,19 @@ public class CvServiceImpl implements CvService {
         cv.setLifecycleStatus(LifecycleStatus.DELETED);
         cv.setDeletedBy(actorId);
         cv.setDeletedAt(deletedAt);
-        cvRepository.save(cv);
+
+        /*
+         * Flushed before the successor is promoted and that order is the whole point. While this
+         * row is still ACTIVE with a null master_cv_id, it and the successor both satisfy "the
+         * active master of this profile" - and uk_cvs_active_master rejects the second one.
+         * Deleting first vacates the slot the successor is about to take.
+         */
+
+        cvRepository.saveAndFlush(cv);
+
+        if (successor != null) {
+            promoteToMaster(cv, successor);
+        }
 
         // A request pointing at a deleted CV can never be answered, so it stops asking.
         cvRepository.cancelPendingRequestsByCvId(cvId, actorId, deletedAt);
@@ -265,8 +294,10 @@ public class CvServiceImpl implements CvService {
      * Deleting the master leaves every localisation pointing at a deleted anchor, so the caller
      * must name a successor while other ACTIVE CVs remain. When the master is the last CV, there
      * is nothing to re-anchor and no successor is asked for.
+     *
+     * Read-only: it only picks and validates, so a rejected delete writes nothing.
      */
-    private void handoverMastership(Cv master, UUID newMasterCvId) {
+    private Cv resolveSuccessorMaster(Cv master, UUID newMasterCvId) {
         List<Cv> siblings = cvRepository
                 .findByProfileIdAndLifecycleStatusOrderByLanguageAsc(master.getProfileId(), LifecycleStatus.ACTIVE)
                 .stream()
@@ -274,22 +305,27 @@ public class CvServiceImpl implements CvService {
                 .toList();
 
         if (siblings.isEmpty()) {
-            return;
+            return null;
         }
         if (newMasterCvId == null) {
             throw new ApiException.BusinessRuleException(ErrorCode.MUST_DESIGNATE_NEW_MASTER);
         }
 
-        Cv successor = siblings.stream()
+        return siblings.stream()
                 .filter(candidate -> candidate.getId().equals(newMasterCvId))
                 .findFirst()
                 .orElseThrow(() -> new ApiException.BusinessRuleException(ErrorCode.INVALID_NEW_MASTER));
+    }
 
+    // Runs only after the outgoing master is flushed as DELETED and its master slot is free.
+    private void promoteToMaster(Cv previousMaster, Cv successor) {
         successor.setMasterCvId(null);
         // Flushed before the rest are repointed, so the unique index never sees two masters.
         cvRepository.saveAndFlush(successor);
 
-        siblings.stream()
+        cvRepository
+                .findByProfileIdAndLifecycleStatusOrderByLanguageAsc(successor.getProfileId(), LifecycleStatus.ACTIVE)
+                .stream()
                 .filter(candidate -> !candidate.getId().equals(successor.getId()))
                 .forEach(candidate -> {
                     candidate.setMasterCvId(successor.getId());
@@ -297,7 +333,7 @@ public class CvServiceImpl implements CvService {
                 });
 
         auditLogger.record(Action.UPDATE_CV_DRAFT, TargetType.CV, successor.getId(),
-                master.getId(), successor.getId());
+                previousMaster.getId(), successor.getId());
     }
 
     /*
@@ -350,6 +386,7 @@ public class CvServiceImpl implements CvService {
         }
 
         CvContent normalised = codec.normaliseItemIds(request.content());
+        itemIdGuard.requireOwnedOrNew(profile.getId(), normalised);
 
         draft.setContentJson(codec.write(normalised));
         draft.setAvatarImageId(request.avatarImageId());

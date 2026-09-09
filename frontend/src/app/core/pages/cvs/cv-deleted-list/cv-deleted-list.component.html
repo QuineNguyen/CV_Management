@@ -1,0 +1,164 @@
+<section class="page">
+
+  <!-- Toolbar -->
+  <header class="page-toolbar">
+    <div>
+      <h1 class="page-title">Deleted CVs</h1>
+      <p class="page-subtitle">
+        Restorable at any time · {{ pageState().total }} deleted
+      </p>
+    </div>
+  </header>
+
+  <!-- Body -->
+  @if (loading()) {
+    <div class="skeleton-stack" aria-busy="true">
+      @for (row of [1, 2, 3]; track row) {
+        <div class="skeleton-row"></div>
+      }
+    </div>
+  } @else if (!cvs().length) {
+    <div class="empty-state">
+      <p class="empty-state-title">Nothing has been deleted</p>
+      <p class="empty-state-hint">
+        Deleting a CV never removes it — it moves here and keeps its full version history,
+        so a CV already sent to a customer stays accounted for
+      </p>
+    </div>
+  } @else {
+
+    <!-- Table: desktop -->
+    <div class="data-table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th scope="col" class="col-owner">Employee</th>
+            <th scope="col" class="col-profile">Profile</th>
+            <th scope="col" class="col-language">Language</th>
+            <th scope="col" class="col-version">Version</th>
+            <th scope="col" class="col-deleted">Deleted</th>
+            <th scope="col" class="col-actions">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (cv of cvs(); track cv.id) {
+            <tr>
+              <td class="col-owner">
+                <span class="cell-strong">{{ cv.employeeName ?? '—' }}</span>
+              </td>
+              <td class="col-profile">
+                <div class="profile-title-row">
+                  <span class="cell-muted">{{ cv.profileName ?? '—' }}</span>
+                  @if (cv.master) {
+                    <span class="status-badge">Master</span>
+                  }
+                </div>
+              </td>
+              <td class="col-language">
+                <div class="language-cell">
+                  <span class="code-chip is-primary">{{ cv.language }}</span>
+                  <span class="language-name">{{ languageLabel(cv.language) }}</span>
+                </div>
+              </td>
+              <td class="col-version">
+                @if (cv.currentVersionNumber) {
+                  v{{ cv.currentVersionNumber }}
+                } @else {
+                  <span class="cell-muted">Never published</span>
+                }
+              </td>
+              <td class="col-deleted">
+                <span class="cell-date">{{ cv.deletedAt | date:'dd/MM/yyyy HH:mm' }}</span>
+                <span class="cell-muted">by {{ cv.deletedByName ?? '—' }}</span>
+              </td>
+              <td class="col-actions">
+                <div class="row-actions">
+                  <button type="button" class="icon-btn" matTooltip="Restore this CV"
+                          (click)="askRestore(cv)">↺</button>
+                </div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Cards: iPad and phone -->
+    <ul class="data-cards">
+      @for (cv of cvs(); track cv.id) {
+        <li class="data-card">
+          <div class="data-card-head">
+            <div class="data-card-text">
+              <div class="profile-title-row">
+                <span class="data-card-title">{{ cv.profileName ?? '—' }}</span>
+                @if (cv.master) {
+                  <span class="status-badge">Master</span>
+                }
+              </div>
+              <p class="data-card-line">{{ cv.employeeName ?? '—' }}</p>
+            </div>
+
+            <div class="row-actions">
+              <button type="button" class="icon-btn" matTooltip="Restore this CV"
+                      (click)="askRestore(cv)">↺</button>
+            </div>
+          </div>
+
+          <dl class="data-card-facts">
+            <div>
+              <dt>Language</dt>
+              <dd>
+                <div class="language-cell">
+                  <span class="code-chip is-primary">{{ cv.language }}</span>
+                  <span class="language-name">{{ languageLabel(cv.language) }}</span>
+                </div>
+              </dd>
+            </div>
+            <div>
+              <dt>Version</dt>
+              <dd>{{ cv.currentVersionNumber ? 'v' + cv.currentVersionNumber : 'Never published' }}</dd>
+            </div>
+            <div>
+              <dt>Deleted</dt>
+              <dd>{{ cv.deletedAt | date:'dd/MM/yyyy HH:mm' }} by {{ cv.deletedByName ?? '—' }}</dd>
+            </div>
+          </dl>
+        </li>
+      }
+    </ul>
+
+    <mat-paginator
+      class="page-paginator"
+      [length]="pageState().total"
+      [pageIndex]="pageState().index"
+      [pageSize]="pageState().size"
+      [pageSizeOptions]="pageSizeOptions"
+      showFirstLastButtons
+      (page)="onPageChange($event)" />
+
+    <p class="text-muted">
+      A CV can only come back if its language slot is still free and its profile is active —
+      otherwise the restore is refused and says which condition failed
+    </p>
+  }
+</section>
+
+<!-- Restore confirmation -->
+@if (restoreTarget(); as target) {
+  <div class="modal-backdrop" [class.is-closing]="isRestoreClosing()" (mousedown)="onRestoreBackdropMouseDown($event)" (click)="onRestoreBackdropClick($event)">
+    <div class="modal modal-sm" role="alertdialog" aria-modal="true" (click)="$event.stopPropagation()">
+      <h2 class="modal-title">Restore CV</h2>
+      <p class="modal-body">
+        Restore the <strong>{{ languageLabel(target.language) }}</strong> CV of
+        <strong>{{ target.profileName }}</strong>?
+        Its version history comes back untouched
+      </p>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-ghost" (click)="cancelRestore()" [disabled]="restoring()">Cancel</button>
+        <button type="button" class="btn btn-primary" (click)="confirmRestore()" [disabled]="restoring()">
+          {{ restoring() ? 'Restoring...' : 'Restore' }}
+        </button>
+      </div>
+    </div>
+  </div>
+}

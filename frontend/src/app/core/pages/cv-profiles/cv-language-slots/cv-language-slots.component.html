@@ -1,0 +1,35 @@
+@if (loading()) {
+  <div class="skeleton-row"></div>
+} @else {
+  <ul class="slot-list">
+    @for (slot of slots(); track slot.language) {
+      <li class="slot" [class.is-empty]="!slot.cv">
+        <span class="code-chip is-primary">{{ slot.language }}</span>
+
+        @if (slot.cv; as cv) {
+          <a class="slot-link" [routerLink]="[cvsRoute, cv.id]">
+            {{ languageLabels[slot.language] }}
+            @if (cv.currentVersionNumber) {
+              <span class="slot-version">v{{ cv.currentVersionNumber }}</span>
+            } @else {
+              <span class="slot-version is-muted">unpublished</span>
+            }
+          </a>
+          @if (cv.master) {
+            <span class="status-badge">Master</span>
+          }
+          @if (cv.openDraftStatus) {
+            <span class="status-badge is-warning">{{ draftStatusLabels[cv.openDraftStatus] }}</span>
+          }
+        } @else {
+          <span class="slot-empty-label">{{ languageLabels[slot.language] }} — none</span>
+          @if (canCreate()) {
+            <button type="button" class="link-btn" (click)="create(slot.language)">
+              Create
+            </button>
+          }
+        }
+      </li>
+    }
+  </ul>
+}

@@ -1,0 +1,95 @@
+:host {
+  display: block;
+  color: var(--vt-ink);
+}
+
+/* ---------- Column widths ---------- */
+.col-owner    { width: 20%; min-width: 10rem; }
+.col-profile  { width: 24%; min-width: 11rem; }
+.col-language { width: 14rem; }
+.col-version  { width: 8rem; }
+.col-deleted  { width: 13rem; }
+.col-actions  { width: 6rem; }
+
+.data-table td.col-profile,
+.data-table td.col-language,
+.data-table td.col-version,
+.data-table td.col-deleted,
+.data-table td.col-actions {
+  text-align: center;
+  white-space: nowrap;
+}
+
+.row-actions {
+  justify-content: center;
+}
+
+/* ---------- Profile name & badge ---------- */
+.profile-title-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+.profile-title-row .cell-strong,
+.profile-title-row .cell-muted,
+.profile-title-row .data-card-title {
+  display: inline-flex;
+  align-items: center;
+  margin: 0;
+  line-height: 1.2;
+}
+
+.profile-title-row .cell-strong,
+.profile-title-row .data-card-title {
+  font-weight: 700;
+}
+
+.profile-title-row .status-badge {
+  display: inline-flex;
+  align-items: center;
+  line-height: 1.2;
+  flex-shrink: 0;
+}
+
+.col-profile .cell-muted {
+  font-size: var(--vt-fs-md);
+}
+
+/* ---------- Language cell ---------- */
+.language-cell {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+.language-name {
+  font-size: var(--vt-fs-md);
+  color: var(--vt-ink-muted);
+}
+
+/* ---------- Version cell ---------- */
+.col-version .cell-muted {
+  font-size: var(--vt-fs-md);
+}
+
+/* ---------- Deleted cell: date over actor ---------- */
+.col-deleted .cell-date {
+  display: block;
+  font-size: var(--vt-fs-md);
+}
+
+.col-deleted .cell-muted {
+  display: block;
+  font-size: var(--vt-fs-sm);
+}
+
+.cell-date {
+  color: var(--vt-ink-muted);
+  white-space: nowrap;
+}

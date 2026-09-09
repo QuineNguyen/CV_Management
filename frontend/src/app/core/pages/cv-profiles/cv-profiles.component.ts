@@ -4,7 +4,7 @@ import { MatPaginatorModule, PageEvent } from "@angular/material/paginator";
 import { MatTooltipModule } from "@angular/material/tooltip";
 import { CvProfileService } from "../../services/cv-profile.service";
 import { AuthService } from "../../services/auth.service";
-import { ActivatedRoute } from "@angular/router";
+import { ActivatedRoute, Router } from "@angular/router";
 import { ToastService } from "../../services/toast.service";
 import { CvProfileRequest, CvProfileResponse } from "../../dtos/cv-profile.dto";
 import { CvProfileDialogState, CvProfilePageState } from "../../models/cv-profile.model";
@@ -14,11 +14,13 @@ import { QueryParam } from "../../enums/query-param.enum";
 import { DialogMode } from "../../enums/dialog-mode.enum";
 import { CVProfileFormDialogComponent } from "./cv-profile-form/cv-profile-form-dialog.component";
 import { UserService } from "../../services/user.service";
+import { CvLanguageSlotsComponent } from "./cv-language-slots/cv-language-slots.component";
+import { AppRoute } from "../../enums/app-route.enum";
 
 @Component({
     selector: 'app-profiles',
     standalone: true,
-    imports: [MatPaginatorModule, MatTooltipModule, CVProfileFormDialogComponent, DatePipe],
+    imports: [MatPaginatorModule, MatTooltipModule, CVProfileFormDialogComponent, DatePipe, CvLanguageSlotsComponent],
     templateUrl: './cv-profiles.component.html',
     styleUrl: './cv-profiles.component.css',
     changeDetection: ChangeDetectionStrategy.OnPush,
@@ -31,6 +33,7 @@ export class CVProfilesComponent implements OnInit {
     private readonly userService = inject(UserService);
     private readonly auth = inject(AuthService);
     private readonly route = inject(ActivatedRoute);
+    private readonly router = inject(Router);
     private readonly toast = inject(ToastService);
     private readonly destroyRef = inject(DestroyRef);
 
@@ -55,6 +58,7 @@ export class CVProfilesComponent implements OnInit {
     readonly deleteTarget = signal<CvProfileResponse | null>(null);
     readonly deleting = signal(false);
     readonly isDeleteClosing = signal(false);
+    private deleteBackdropMouseDownTarget: EventTarget | null = null;
 
     // Id of the profile currently being promoted, so only its button shows a pending state.
     readonly promotingId = signal<string | null>(null);
@@ -66,6 +70,9 @@ export class CVProfilesComponent implements OnInit {
     readonly canDelete = computed(() => this.auth.hasRole(UserRole.Admin, UserRole.HR));
 
     readonly isOwnPage = computed(() => this.auth.user()?.id === this.employeeId());
+
+    // Which profile's language slots are open; only one at a time keeps the table readable.
+    readonly expandedProfileId = signal<string | null>(null);
 
     ngOnInit(): void {
         this.route.queryParamMap
@@ -188,6 +195,17 @@ export class CVProfilesComponent implements OnInit {
         this.deleteTarget.set(profile);
     }
 
+    onDeleteBackdropMouseDown(event: MouseEvent): void {
+        this.deleteBackdropMouseDownTarget = event.target;
+    }
+
+    onDeleteBackdropClick(event: MouseEvent): void {
+        if (event.target === event.currentTarget && this.deleteBackdropMouseDownTarget === event.currentTarget) {
+            this.cancelDelete();
+        }
+        this.deleteBackdropMouseDownTarget = null;
+    }
+
     cancelDelete(): void {
         if (this.isDeleteClosing() || this.deleting()) {
             return;
@@ -258,5 +276,17 @@ export class CVProfilesComponent implements OnInit {
         this.userService.getById(employeeId)
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe({ next: user => this.employeeName.set(user.fullName) });
+    }
+
+    toggleCvs(profile: CvProfileResponse): void {
+        this.expandedProfileId.update(current => (current === profile.id ? null : profile.id));
+    }
+
+    // Creating a CV is the common task; the wizard creates the first profile on its own when the
+    // employee has none, so it works as an entry point even from an empty page.
+    createCv(profileId?: string): void {
+        void this.router.navigate(['/' + AppRoute.CvsNew], {
+            queryParams: profileId ? { [QueryParam.ProfileId]: profileId } : {},
+        });
     }
 }

@@ -110,6 +110,10 @@ export class UsersComponent implements OnInit {
     readonly temporaryPassword = signal<TemporaryPasswordState | null>(null);
     readonly isPasswordClosing = signal(false);
 
+    private resetBackdropMouseDownTarget: EventTarget | null = null;
+    private passwordBackdropMouseDownTarget: EventTarget | null = null;
+    private activateBackdropMouseDownTarget: EventTarget | null = null;
+
     // HR reaches this page read-only; every write action is hidden for them
     readonly canManage = computed(() => this.auth.hasRole(UserRole.Admin));
 
@@ -372,6 +376,17 @@ export class UsersComponent implements OnInit {
         }
     }
 
+    onPasswordBackdropMouseDown(event: MouseEvent): void {
+        this.passwordBackdropMouseDownTarget = event.target;
+    }
+
+    onPasswordBackdropClick(event: MouseEvent): void {
+        if (event.target === event.currentTarget && this.passwordBackdropMouseDownTarget === event.currentTarget) {
+            this.dismissPassword();
+        }
+        this.passwordBackdropMouseDownTarget = null;
+    }
+
     dismissPassword(): void {
         if (this.isPasswordClosing()) {
             return;
@@ -422,6 +437,17 @@ export class UsersComponent implements OnInit {
         this.activateTarget.set(user);
     }
 
+    onActivateBackdropMouseDown(event: MouseEvent): void {
+        this.activateBackdropMouseDownTarget = event.target;
+    }
+
+    onActivateBackdropClick(event: MouseEvent): void {
+        if (event.target === event.currentTarget && this.activateBackdropMouseDownTarget === event.currentTarget) {
+            this.cancelActivate();
+        }
+        this.activateBackdropMouseDownTarget = null;
+    }
+
     cancelActivate(): void {
         if (this.isActivateClosing() || this.activating()) {
             return;
@@ -462,6 +488,17 @@ export class UsersComponent implements OnInit {
     askResetPassword(user: UserResponse): void {
         this.isResetClosing.set(false);
         this.resetTarget.set(user);
+    }
+
+    onResetBackdropMouseDown(event: MouseEvent): void {
+        this.resetBackdropMouseDownTarget = event.target;
+    }
+
+    onResetBackdropClick(event: MouseEvent): void {
+        if (event.target === event.currentTarget && this.resetBackdropMouseDownTarget === event.currentTarget) {
+            this.cancelReset();
+        }
+        this.resetBackdropMouseDownTarget = null;
     }
 
     cancelReset(): void {

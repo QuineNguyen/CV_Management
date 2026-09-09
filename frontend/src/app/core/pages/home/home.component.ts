@@ -14,7 +14,8 @@ import { MatChipsModule } from '@angular/material/chips';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { AuthService } from '../../services/auth.service';
 import { environment } from '../../../../environments/environment';
-import { Language } from '../../models/language.model';
+import { CvLanguage } from '../../enums/cv-language.enum';
+
 
 interface HealthResponse {
   status: string;
@@ -77,7 +78,7 @@ export class HomeComponent {
 
   /** Test string containing Japanese, Vietnamese diacritics, and 4-byte emoji. */
   sampleText = 'ソフトウェア開発者 — Kỹ sư phần mềm 🎌';
-  sampleLanguage: Language = 'JA';
+  sampleLanguage: CvLanguage = CvLanguage.Ja;
   deadlineDate: Date = new Date();
 
   constructor() {

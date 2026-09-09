@@ -19,6 +19,9 @@
         <button type="button" class="btn btn-primary" (click)="openCreate()">
           <span aria-hidden="true">＋</span> Add Profile
         </button>
+        <button type="button" class="btn btn-primary" (click)="createCv()">
+          <span aria-hidden="true">＋</span> Create CV
+        </button>
       </div>
     }
   </header>
@@ -32,13 +35,17 @@
     </div>
   } @else if (!profiles().length) {
     <div class="empty-state">
-      <p class="empty-state-title">No profiles yet</p>
+      <p class="empty-state-title">No CVs yet</p>
       <p class="empty-state-hint">
-        A profile is one professional persona — "Software Developer" and "AI Engineer" are two
-        profiles of the same person, each with its own CVs and its own reviewing team
+        Start by creating a CV — a profile is set up for you along the way, using your primary team
+        as its reviewing team. A profile is one professional persona: "Software Developer" and
+        "AI Engineer" are two profiles of the same person, each with its own CVs
       </p>
       @if (canEdit()) {
-        <button type="button" class="btn btn-primary" (click)="openCreate()">Create the first profile</button>
+        <button type="button" class="btn btn-primary" (click)="createCv()">Create your first CV</button>
+        <button type="button" class="link-btn empty-state-secondary" (click)="openCreate()">
+          Or name a profile first
+        </button>
       }
     </div>
   } @else {
@@ -77,13 +84,21 @@
                   }
                 </div>
               </td>
-              <td class="col-cvs profile-count-cell">{{ profile.cvCount }}</td>
+              <td class="col-cvs profile-count-cell">
+                <button type="button" class="link-btn"
+                        [matTooltip]="expandedProfileId() === profile.id ? 'Hide CVs' : 'Show CVs'"
+                        (click)="toggleCvs(profile)">
+                  {{ profile.cvCount }}
+                </button>
+              </td>
               <td class="col-updated">
                 <span class="cell-date">{{ profile.updatedAt | date:'dd/MM/yyyy HH:mm' }}</span>
               </td>
               <td class="col-actions">
                 <div class="row-actions">
                   @if (canEdit()) {
+                    <button type="button" class="icon-btn" matTooltip="Create a CV in this profile"
+                            (click)="createCv(profile.id)">＋</button>
                     <button type="button" class="icon-btn" [matTooltip]="primaryActionHint(profile)"
                             [disabled]="profile.primary || promotingId() === profile.id"
                             (click)="setPrimary(profile)">★</button>
@@ -91,13 +106,22 @@
                             (click)="openEdit(profile)">✎</button>
                   }
                   @if (canDelete()) {
-                    <button type="button" class="icon-btn icon-btn--danger" [matTooltip]="deleteActionHint(profile)"
+                    <button type="button" class="icon-btn icon-btn-danger" [matTooltip]="deleteActionHint(profile)"
                             [disabled]="profile.primary"
                             (click)="askDelete(profile)">🗑</button>
                   }
                 </div>
               </td>
             </tr>
+            @if (expandedProfileId() === profile.id) {
+              <tr class="slots-row">
+                <td colspan="5">
+                  <app-cv-language-slots
+                    [profileId]="profile.id"
+                    [canCreate]="canEdit()" />
+                </td>
+              </tr>
+            }
           }
         </tbody>
       </table>
@@ -122,6 +146,8 @@
 
             <div class="row-actions">
               @if (canEdit()) {
+                <button type="button" class="icon-btn" matTooltip="Create a CV in this profile"
+                            (click)="createCv(profile.id)">＋</button>
                 <button type="button" class="icon-btn" [matTooltip]="primaryActionHint(profile)"
                         [disabled]="profile.primary || promotingId() === profile.id"
                         (click)="setPrimary(profile)">★</button>
@@ -129,7 +155,7 @@
                         (click)="openEdit(profile)">✎</button>
               }
               @if (canDelete()) {
-                <button type="button" class="icon-btn icon-btn--danger" [matTooltip]="deleteActionHint(profile)"
+                <button type="button" class="icon-btn icon-btn-danger" [matTooltip]="deleteActionHint(profile)"
                         [disabled]="profile.primary"
                         (click)="askDelete(profile)">🗑</button>
               }
@@ -148,13 +174,23 @@
             </div>
             <div>
               <dt>CVs</dt>
-              <dd>{{ profile.cvCount }}</dd>
+              <dd>
+                <button type="button" class="link-btn" (click)="toggleCvs(profile)">
+                  {{ profile.cvCount }} — {{ expandedProfileId() === profile.id ? 'hide' : 'show' }}
+                </button>
+              </dd>
             </div>
             <div>
               <dt>Updated</dt>
               <dd>{{ profile.updatedAt | date:'dd/MM/yyyy HH:mm' }}</dd>
             </div>
           </dl>
+
+          @if (expandedProfileId() === profile.id) {
+            <app-cv-language-slots
+              [profileId]="profile.id"
+              [canCreate]="canEdit()" />
+          }
         </li>
       }
     </ul>
@@ -188,7 +224,7 @@
 
 <!-- Delete confirmation -->
 @if (deleteTarget(); as target) {
-  <div class="modal-backdrop" [class.is-closing]="isDeleteClosing()" (click)="cancelDelete()">
+  <div class="modal-backdrop" [class.is-closing]="isDeleteClosing()" (mousedown)="onDeleteBackdropMouseDown($event)" (click)="onDeleteBackdropClick($event)">
     <div class="modal modal-sm" role="alertdialog" aria-modal="true" (click)="$event.stopPropagation()">
       <h2 class="modal-title">Delete profile</h2>
       <p class="modal-body">

@@ -41,6 +41,8 @@ export class TeamMembersDialogComponent implements OnInit {
 
     readonly isClosing = signal(false);
     readonly isRemoveClosing = signal(false);
+    private mainBackdropMouseDownTarget: EventTarget | null = null;
+    private removeBackdropMouseDownTarget: EventTarget | null = null;
 
     readonly members = signal<TeamMemberResponse[]>([]);
     readonly loading = signal(false);
@@ -111,6 +113,17 @@ export class TeamMembersDialogComponent implements OnInit {
         this.removeTarget.set(member);
     }
 
+    onRemoveBackdropMouseDown(event: MouseEvent): void {
+        this.removeBackdropMouseDownTarget = event.target;
+    }
+
+    onRemoveBackdropClick(event: MouseEvent): void {
+        if (event.target === event.currentTarget && this.removeBackdropMouseDownTarget === event.currentTarget) {
+            this.cancelRemove();
+        }
+        this.removeBackdropMouseDownTarget = null;
+    }
+
     cancelRemove(): void {
         if (this.isRemoveClosing() || (this.removeTarget() && this.busyUserId() === this.removeTarget()?.userId)) {
             return;
@@ -144,6 +157,17 @@ export class TeamMembersDialogComponent implements OnInit {
                 this.isRemoveClosing.set(false);
             },
         });
+    }
+
+    onMainBackdropMouseDown(event: MouseEvent): void {
+        this.mainBackdropMouseDownTarget = event.target;
+    }
+
+    onMainBackdropClick(event: MouseEvent): void {
+        if (event.target === event.currentTarget && this.mainBackdropMouseDownTarget === event.currentTarget) {
+            this.onClose();
+        }
+        this.mainBackdropMouseDownTarget = null;
     }
 
     onClose(): void {

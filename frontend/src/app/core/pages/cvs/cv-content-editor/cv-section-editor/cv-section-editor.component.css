@@ -1,0 +1,96 @@
+:host {
+  display: block;
+}
+
+.cv-section {
+  background: var(--vt-surface);
+  border: 0.0625rem solid var(--vt-line);
+  border-radius: var(--vt-radius);
+  padding: var(--vt-pad);
+  box-shadow: var(--vt-shadow);
+}
+
+.cv-section-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--vt-gap);
+  flex-wrap: wrap;
+  margin-block-end: var(--vt-pad);
+}
+
+.cv-section-title {
+  margin: 0;
+  font-size: var(--vt-fs-lg);
+  font-weight: 700;
+  color: var(--vt-ink);
+}
+
+.cv-section-description {
+  margin: 0.25rem 0 0;
+  font-size: var(--vt-fs-sm);
+  color: var(--vt-ink-muted);
+}
+
+.cv-section-add {
+  flex: 0 0 auto;
+  min-height: var(--vt-touch-target);
+}
+
+.cv-section-empty {
+  margin: 0;
+  padding: var(--vt-pad);
+  text-align: center;
+  color: var(--vt-ink-muted);
+  font-size: var(--vt-fs-sm);
+  border: 0.0625rem dashed var(--vt-line);
+  border-radius: var(--vt-radius-sm);
+}
+
+.cv-item-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--vt-gap);
+}
+
+.cv-textarea {
+  resize: vertical;
+  min-height: 6rem;
+  font-family: inherit;
+}
+
+.form-grid .field {
+  grid-column: 1 / -1;
+}
+
+.field.custom-select-wrap {
+  position: relative;
+}
+
+.field.custom-select-wrap:has(.is-open) {
+  z-index: 30;
+}
+
+@media (min-width: 48rem) {
+  .form-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .form-grid .field-half {
+    grid-column: span 1;
+  }
+}
+
+/* ---------- Phone ---------- */
+@media (max-width: 40rem) {
+  .cv-section {
+    padding: clamp(0.75rem, 3vw, 1rem);
+  }
+
+  .cv-section-add {
+    width: 100%;
+  }
+}

@@ -1,4 +1,4 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, computed, HostListener, inject, signal } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatSidenav, MatSidenavModule } from '@angular/material/sidenav';
@@ -16,6 +16,7 @@ import { UserRole } from '../enums/user-role.enum';
 import { AppRoute } from '../enums/app-route.enum';
 import { NavItem } from '../models/nav-item.model';
 import { NavIconEnum } from '../enums/nav-icon.enum';
+import { ConfirmService } from '../services/confirm.service';
 
 
 /**
@@ -48,10 +49,12 @@ export class ShellComponent {
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
   private readonly breakpoints = inject(BreakpointObserver);
+  private readonly confirm = inject(ConfirmService);
 
   readonly user = this.auth.user;
   readonly navOpen = signal(true);
   readonly homeRoute = '/' + AppRoute.Home;
+  private confirmBackdropMouseDownTarget: EventTarget | null = null;
 
   /**
    * Drawer switches to overlay mode below 1024px, which covers phones and iPad in both
@@ -69,6 +72,8 @@ export class ShellComponent {
     { label: 'Departments', icon: NavIconEnum.Departments, route: AppRoute.Departments, roles: [UserRole.Admin] },
     { label: 'Teams', icon: NavIconEnum.Teams, route: AppRoute.Teams, roles: [UserRole.Admin] },
     { label: 'Competency Profiles', icon: NavIconEnum.Profiles, route: AppRoute.Profiles },
+    { label: 'Create CV', icon: NavIconEnum.AddCv, route: AppRoute.CvsNew },
+    { label: 'Deleted CVs', icon: NavIconEnum.Deleted, route: AppRoute.CvsDeleted, roles: [UserRole.Admin, UserRole.HR] },
     // Later stages add their entries here. Each one declares the roles it is offered to; the
     // server still enforces access independently.
   ];
@@ -83,6 +88,36 @@ export class ShellComponent {
     const role = this.user()?.role;
     return role ? ROLE_LABELS[role] : '';
   });
+
+  /*
+   * The shell draws prompts raised from outside any page - route guards have no template of their
+   * own. Nothing about navigation depends on this; it lives here because the shell is the one
+   * component always on screen.
+   */
+  readonly pendingConfirm = this.confirm.pending;
+
+  onConfirmBackdropMouseDown(event: MouseEvent): void {
+    this.confirmBackdropMouseDownTarget = event.target;
+  }
+
+  onConfirmBackdropClick(event: MouseEvent): void {
+    if (event.target === event.currentTarget && this.confirmBackdropMouseDownTarget === event.currentTarget) {
+      this.answerConfirm(false);
+    }
+    this.confirmBackdropMouseDownTarget = null;
+  }
+
+  answerConfirm(result: boolean): void {
+    this.confirm.answer(result);
+  }
+
+  @HostListener('document:keydown.escape')
+  onEscape(): void {
+    if (this.pendingConfirm()) {
+      // Escape means "no": the safe answer is always the one that keeps the work.
+      this.confirm.answer(false);
+    }
+  }
 
   toggleNav(drawer: MatSidenav): void {
     if (this.isCompact()) {

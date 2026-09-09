@@ -1,0 +1,114 @@
+:host {
+  display: block;
+  color: var(--vt-ink);
+}
+
+.page-title .status-badge {
+  margin-inline-start: 0.5rem;
+  vertical-align: middle;
+}
+
+.page-subtitle {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.link-btn,
+.link-btn:hover {
+  min-height: auto;
+  text-decoration: none;
+}
+
+.employee-name {
+  font-size: var(--vt-fs-md);
+}
+
+/* ---------- Version metadata ---------- */
+.version-facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(11rem, 100%), 1fr));
+  gap: var(--vt-gap);
+  margin: 0 0 var(--vt-pad);
+  padding: var(--vt-pad);
+  background: var(--vt-surface);
+  border: 0.0625rem solid var(--vt-line);
+  border-radius: var(--vt-radius);
+  box-shadow: var(--vt-shadow);
+}
+
+.version-facts dt {
+  font-size: var(--vt-fs-sm);
+  color: var(--vt-ink-muted);
+  margin-block-end: 0.25rem;
+}
+
+.version-facts dd {
+  margin: 0;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+/* ---------- Notice ---------- */
+.notice {
+  border: 0.0625rem solid var(--vt-line);
+  border-inline-start: 0.25rem solid var(--vt-ink-muted);
+  border-radius: var(--vt-radius-sm);
+  background: var(--vt-surface);
+  padding: clamp(0.6rem, 2vw, 1rem);
+  margin-block-end: var(--vt-pad);
+  font-size: var(--vt-fs-sm);
+  line-height: 1.5;
+}
+
+.notice-warning {
+  border-inline-start-color: var(--vt-warning);
+  background: #fdf7ef;
+}
+
+/* ---------- Master picker inside the delete dialog ---------- */
+.choice-list {
+  list-style: none;
+  margin: var(--vt-gap) 0 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--vt-gap);
+}
+
+.choice-option {
+  min-height: var(--vt-touch-target);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: clamp(0.5rem, 2vw, 0.75rem);
+  border: 0.0625rem solid var(--vt-line);
+  border-radius: var(--vt-radius-sm);
+  background: var(--vt-surface);
+  color: var(--vt-ink);
+  font-family: inherit;
+  font-size: var(--vt-fs-md);
+  cursor: pointer;
+}
+
+.choice-option.is-selected {
+  border-color: var(--vt-red);
+  background: var(--vt-red-surface);
+}
+
+@media (max-width: 40rem) {
+  .page-toolbar-actions {
+    width: 100%;
+  }
+
+  .page-toolbar-actions .btn {
+    flex: 1 1 0;
+  }
+
+  .choice-option {
+    width: 100%;
+  }
+}

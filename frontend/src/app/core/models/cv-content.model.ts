@@ -1,5 +1,4 @@
-import { LanguageProficiency } from "../enums/language-proficiency.enum";
-import { ProficiencyLevel } from "../enums/proficiency-level.enum";
+import { ProficiencyLevel, LanguageProficiency } from "../enums/proficiency.enum";
 
 /*
  * Wire shape of content_json, mirroring the backend records. Keys stay snake_case because a

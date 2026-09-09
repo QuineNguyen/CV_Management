@@ -43,6 +43,7 @@ export class DepartmentsComponent implements OnInit {
     readonly deleteTarget = signal<DepartmentNode | null>(null);
     readonly deleting = signal(false);
     readonly isDeleteClosing = signal(false);
+    private deleteBackdropMouseDownTarget: EventTarget | null = null;
 
     ngOnInit(): void {
         this.loadTree(true);
@@ -157,6 +158,17 @@ export class DepartmentsComponent implements OnInit {
     askDelete(department: DepartmentNode): void {
         this.isDeleteClosing.set(false);
         this.deleteTarget.set(department);
+    }
+
+    onDeleteBackdropMouseDown(event: MouseEvent): void {
+        this.deleteBackdropMouseDownTarget = event.target;
+    }
+
+    onDeleteBackdropClick(event: MouseEvent): void {
+        if (event.target === event.currentTarget && this.deleteBackdropMouseDownTarget === event.currentTarget) {
+            this.cancelDelete();
+        }
+        this.deleteBackdropMouseDownTarget = null;
     }
 
     cancelDelete(): void {

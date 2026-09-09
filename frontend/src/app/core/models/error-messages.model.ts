@@ -24,6 +24,19 @@ export const ERROR_MESSAGES: Readonly<Record<ClientErrorCode, string>> = {
   DRAFT_CONTENT_LOCKED:
     'This draft is read-only while it is awaiting approval, so reviewers decide on the exact ' +
     'content they read',
+  CV_SLOT_OCCUPIED: 'This profile already has an active CV in that language',
+  CV_PROFILE_DELETED: 'Another CV now occupies this profile and language. Delete or move it before restoring this one',
+  CV_NOT_DELETED: 'This CV is not deleted, so there is nothing to restore',
+  CV_MASTER_CONFLICT: 'Restoring this CV would leave the profile with two master CVs',
+  MUST_DESIGNATE_NEW_MASTER: 'This is the master CV. Choose which of the remaining CVs takes over before deleting it',
+  INVALID_NEW_MASTER: 'The CV you chose as the new master must be another active CV of the same profile',
+  CV_HAS_PENDING_DRAFTS: 'This CV has a draft awaiting approval. Cancel the draft before deleting it',
+  CV_HAS_NO_VERSION: 'This CV has no published version yet',
+  DUPLICATE_CV_ITEM_ID: 'Two entries in this CV share the same identifier. Reload the editor and try again',
+  ITEM_ID_FOREIGN_TO_PROFILE: 'This content references an entry from another profile. Reload the editor and try again',
+  PROFILE_NAME_CONFLICT_ON_RESTORE: 'Another active profile already uses that name. Give this one a new name',
+  PROFILE_TEAM_INVALID_ON_RESTORE: 'The linked team is no longer one this employee belongs to. Pick a current team',
+  PROFILE_NOT_DELETED: 'This profile is not deleted, so there is nothing to restore',
 
   // Approval
   APPROVAL_ALREADY_ASSIGNED: 'This draft already has an open approval assignment',

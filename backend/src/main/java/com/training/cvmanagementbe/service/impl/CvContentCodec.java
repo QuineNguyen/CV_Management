@@ -16,6 +16,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 /*
  * Serialises CV content and exposes the flat views the diff needs.
@@ -131,6 +132,18 @@ public class CvContentCodec {
             }
         }
         return objectMapper.convertValue(root, CvContent.class);
+    }
+
+    // Every item_id present in the content, across all seven repeated sections.
+    public Set<String> itemIdsOf(CvContent content) {
+        if (content == null) {
+            return Set.of();
+        }
+        return content.repeatedSections().values().stream()
+                .flatMap(List::stream)
+                .map(RepeatedEntry::itemId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toCollection(LinkedHashSet::new));
     }
 
     // Enum constant names map 1:1 onto the JSON property names of CvContent.
