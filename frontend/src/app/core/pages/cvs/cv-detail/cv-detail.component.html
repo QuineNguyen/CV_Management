@@ -1,0 +1,144 @@
+@if (loading()) {
+  <section class="page">
+    <div class="skeleton-stack" aria-busy="true">
+      @for (row of [1, 2, 3]; track row) {
+        <div class="skeleton-row"></div>
+      }
+    </div>
+  </section>
+} @else if (detail(); as detail) {
+  <section class="page">
+
+    <header class="page-toolbar">
+      <div>
+        <h1 class="page-title">
+          {{ languageLabels[detail.cv.language] }} CV
+          @if (detail.cv.master) {
+            <span class="status-badge">Master</span>
+          }
+        </h1>
+        <p class="page-subtitle">
+          <a class="link-btn" [routerLink]="['/cv-profiles']">{{ detail.cv.profileName }}</a>
+          <span class="employee-name">· {{ detail.cv.employeeName }}</span>
+        </p>
+      </div>
+
+      <div class="page-toolbar-actions">
+        @if (canEdit()) {
+          <button type="button" class="btn btn-primary" (click)="edit()">Edit</button>
+        }
+        @if (canDelete()) {
+          <button type="button" class="btn btn-danger" (click)="askDelete()">Delete</button>
+        }
+      </div>
+    </header>
+
+    <!-- Version metadata -->
+    <dl class="version-facts">
+      <div>
+        <dt>Current version</dt>
+        <dd>
+          @if (detail.currentVersion; as version) {
+            v{{ version.versionNumber }}
+          } @else {
+            <span class="cell-muted">None yet</span>
+          }
+        </dd>
+      </div>
+      <div>
+        <dt>Published</dt>
+        <dd>
+          {{ detail.currentVersion
+              ? (detail.currentVersion.publishedAt | date:'dd/MM/yyyy HH:mm')
+              : '—' }}
+        </dd>
+      </div>
+      <div>
+        <dt>Source</dt>
+        <dd>
+          {{ detail.currentVersion ? versionSourceLabels[detail.currentVersion.source] : '—' }}
+        </dd>
+      </div>
+      <div>
+        <dt>Changes</dt>
+        <dd>{{ detail.currentVersion?.changeSummary ?? '—' }}</dd>
+      </div>
+      <div>
+        <dt>Open draft</dt>
+        <dd>
+          @if (detail.openDraft; as draft) {
+            {{ draftStatusLabels[draft.status] }} · round {{ draft.reviewRound }}
+          } @else {
+            <span class="cell-muted">None</span>
+          }
+        </dd>
+      </div>
+    </dl>
+
+    @if (!detail.currentVersion) {
+      <div class="notice notice-warning" role="status">
+        <strong>No official version yet.</strong>
+        Nothing has been published for this CV, so there is nothing to export or send out.
+        @if (detail.openDraft) {
+          A draft exists and is {{ draftStatusLabels[detail.openDraft.status] }}
+        }
+      </div>
+    }
+
+    <!-- Content, read-only -->
+    @if (detail.content) {
+      <app-cv-content-editor [content]="detail.content" [language]="detail.cv.language" [readOnly]="true" />
+    } @else if (detail.openDraft; as draft) {
+      <p class="text-muted">Showing the unpublished draft content</p>
+      <app-cv-content-editor [content]="draft.content" [language]="detail.cv.language" [readOnly]="true" />
+    }
+  </section>
+}
+
+<!-- Delete confirmation -->
+@if (deleteOpen() && detail(); as detail) {
+  <div class="modal-backdrop" [class.is-closing]="isDeleteClosing()" (mousedown)="onDeleteBackdropMouseDown($event)" (click)="onDeleteBackdropClick($event)">
+    <div class="modal" role="alertdialog" aria-modal="true" (click)="$event.stopPropagation()">
+      <h2 class="modal-title">Delete CV</h2>
+      <p class="modal-body">
+        Delete the <strong>{{ languageLabels[detail.cv.language] }}</strong> CV of
+        <strong>{{ detail.cv.profileName }}</strong>?
+        Its version history is kept and it can be restored later
+      </p>
+
+      @if (needsNewMaster()) {
+        <div class="field">
+          <label class="field-label">
+            New master CV <span class="field-required">*</span>
+          </label>
+          <p class="field-hint">
+            This is the master of its profile. The other language CVs take their structure from it,
+            so one of them has to take over before it can go
+          </p>
+          <ul class="choice-list">
+            @for (candidate of masterCandidates(); track candidate.id) {
+              <li>
+                <button type="button" class="choice-option choice-option-compact"
+                        [class.is-selected]="newMasterCvId() === candidate.id"
+                        (click)="selectNewMaster(candidate.id)">
+                  <span class="code-chip is-primary">{{ candidate.language }}</span>
+                  <span>{{ languageLabels[candidate.language] }}</span>
+                </button>
+              </li>
+            }
+          </ul>
+        </div>
+      }
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-ghost" (click)="cancelDelete()" [disabled]="deleting()">
+          Cancel
+        </button>
+        <button type="button" class="btn btn-danger" (click)="confirmDelete()"
+                [disabled]="deleting() || (needsNewMaster() && !newMasterCvId())">
+          {{ deleting() ? 'Deleting...' : 'Delete' }}
+        </button>
+      </div>
+    </div>
+  </div>
+}

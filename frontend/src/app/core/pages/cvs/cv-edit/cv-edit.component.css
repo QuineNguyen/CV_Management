@@ -1,0 +1,54 @@
+:host {
+  display: block;
+  color: var(--vt-ink);
+}
+
+/* ---------- Branch banner ---------- */
+.notice {
+  border: 0.0625rem solid var(--vt-line);
+  border-inline-start: 0.25rem solid var(--vt-ink-muted);
+  border-radius: var(--vt-radius-sm);
+  background: var(--vt-surface);
+  padding: clamp(0.6rem, 2vw, 1rem);
+  margin-block-end: var(--vt-pad);
+  font-size: var(--vt-fs-sm);
+  line-height: 1.5;
+}
+
+.notice-warning {
+  border-inline-start-color: var(--vt-warning);
+  background: #fdf7ef;
+}
+
+.notice-danger {
+  border-inline-start-color: var(--vt-red);
+  background: var(--vt-red-surface);
+}
+
+.notice-detail {
+  margin: 0.5rem 0 0;
+  color: var(--vt-ink-muted);
+}
+
+/* ---------- Footer ---------- */
+.edit-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--vt-gap);
+  flex-wrap: wrap;
+  margin-block-start: var(--vt-pad);
+  position: sticky;
+  bottom: 0;
+  padding: var(--vt-gap) 0;
+  background: linear-gradient(to top, var(--vt-canvas) 70%, transparent);
+}
+
+.page-subtitle .code-chip {
+  margin-inline-end: 0.35rem;
+}
+
+@media (max-width: 40rem) {
+  .edit-footer .btn {
+    flex: 1 1 0;
+  }
+}

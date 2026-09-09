@@ -10,4 +10,7 @@ export enum AppRoute {
     Departments = 'departments',
     Teams = 'teams',
     Profiles = 'cv-profiles',
+    Cvs = 'cvs',
+    CvsNew = 'cvs/new',
+    CvsDeleted = 'cvs/deleted',
 }

@@ -58,6 +58,7 @@ export class TeamsComponent implements OnInit {
     readonly deleteTarget = signal<TeamResponse | null>(null);
     readonly deleting = signal(false);
     readonly isDeleteClosing = signal(false);
+    private deleteBackdropMouseDownTarget: EventTarget | null = null;
 
     readonly isEmpty = computed(() => !this.loading() && this.teams().length === 0);
 
@@ -214,6 +215,17 @@ export class TeamsComponent implements OnInit {
     askDelete(team: TeamResponse): void {
         this.isDeleteClosing.set(false);
         this.deleteTarget.set(team);
+    }
+
+    onDeleteBackdropMouseDown(event: MouseEvent): void {
+        this.deleteBackdropMouseDownTarget = event.target;
+    }
+
+    onDeleteBackdropClick(event: MouseEvent): void {
+        if (event.target === event.currentTarget && this.deleteBackdropMouseDownTarget === event.currentTarget) {
+            this.cancelDelete();
+        }
+        this.deleteBackdropMouseDownTarget = null;
     }
 
     cancelDelete(): void {

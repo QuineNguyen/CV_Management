@@ -8,7 +8,7 @@
 .col-team     { width: 28%; min-width: 13rem; }
 .col-cvs      { width: 5rem; }
 .col-updated  { width: 11rem; }
-.col-actions  { width: 7rem; }
+.col-actions  { width: 9rem; }
 
 .data-table td.col-team,
 .data-table td.col-cvs,
@@ -23,6 +23,11 @@
 
 .row-actions {
   justify-content: center;
+}
+
+.slots-row td {
+  background: var(--vt-canvas);
+  padding-block: var(--vt-gap);
 }
 
 /* ---------- Profile name & badge (inline side-by-side) ---------- */
@@ -58,7 +63,7 @@
 }
 
 .team-name {
-  font-size: var(--vt-fs-sm);
+  font-size: var(--vt-fs-md);
   color: var(--vt-ink-muted);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -67,7 +72,7 @@
 
 /* ---------- Updated date ---------- */
 .cell-date {
-  font-size: var(--vt-fs-sm);
+  font-size: var(--vt-fs-md);
   color: var(--vt-ink-muted);
   white-space: nowrap;
 }
@@ -79,4 +84,8 @@
 
 .btn-primary {
   margin: 0.75rem 0 0;
+}
+
+.empty-state-secondary {
+  margin-block-start: 0.5rem;
 }

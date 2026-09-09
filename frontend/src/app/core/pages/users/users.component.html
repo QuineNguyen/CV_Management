@@ -282,7 +282,7 @@
                           (click)="askResetPassword(user)">🔑</button>
                         <button
                           type="button"
-                          class="icon-btn icon-btn--danger"
+                          class="icon-btn icon-btn-danger"
                           [matTooltip]="selfActionHint(user.id, 'deactivate')"
                           [disabled]="user.id === currentUserId()"
                           (click)="askDeactivate(user)">⊘</button>
@@ -334,7 +334,7 @@
                       (click)="askResetPassword(user)">🔑</button>
                     <button
                       type="button"
-                      class="icon-btn icon-btn--danger"
+                      class="icon-btn icon-btn-danger"
                       [matTooltip]="selfActionHint(user.id, 'deactivate')"
                       [disabled]="user.id === currentUserId()"
                       (click)="askDeactivate(user)">⊘</button>
@@ -410,7 +410,7 @@
 
 <!-- Reset password confirmation -->
 @if (resetTarget(); as target) {
-  <div class="modal-backdrop" [class.is-closing]="isResetClosing()" (click)="cancelReset()">
+  <div class="modal-backdrop" [class.is-closing]="isResetClosing()" (mousedown)="onResetBackdropMouseDown($event)" (click)="onResetBackdropClick($event)">
     <div class="modal modal-sm" role="alertdialog" aria-modal="true" (click)="$event.stopPropagation()">
       <h2 class="modal-title">Reset password</h2>
       <p class="modal-body">
@@ -434,7 +434,7 @@
 
 <!-- Temporary password, shown once -->
 @if (temporaryPassword(); as state) {
-  <div class="modal-backdrop" [class.is-closing]="isPasswordClosing()" (click)="dismissPassword()">
+  <div class="modal-backdrop" [class.is-closing]="isPasswordClosing()" (mousedown)="onPasswordBackdropMouseDown($event)" (click)="onPasswordBackdropClick($event)">
     <div class="modal modal-sm" role="alertdialog" aria-modal="true" (click)="$event.stopPropagation()">
       <h2 class="modal-title">{{ state.title }}</h2>
       <p class="modal-body">
@@ -458,7 +458,7 @@
 
 <!-- Reactivate confirmation -->
 @if (activateTarget(); as target) {
-  <div class="modal-backdrop" [class.is-closing]="isActivateClosing()" (click)="cancelActivate()">
+  <div class="modal-backdrop" [class.is-closing]="isActivateClosing()" (mousedown)="onActivateBackdropMouseDown($event)" (click)="onActivateBackdropClick($event)">
     <div class="modal modal-sm" role="alertdialog" aria-modal="true" (click)="$event.stopPropagation()">
       <h2 class="modal-title">Reactivate user</h2>
       <p class="modal-body">

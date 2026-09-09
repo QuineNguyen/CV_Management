@@ -9,4 +9,6 @@ export enum NavIconEnum {
   Teams = 'groups',
   Password = 'lock_reset',
   Profiles = 'badge',
+  AddCv = 'note_add',
+  Deleted = 'delete_history',
 }

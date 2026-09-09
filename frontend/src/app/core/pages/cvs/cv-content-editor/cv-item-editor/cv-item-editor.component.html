@@ -1,0 +1,129 @@
+<li class="cv-item" [class.is-expanded]="expanded()" cdkDrag [cdkDragDisabled]="readOnly()" [formGroup]="group()">
+
+  <!-- Collapsed header -->
+  <div class="cv-item-head" (click)="onToggle()">
+    @if (!readOnly()) {
+      <button type="button" class="cv-item-handle" cdkDragHandle
+              matTooltip="Drag to reorder" (click)="$event.stopPropagation()"
+              aria-label="Reorder entry">⠿</button>
+    }
+
+    <div class="cv-item-summary">
+      <span class="cv-item-title">{{ title() }}</span>
+      @if (subtitle(); as sub) {
+        <span class="cv-item-subtitle">{{ sub }}</span>
+      }
+      @if (untranslated) {
+        <span class="status-badge is-warning">Untranslated</span>
+      }
+      @if (deletedInMaster) {
+        <span class="status-badge is-danger">Removed in master</span>
+      }
+    </div>
+
+    <div class="cv-item-actions">
+      @if (!readOnly()) {
+        <button type="button" class="icon-btn icon-btn-danger" matTooltip="Remove entry"
+                (click)="onRemove($event)">🗑</button>
+      }
+      <span class="cv-item-caret" [class.is-open]="expanded()" aria-hidden="true"></span>
+    </div>
+  </div>
+
+  <!-- Expandable body -->
+  <div class="cv-item-collapse" [class.is-expanded]="expanded()">
+    <div class="cv-item-collapse-inner">
+      <div class="cv-item-body form-grid">
+        @for (field of section().fields; track field.key) {
+          <div class="field" [class.field-half]="field.half" [class.custom-select-wrap]="field.kind === FieldKind.Select">
+            <label class="field-label" [for]="section().key + '-' + index() + '-' + field.key">
+              {{ field.label }}
+              @if (field.required) {
+                <span class="field-required">*</span>
+              }
+            </label>
+
+            @switch (field.kind) {
+              @case (FieldKind.Textarea) {
+                <textarea class="field-input cv-textarea" rows="4"
+                          [id]="section().key + '-' + index() + '-' + field.key"
+                          [formControlName]="field.key"
+                          [attr.maxlength]="field.maxLength"
+                          [attr.placeholder]="field.placeholder"></textarea>
+              }
+              @case (FieldKind.Date) {
+                <input class="field-input" type="date"
+                       [id]="section().key + '-' + index() + '-' + field.key"
+                       [formControlName]="field.key" />
+              }
+              @case (FieldKind.Number) {
+                <input class="field-input" type="number" min="1"
+                       [id]="section().key + '-' + index() + '-' + field.key"
+                       [formControlName]="field.key" />
+              }
+              @case (FieldKind.Select) {
+                <button
+                  type="button"
+                  class="field-input custom-select-trigger"
+                  [id]="section().key + '-' + index() + '-' + field.key"
+                  [class.is-open]="openSelectKey() === field.key"
+                  [disabled]="readOnly()"
+                  (click)="toggleSelect(field.key, $event)"
+                  aria-haspopup="listbox"
+                  [attr.aria-expanded]="openSelectKey() === field.key">
+                  <span class="custom-select-label">
+                    {{ getSelectedOptionLabel(field) }}
+                  </span>
+                </button>
+
+                @if (openSelectKey() === field.key) {
+                  <div class="custom-select-panel" (click)="$event.stopPropagation()">
+                    <ul class="custom-select-list" role="listbox">
+                      <li role="option" [attr.aria-selected]="!group().get(field.key)?.value">
+                        <button
+                          type="button"
+                          class="custom-select-option"
+                          [class.is-selected]="!group().get(field.key)?.value"
+                          (click)="selectOption(field.key, null)">
+                          {{ emptyOptionLabel() }}
+                        </button>
+                      </li>
+                      @for (option of options(field); track option.value) {
+                        <li role="option" [attr.aria-selected]="group().get(field.key)?.value === option.value">
+                          <button
+                            type="button"
+                            class="custom-select-option"
+                            [class.is-selected]="group().get(field.key)?.value === option.value"
+                            (click)="selectOption(field.key, option.value)">
+                            {{ option.label }}
+                          </button>
+                        </li>
+                      }
+                    </ul>
+                  </div>
+                }
+              }
+              @default {
+                <input class="field-input" type="text" autocomplete="off"
+                       [id]="section().key + '-' + index() + '-' + field.key"
+                       [formControlName]="field.key"
+                       [attr.maxlength]="field.maxLength"
+                       [attr.placeholder]="field.placeholder" />
+              }
+            }
+
+            @if (hasError(field, 'required')) {
+              <span class="field-error">{{ field.label }} is required</span>
+            }
+            @if (hasError(field, 'maxlength')) {
+              <span class="field-error">{{ field.label }} must be at most {{ field.maxLength }} characters</span>
+            }
+            @if (field.hint) {
+              <span class="field-hint">{{ field.hint }}</span>
+            }
+          </div>
+        }
+      </div>
+    </div>
+  </div>
+</li>

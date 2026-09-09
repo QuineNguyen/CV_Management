@@ -48,6 +48,7 @@ public enum ErrorCode {
     PROFILE_HAS_PENDING_DRAFTS("Cannot delete a profile that has CVs awaiting approval"),
     LINKED_TEAM_NOT_MEMBER("The linked team must be one the employee belongs to"),
     DUPLICATE_CV_ITEM_ID("Two entries in this CV share the same item identifier"),
+    ITEM_ID_FOREIGN_TO_PROFILE("An entry identifier in this content belongs to a different profile"),
 
     // ---------- Approval ----------
     APPROVAL_ALREADY_ASSIGNED("This draft already has an open approval assignment"),
@@ -111,7 +112,7 @@ public enum ErrorCode {
     CV_MASTER_CONFLICT("Restoring this CV would create two masters in the same profile"),
     MUST_DESIGNATE_NEW_MASTER("This CV is the master; designate a replacement before deleting"),
     INVALID_NEW_MASTER("The designated master must be another active CV of the same profile"),
-    CV_HAS_PENDING_DRAFTS("Cannot delete a CV that has drafys awaiting approval"),
+    CV_HAS_PENDING_DRAFTS("Cannot delete a CV that has drafts awaiting approval"),
     CV_HAS_NO_VERSION("This CV has no published version yet"),
 
     // ---------- CV Profile restore ----------

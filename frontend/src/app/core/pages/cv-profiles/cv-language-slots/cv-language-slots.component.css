@@ -1,0 +1,67 @@
+:host {
+  display: block;
+}
+
+.slot-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: row;
+  gap: var(--vt-gap, 0.75rem);
+  width: 100%;
+}
+
+.slot {
+  flex: 1 1 0%;
+  min-width: 0;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  min-height: var(--vt-tap);
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--vt-line, #e0e0e0);
+  border-radius: var(--vt-radius-sm, 4px);
+  background: var(--vt-surface, #ffffff);
+  font-size: var(--vt-fs-sm);
+}
+
+.slot.is-empty {
+  color: var(--vt-ink-muted);
+}
+
+.slot-link {
+  color: var(--vt-ink);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.slot-link:hover {
+  color: var(--vt-red);
+  text-decoration: underline;
+}
+
+.slot-version {
+  margin-inline-start: 0.35rem;
+  font-weight: 400;
+  color: var(--vt-ink-muted);
+}
+
+.slot-version.is-muted {
+  font-style: italic;
+}
+
+.slot-empty-label {
+  flex: 1 1 auto;
+}
+
+.status-badge.is-warning {
+  background: #fdf0e0;
+  color: #8a5210;
+}
+
+.slot .link-btn {
+  font-size: var(--vt-fs-sm);
+}

@@ -1,0 +1,103 @@
+@if (loading()) {
+  <section class="page">
+    <div class="skeleton-stack" aria-busy="true">
+      @for (row of [1, 2, 3]; track row) {
+        <div class="skeleton-row"></div>
+      }
+    </div>
+  </section>
+} @else if (detail(); as detail) {
+  <section class="page">
+
+    <header class="page-toolbar">
+      <div>
+        <h1 class="page-title">Edit CV</h1>
+        <p class="page-subtitle">
+          <span class="code-chip is-primary">{{ detail.cv.language }}</span>
+          {{ languageLabels[detail.cv.language] }} ·
+          {{ detail.cv.profileName }} ·
+          @if (detail.cv.currentVersionNumber) {
+            currently v{{ detail.cv.currentVersionNumber }}
+          } @else {
+            no official version yet
+          }
+        </p>
+      </div>
+    </header>
+
+    <!-- Branch banner: what saving will actually do -->
+    @if (locked()) {
+      <div class="notice notice-warning" role="status">
+        <strong>Read-only while under review.</strong>
+        This draft is {{ draftStatusLabels[openDraft()!.status] }}. Content is frozen for everyone,
+        including you, so the reviewer decides on exactly what they read. Cancel the draft if you
+        need to change it
+      </div>
+    } @else if (directPublish()) {
+      <div class="notice notice-danger" role="status">
+        <strong>Saving publishes immediately.</strong>
+        As the owner of this CV with an Admin or HR role, your changes become an official version
+        without any review. That is recorded in the audit log
+      </div>
+    } @else if (openDraft(); as draft) {
+      <div class="notice" role="status">
+        <strong>Editing your draft.</strong>
+        Saved as {{ draftStatusLabels[draft.status] }}, round {{ draft.reviewRound }}.
+        The published version stays live until this one is approved
+        @if (draft.lastRejectionReason) {
+          <p class="notice-detail">Last rejection: {{ draft.lastRejectionReason }}</p>
+        }
+        @if (!draft.submittable) {
+          <p class="notice-detail">
+            Personal info, at least one skill and at least one experience entry are needed before
+            this can be submitted for approval
+          </p>
+        }
+      </div>
+    } @else {
+      <div class="notice" role="status">
+        <strong>Saving creates a draft.</strong>
+        It becomes an official version only after your tech lead and HR both approve it
+      </div>
+    }
+
+    <app-cv-content-editor
+      [content]="editorContent()"
+      [language]="detail.cv.language"
+      [readOnly]="locked()"
+      (dirtyChanged)="onDirtyChanged($event)" />
+
+    <div class="edit-footer">
+      <button type="button" class="btn btn-ghost" (click)="cancel()" [disabled]="saving()">
+        Cancel
+      </button>
+      @if (!locked()) {
+        <button type="button" class="btn btn-primary" (click)="onSaveClicked()" [disabled]="saving()">
+          {{ saving()
+              ? 'Saving...'
+              : directPublish() ? 'Save & publish now' : 'Save draft' }}
+        </button>
+      }
+    </div>
+  </section>
+}
+
+<!-- Bypass-approval confirmation -->
+@if (confirmOpen()) {
+  <div class="modal-backdrop" [class.is-closing]="isConfirmClosing()" (mousedown)="onConfirmBackdropMouseDown($event)" (click)="onConfirmBackdropClick($event)">
+    <div class="modal modal-sm" role="alertdialog" aria-modal="true" (click)="$event.stopPropagation()">
+      <h2 class="modal-title">Publish without review?</h2>
+      <p class="modal-body">
+        This creates version {{ (detail()!.cv.currentVersionNumber ?? 0) + 1 }} straight away.
+        No tech lead and no HR reviewer will see it first, and the action is written to the audit
+        log. Published versions are never edited or deleted
+      </p>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-ghost" (click)="cancelConfirm()">Cancel</button>
+        <button type="button" class="btn btn-danger" (click)="confirmPublish()">
+          Publish now
+        </button>
+      </div>
+    </div>
+  </div>
+}

@@ -1,0 +1,155 @@
+<section class="page">
+
+  <header class="page-toolbar">
+    <div>
+      <h1 class="page-title">Create a CV</h1>
+      <p class="page-subtitle">
+        One CV is one profile in one language — a second language is a separate CV, not a version
+      </p>
+    </div>
+  </header>
+
+  <!-- Step indicator -->
+  <ol class="wizard-steps">
+    @for (label of ['Profile', 'Language', 'Content']; track label; let i = $index) {
+      <li class="wizard-step"
+          [class.is-active]="step() === i + 1"
+          [class.is-done]="step() > i + 1"
+          [class.is-clickable]="canGoToStep(i + 1)"
+          (click)="goToStep(i + 1)">
+        <span class="wizard-step-index">{{ i + 1 }}</span>
+        <span class="wizard-step-label">{{ label }}</span>
+      </li>
+    }
+  </ol>
+
+  @if (loading()) {
+    <div class="skeleton-stack" aria-busy="true">
+      @for (row of [1, 2]; track row) {
+        <div class="skeleton-row"></div>
+      }
+    </div>
+  } @else {
+
+    <!-- Step 1: profile -->
+    <div class="wizard-step-pane" [class.is-active]="step() === 1">
+      <div class="wizard-step-pane-inner">
+        <div class="wizard-panel">
+          <h2 class="wizard-panel-title">Which profile is this CV for?</h2>
+          <p class="wizard-panel-hint">
+            A profile is one professional persona. "Software Developer" and "AI Engineer" are two
+            profiles of the same person, each with its own CVs and its own reviewing team
+          </p>
+
+          <ul class="choice-list">
+            @for (profile of profiles(); track profile.id) {
+              <li>
+                <button type="button" class="choice-option"
+                        [class.is-selected]="selectedProfileId() === profile.id"
+                        (click)="selectProfile(profile.id)">
+                  <span class="choice-option-main">
+                    <span class="choice-option-title">{{ profile.name }}</span>
+                    @if (profile.primary) {
+                      <span class="status-badge is-active">Primary</span>
+                    }
+                  </span>
+                  <span class="choice-option-sub">
+                    <span class="code-chip is-primary">{{ profile.linkedTeamCode ?? '—' }}</span>
+                    {{ profile.linkedTeamName ?? 'No team' }} · {{ profile.cvCount }} CV(s)
+                  </span>
+                </button>
+              </li>
+            }
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 2: language -->
+    <div class="wizard-step-pane" [class.is-active]="step() === 2">
+      <div class="wizard-step-pane-inner">
+        <div class="wizard-panel">
+          <h2 class="wizard-panel-title">Which language?</h2>
+          <p class="wizard-panel-hint">
+            Only languages this profile has no active CV in are offered.
+            The first CV of a profile becomes its master; the others follow its structure
+          </p>
+
+          @if (languagesLoading()) {
+            <div class="skeleton-stack" aria-busy="true">
+              <div class="skeleton-row"></div>
+            </div>
+          } @else if (!availableLanguages().length) {
+            <div class="empty-state">
+              <p class="empty-state-title">This profile already has all three languages</p>
+              <p class="empty-state-hint">
+                Delete one of its CVs, or create the CV under a different profile
+              </p>
+            </div>
+          } @else {
+            <ul class="choice-list choice-list-inline">
+              @for (language of availableLanguages(); track language) {
+                <li>
+                  <button type="button" class="choice-option choice-option-compact"
+                          [class.is-selected]="selectedLanguage() === language"
+                          (click)="selectLanguage(language)">
+                    <span class="code-chip is-primary">{{ language }}</span>
+                    <span class="choice-option-title">{{ languageLabel(language) }}</span>
+                  </button>
+                </li>
+              }
+            </ul>
+          }
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 3: content -->
+    <div class="wizard-step-pane" [class.is-active]="step() === 3">
+      <div class="wizard-step-pane-inner">
+        <div class="wizard-panel">
+          <h2 class="wizard-panel-title">
+            {{ selectedLanguage() ? languageLabel(selectedLanguage()!) : '' }} CV for "{{ selectedProfile()?.name ?? '' }}"
+          </h2>
+          <p class="wizard-panel-hint">
+            @if (directPublish()) {
+              Saving publishes version 1 immediately — you are the owner, so no approval is needed
+            } @else {
+              Saving creates a draft. It becomes an official version only after the tech lead and HR
+              both approve it
+            }
+          </p>
+        </div>
+
+        <app-cv-content-editor [content]="seedContent()" [language]="selectedLanguage()!" />
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="wizard-footer">
+      <button type="button" class="btn btn-ghost" (click)="cancel()" [disabled]="saving()">
+        Cancel
+      </button>
+
+      <div class="wizard-footer-main">
+        @if (step() > 1) {
+          <button type="button" class="btn btn-ghost" (click)="back()" [disabled]="saving()">
+            Back
+          </button>
+        }
+        @if (step() < 3) {
+          <button type="button" class="btn btn-primary" (click)="next()"
+                  [disabled]="(step() === 1 && !selectedProfileId()) || (step() === 2 && !selectedLanguage())">
+            Continue
+          </button>
+        } @else {
+          <button type="button" class="btn btn-primary" (click)="save()" [disabled]="saving()">
+            {{ saving()
+                ? 'Saving...'
+                : directPublish() ? 'Create & publish v1' : 'Save as draft' }}
+          </button>
+        }
+      </div>
+    </div>
+  }
+</section>

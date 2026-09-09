@@ -4,6 +4,7 @@ import { authGuard, roleGuard } from './core/services/auth.guard';
 import { mustChangePasswordGuard } from './core/services/must-change-password.guard';
 import { AppRoute } from './core/enums/app-route.enum';
 import { UserRole } from './core/enums/user-role.enum';
+import { unsavedChangesGuard } from './core/services/unsaved-changes.guard';
 
 export const routes: Routes = [
   {
@@ -63,7 +64,34 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./core/pages/cv-profiles/cv-profiles.component').then(m => m.CVProfilesComponent),
         canActivate: [authGuard],
-      }
+      },
+      {
+        path: AppRoute.CvsNew,
+        canDeactivate: [unsavedChangesGuard],
+        loadComponent: () =>
+          import('./core/pages/cvs/cv-create/cv-create.component')
+            .then(m => m.CvCreateComponent),
+      },
+      {
+        path: AppRoute.CvsDeleted,
+        canActivate: [roleGuard(UserRole.Admin, UserRole.HR)],
+        loadComponent: () =>
+          import('./core/pages/cvs/cv-deleted-list/cv-deleted-list.component')
+            .then(m => m.CvDeletedListComponent),
+      },
+      {
+        path: `${AppRoute.Cvs}/:id`,
+        loadComponent: () =>
+          import('./core/pages/cvs/cv-detail/cv-detail.component')
+            .then(m => m.CvDetailComponent),
+      },
+      {
+        path: `${AppRoute.Cvs}/:id/edit`,
+        canDeactivate: [unsavedChangesGuard],
+        loadComponent: () =>
+          import('./core/pages/cvs/cv-edit/cv-edit.component')
+            .then(m => m.CvEditComponent),
+      },
     ],
   },
   { path: '**', redirectTo: '' },

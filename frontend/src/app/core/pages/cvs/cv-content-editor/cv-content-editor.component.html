@@ -1,0 +1,12 @@
+<form class="cv-editor" [formGroup]="form">
+  @for (section of sections; track section.key) {
+    <app-cv-section-editor
+      [section]="section"
+      [control]="controlOf(section)"
+      [language]="language()"
+      [readOnly]="readOnly()"
+      (itemAdded)="addItem(section)"
+      (itemRemoved)="removeItem(section, $event)"
+      (itemsReordered)="reorderItems(section, $event)" />
+  }
+</form>

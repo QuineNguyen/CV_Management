@@ -9,11 +9,14 @@ import java.util.UUID;
  *
  * - content is null when nothing has been published - the screen then shows
  * "no official version yet" rather than an empty CV.
+ * - openDraft is what the edit screen loads. Seeding the editor from the published
+ * version instead would silently discard work an employee saved and came back to.
  */
 public record CvDetailResponse(
         CvResponse cv,
         CvVersionSummary currentVersion,
         CvContent content,
-        UUID avatarImageId
+        UUID avatarImageId,
+        CvDraftResponse openDraft
 ) {
 }
