@@ -25,17 +25,20 @@ public record AuthenticatedUser(
         @Schema(example = "EMPLOYEE")
         Role role,
 
-        boolean mustChangePassword
+        boolean mustChangePassword,
+
+        String avatarUrl
 ) {
     // Static Factory Method: Useful utility to convert Entity User to DTO
-    public static AuthenticatedUser from(User user) {
+    public static AuthenticatedUser from(User user, String avatarUrl) {
         return new AuthenticatedUser(
                 user.getId(),
                 user.getUsername(),
                 user.getFullName(),
                 user.getEmail(),
                 user.getRole(),
-                user.isMustChangePassword()
+                user.isMustChangePassword(),
+                avatarUrl
         );
     }
 }

@@ -38,6 +38,7 @@ public class UserServiceImpl implements UserService {
     private final PasswordEncoder passwordEncoder;
     private final PasswordGenerator passwordGenerator;
     private final JwtService jwtService;
+    private final AvatarUrlResolver avatarUrlResolver;
     private final AuditLogger auditLogger;
 
     @Override
@@ -78,9 +79,11 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional
     public CreatedUserResponse create(CreateUserRequest request) {
+        validateManageableTarget(null, request.role());
         validateIdentityAvailable(request.email(), request.username());
         requireDepartmentExists(request.primaryDepartmentId());
         validateTeamAssignments(request.teams());
+        rejectHrAssigningAdmin(request.role());
 
         // Handed to the admin once; the account starts in must-change-password state
         String temporaryPassword = passwordGenerator.generate();
@@ -114,6 +117,7 @@ public class UserServiceImpl implements UserService {
     @Transactional
     public UserResponse update(UUID id, UpdateUserRequest request) {
         User user = requireUser(id);
+        validateManageableTarget(user.getRole(), request.role());
         requireDepartmentExists(request.primaryDepartmentId());
         validateTeamAssignments(request.teams());
         validateMembershipsRemovable(id, request.teams());
@@ -251,11 +255,19 @@ public class UserServiceImpl implements UserService {
         if (user.getId().equals(CurrentActor.requireUserId()) && user.getRole() != newRole) {
             throw new ApiException.BusinessRuleException(ErrorCode.CANNOT_CHANGE_OWN_ROLE);
         }
+        rejectHrAssigningAdmin(newRole);
         // Demoting the last active admin would lock the system out
         if (user.getRole() == Role.ADMIN && newRole != Role.ADMIN
                 && user.isActive()
                 && countActiveAdmins() <= MIN_ACTIVE_ADMINS) {
             throw new ApiException.BusinessRuleException(ErrorCode.LAST_ACTIVE_ADMIN);
+        }
+    }
+
+    // HR must not promote anyone to ADMIN — only an Admin can grant that role
+    private void rejectHrAssigningAdmin(Role targetRole) {
+        if (targetRole == Role.ADMIN && CurrentActor.requireRole() == Role.HR) {
+            throw new ApiException.BusinessRuleException(ErrorCode.HR_CANNOT_ASSIGN_ADMIN);
         }
     }
 
@@ -285,6 +297,33 @@ public class UserServiceImpl implements UserService {
             return;
         }
         throw new ApiException.ForbiddenException(ErrorCode.OUT_OF_SCOPE);
+    }
+
+    /*
+     * RBAC says who may call the endpoint; this says whom they may call it about and what they
+     * may set.
+     *
+     * Two separate rules:
+     * - The target's current role decides whether this caller may touch the record at all;
+     * - HR may not write `role` under any circumstance, not even between two roles it otherwise
+     *   administers. Setting role is the self-escalation path, at create time as much as at
+     *   update time
+     */
+    private void validateManageableTarget(Role currentRole, Role incomingRole) {
+        Role actorRole = CurrentActor.requireRole();
+        Set<Role> manageable = actorRole.manageableRoles();
+
+        if (currentRole != null && !manageable.contains(currentRole)) {
+            throw new ApiException.ForbiddenException(ErrorCode.OUT_OF_SCOPE);
+        }
+        if (incomingRole != null && !manageable.contains(incomingRole)) {
+            throw new ApiException.ForbiddenException(ErrorCode.OUT_OF_SCOPE);
+        }
+        // Create is exempt from the no-role-change rule: HR picks EMPLOYEE or TECH_LEAD and the
+        // set check above is what keeps ADMIN and HR out of that choice.
+        if (actorRole == Role.HR && currentRole != null && currentRole != incomingRole) {
+            throw new ApiException.ForbiddenException(ErrorCode.OUT_OF_SCOPE);
+        }
     }
 
     // ---------- Private helpers ----------
@@ -384,12 +423,15 @@ public class UserServiceImpl implements UserService {
                 .map(User::getPrimaryDepartmentId).collect(Collectors.toSet()));
         Map<UUID, List<UserTeamInfo>> teamsByUserId = findTeamInfos(users.stream()
                 .map(User::getId).collect(Collectors.toSet()));
+        Map<UUID, String> avatarUrls = avatarUrlResolver.resolveAll(users.stream()
+                .map(User::getAvatarImageId).toList());
 
         return users.stream()
                 .map(user -> toResponse(user,
                         departmentById.get(user.getPrimaryDepartmentId()),
                         teamsByUserId.getOrDefault(user.getId(), List.of()),
-                        List.of()))
+                        List.of(),
+                        avatarUrls.get(user.getAvatarImageId())))
                 .toList();
     }
 
@@ -443,7 +485,7 @@ public class UserServiceImpl implements UserService {
                 response.username(), response.role(), response.status(),
                 response.primaryDepartmentId(), response.departmentCode(), response.departmentName(),
                 response.dateOfBirth(), response.phoneNumber(), response.address(),
-                response.avatarImageId(), response.teams(), led,
+                response.avatarImageId(), response.avatarUrl(), response.teams(), led,
                 response.mustChangePassword(), response.createdAt());
     }
 
@@ -472,13 +514,14 @@ public class UserServiceImpl implements UserService {
 
     // Audit snapshot: joined names and teams are not needed and would cost extra queries
     private UserResponse toFlatResponse(User user) {
-        return toResponse(user, null, List.of(), List.of());
+        return toResponse(user, null, List.of(), List.of(), null);
     }
 
     private UserResponse toResponse(User user,
                                     Department department,
                                     List<UserTeamInfo> teams,
-                                    List<TeamResponse> ledTeams) {
+                                    List<TeamResponse> ledTeams,
+                                    String avatarUrl) {
         return new UserResponse(
                 user.getId(),
                 user.getFullName(),
@@ -493,6 +536,7 @@ public class UserServiceImpl implements UserService {
                 user.getPhoneNumber(),
                 user.getAddress(),
                 user.getAvatarImageId(),
+                avatarUrl,
                 teams,
                 ledTeams,
                 user.isMustChangePassword(),

@@ -92,6 +92,7 @@ public enum ErrorCode {
     USER_ALREADY_INACTIVE("User is already inactive"),
     CANNOT_DEACTIVATE_SELF("You cannot deactivate your own account"),
     CANNOT_CHANGE_OWN_ROLE("You cannot change your own role"),
+    HR_CANNOT_ASSIGN_ADMIN("Only an administrator can assign the Admin role"),
 
     // ---------- Generic ----------
     /** Returned as 403 whenever the caller's role does not cover the requested data. */
@@ -118,7 +119,19 @@ public enum ErrorCode {
     // ---------- CV Profile restore ----------
     PROFILE_NAME_CONFLICT_ON_RESTORE("Another active profile of this employee already uses that name; provide a new name"),
     PROFILE_TEAM_INVALID_ON_RESTORE("The linked team is no longer one the employee belongs to; select a current team"),
-    PROFILE_NOT_DELETED("This profile is not in DELETED status");
+    PROFILE_NOT_DELETED("This profile is not in DELETED status"),
+
+    // ---------- Image upload ----------
+    IMAGE_EMPTY("The uploaded file is empty"),
+    IMAGE_TOO_LARGE("Image must be 5 MB or smaller"),
+    IMAGE_UNSUPPORTED_TYPE("Only JPEG and PNG images are accepted"),
+    IMAGE_STORAGE_UNAVAILABLE("The image store is not reachable right now; please try again"),
+
+    // ---------- Profile update requests ----------
+    PROFILE_UPDATE_PENDING_EXISTS("You already have a pending profile update request"),
+    PROFILE_UPDATE_NOT_PENDING("This request has already been processed"),
+    PROFILE_UPDATE_NO_CHANGES("The request does not change any of your current values"),
+    PROFILE_UPDATE_NO_PENDING_REQUEST("You have no pending profile update request to cancel");
 
     private final String message;
 

@@ -56,7 +56,8 @@ public class GlobalExceptionHandler {
             Map.entry(DbConstraint.FK_UR_CV_PROFILE.getIndexName(),                ErrorCode.CV_PROFILE_MISMATCH),
             Map.entry(DbConstraint.UK_DEPARTMENT_CODE.getIndexName(),              ErrorCode.DUPLICATE_DEPARTMENT_CODE),
             Map.entry(DbConstraint.UK_DEPARTMENT_NAME.getIndexName(),              ErrorCode.DUPLICATE_DEPARTMENT_NAME),
-            Map.entry(DbConstraint.UK_TEAM_MEMBERS_PAIR.getIndexName(),            ErrorCode.USER_ALREADY_IN_TEAM)
+            Map.entry(DbConstraint.UK_TEAM_MEMBERS_PAIR.getIndexName(),            ErrorCode.USER_ALREADY_IN_TEAM),
+            Map.entry(DbConstraint.UQ_PUR_PENDING_SLOT.getIndexName(),             ErrorCode.PROFILE_UPDATE_PENDING_EXISTS) // UQ (unique) + PUR (profile_update_requests)
     );
 
     // --------- 400 ---------

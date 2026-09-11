@@ -114,14 +114,17 @@ export class UsersComponent implements OnInit {
     private passwordBackdropMouseDownTarget: EventTarget | null = null;
     private activateBackdropMouseDownTarget: EventTarget | null = null;
 
-    // HR reaches this page read-only; every write action is hidden for them
-    readonly canManage = computed(() => this.auth.hasRole(UserRole.Admin));
+    // HR can add and edit users, but not deactivate/activate/reset-password
+    readonly canCreateOrEdit = computed(() => this.auth.hasRole(UserRole.Admin, UserRole.HR));
+
+    // Only Admin can deactivate, activate, or reset passwords
+    readonly canManageAccount = computed(() => this.auth.hasRole(UserRole.Admin));
 
     // Admin and HR read anyone's profiles; a tech lead reaching this page does not
     readonly canViewProfiles = computed(() => this.auth.hasRole(UserRole.Admin, UserRole.HR));
 
     // The actions column exists when the viewer has at least one action available in it
-    readonly showActionsColumn = computed(() => this.canManage() || this.canViewProfiles());
+    readonly showActionsColumn = computed(() => this.canCreateOrEdit() || this.canManageAccount() || this.canViewProfiles());
 
     // Tech leads see a narrow set, so the empty state must not read like a missing record
     readonly isScopedView = computed(() => this.auth.hasRole(UserRole.TechLead));

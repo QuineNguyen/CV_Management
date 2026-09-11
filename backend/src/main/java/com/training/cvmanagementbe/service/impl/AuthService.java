@@ -265,7 +265,7 @@ public class AuthService {
     }
 
     private LoginResponse issueToken(User user) {
-        return new LoginResponse(jwtService.generateToken(user), AuthenticatedUser.from(user));
+        return new LoginResponse(jwtService.generateToken(user), AuthenticatedUser.from(user, null));
     }
 
     private void requireActive(User user) {

@@ -17,6 +17,7 @@ public record CvDetailResponse(
         CvVersionSummary currentVersion,
         CvContent content,
         UUID avatarImageId,
+        String avatarUrl,
         CvDraftResponse openDraft
 ) {
 }

@@ -13,7 +13,7 @@
       </p>
     </div>
 
-    @if (canManage()) {
+    @if (canCreateOrEdit()) {
       <div class="page-toolbar-actions">
         <button type="button" class="btn btn-primary" (click)="openCreate()">
           <span aria-hidden="true">＋</span> Add User
@@ -186,7 +186,7 @@
       } @else {
         <p class="empty-state-hint">No account matches the current filters</p>
       }
-      @if (canManage()) {
+      @if (canCreateOrEdit()) {
         <button type="button" class="btn btn-primary" (click)="openCreate()">Add user</button>
       }
     </div>
@@ -271,8 +271,10 @@
                       <button type="button" class="icon-btn" matTooltip="Competency profiles"
                               (click)="openProfiles(user)">🪪</button>
                     }
-                    @if (canManage()) {
+                    @if (canCreateOrEdit()) {
                       <button type="button" class="icon-btn" matTooltip="Edit" (click)="openEdit(user)">✎</button>
+                    }
+                    @if (canManageAccount()) {
                       @if (user.status === activeStatus) {
                         <button
                           type="button"
@@ -323,8 +325,10 @@
                   <button type="button" class="icon-btn" matTooltip="Competency profiles"
                           (click)="openProfiles(user)">🪪</button>
                 }
-                @if (canManage()) {
+                @if (canCreateOrEdit()) {
                   <button type="button" class="icon-btn" matTooltip="Edit" (click)="openEdit(user)">✎</button>
+                }
+                @if (canManageAccount()) {
                   @if (user.status === activeStatus) {
                     <button
                       type="button"

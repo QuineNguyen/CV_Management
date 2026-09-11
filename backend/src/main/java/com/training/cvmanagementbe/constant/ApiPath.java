@@ -33,5 +33,20 @@ public final class ApiPath {
     public static final String DELETED = "/deleted";
     public static final String VERSIONS = "/{id}/versions";
 
+    // Images
+    public static final String IMAGES = "/images";
+
+    // My profile (self-service)
+    public static final String ME = "/me";
+    public static final String MY_PROFILE = "/profile";
+    public static final String MY_PROFILE_UPDATE_REQUEST = "/profile-update-request";
+    public static final String MY_PROFILE_UPDATE_REQUEST_LATEST = "/profile-update-request/latest";
+
+    // Profile update requests
+    public static final String PROFILE_UPDATE_REQUESTS = "/profile-update-requests";
+    public static final String APPROVE = "/{id}/approve";
+    public static final String REJECT = "/{id}/reject";
+    public static final String PENDING_COUNT = "/pending-count";
+
     private ApiPath() {}
 }

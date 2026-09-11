@@ -73,7 +73,7 @@ public class UserController {
     }
 
     @PostMapping
-    @PreAuthorize(AuthorityExpression.ADMIN)
+    @PreAuthorize(AuthorityExpression.ADMIN_OR_HR)
     @Operation(summary = "Create a user and return the temporary password once")
     public ResponseEntity<CreatedUserResponse> create(@Valid @RequestBody CreateUserRequest request) {
         CreatedUserResponse created = userService.create(request);
@@ -83,7 +83,7 @@ public class UserController {
     }
 
     @PutMapping(ApiPath.BY_ID)
-    @PreAuthorize(AuthorityExpression.ADMIN)
+    @PreAuthorize(AuthorityExpression.ADMIN_OR_HR)
     @Operation(summary = "Update a user. Email and username stay immutable")
     public ResponseEntity<UserResponse> update(@PathVariable UUID id,
                                                @Valid @RequestBody UpdateUserRequest request) {
