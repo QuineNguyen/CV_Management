@@ -36,6 +36,7 @@ public class CvServiceImpl implements CvService {
     private final VersionPublisher versionPublisher;
     private final CvContentCodec codec;
     private final CvItemIdGuard itemIdGuard;
+    private final AvatarUrlResolver avatarUrlResolver;
     private final AuditLogger auditLogger;
 
     // ---------- Queries ----------
@@ -55,11 +56,14 @@ public class CvServiceImpl implements CvService {
                 .map(this::toDraftResponse)
                 .orElse(null);
 
+        UUID avatarImageId = current.map(CvVersion::getAvatarImageId).orElse(null);
+
         return new CvDetailResponse(
                 toResponse(cv, profile, resolveEmployeeName(profile.getEmployeeId()), current.orElse(null)),
                 current.map(this::toSummary).orElse(null),
                 current.map(version -> codec.read(version.getContentJson())).orElse(null),
-                current.map(CvVersion::getAvatarImageId).orElse(null),
+                avatarImageId,
+                avatarUrlResolver.resolve(avatarImageId),
                 openDraft
         );
     }
@@ -539,6 +543,7 @@ public class CvServiceImpl implements CvService {
                 draft.getReviewRound(),
                 content,
                 draft.getAvatarImageId(),
+                avatarUrlResolver.resolve(draft.getAvatarImageId()),
                 draft.getLastRejectionReason(),
                 content.submittable(),
                 content.untranslatedItemCount(),

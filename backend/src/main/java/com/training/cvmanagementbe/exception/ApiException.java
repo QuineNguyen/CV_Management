@@ -25,16 +25,17 @@ public abstract class ApiException extends RuntimeException {
         public BadRequestException(String message) {
             super(HttpStatus.BAD_REQUEST, ErrorCode.BAD_REQUEST.code(), message);
         }
+        /*
+         * Keeps a specific code on an 400. "Image too large" and "only JPEG and PNG" lead the user
+         * to two different actions, so they must not both arrive as BAD_REQUEST.
+         */
+        public BadRequestException(ErrorCode error) {
+            super(HttpStatus.BAD_REQUEST, error);
+        }
     }
 
     /** 401 — no valid credentials, or the token was issued before the account's revocation mark. */
     public static class UnauthorizedException extends ApiException {
-        public UnauthorizedException() {
-            super(HttpStatus.UNAUTHORIZED, ErrorCode.UNAUTHENTICATED);
-        }
-        public UnauthorizedException(String message) {
-            super(HttpStatus.UNAUTHORIZED, ErrorCode.UNAUTHENTICATED.code(), message);
-        }
         public UnauthorizedException(ErrorCode error) {
             super(HttpStatus.UNAUTHORIZED, error);
         }
@@ -60,9 +61,6 @@ public abstract class ApiException extends RuntimeException {
      * Data scoping happens in the query, never in the UI, so this is the last line of defence.
      */
     public static class ForbiddenException extends ApiException {
-        public ForbiddenException() {
-            super(HttpStatus.FORBIDDEN, ErrorCode.OUT_OF_SCOPE);
-        }
         public ForbiddenException(ErrorCode error) {
             super(HttpStatus.FORBIDDEN, error);
         }
@@ -83,21 +81,28 @@ public abstract class ApiException extends RuntimeException {
      * detectable instead of silently overwriting a decision.
      */
     public static class ConflictException extends ApiException {
-        public ConflictException() {
-            super(HttpStatus.CONFLICT, ErrorCode.STALE_STATE);
-        }
         public ConflictException(ErrorCode error) {
             super(HttpStatus.CONFLICT, error);
         }
     }
 
-    /** 422 — the request is well formed but breaks a business rule. */
+    /** 422 — the request is well-formed but breaks a business rule. */
     public static class BusinessRuleException extends ApiException {
         public BusinessRuleException(ErrorCode error) {
             super(HttpStatus.UNPROCESSABLE_ENTITY, error);
         }
         public BusinessRuleException(ErrorCode error, String detail) {
             super(HttpStatus.UNPROCESSABLE_ENTITY, error.code(), detail);
+        }
+    }
+
+    /*
+     * 503: the request itself was fine, but a downstream dependency (the object store) could not
+     * be reached. Separate from BusinessRuleException so the client knows a retry may succeed.
+     */
+    public static class ServiceUnavailableException extends ApiException {
+        public ServiceUnavailableException(ErrorCode error) {
+            super(HttpStatus.SERVICE_UNAVAILABLE, error);
         }
     }
 }

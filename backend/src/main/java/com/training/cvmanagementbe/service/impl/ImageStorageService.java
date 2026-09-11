@@ -1,8 +1,11 @@
 package com.training.cvmanagementbe.service.impl;
 
 import com.training.cvmanagementbe.config.MinioConfig;
+import com.training.cvmanagementbe.enums.ErrorCode;
+import com.training.cvmanagementbe.exception.ApiException;
 import io.minio.*;
 import io.minio.http.Method;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -13,9 +16,15 @@ import java.util.concurrent.TimeUnit;
 /**
  * Thin wrapper over the object store that keeps the two endpoints separate:
  * <b>bytes move through the internal endpoint, URLs are signed against the public one</b>.
+ *
+ * - Nothing here throws a checked exception. Translating a MinIO failure into an API error is
+ * this class's job - leaking throws Exception would force every caller to invent its own
+ * answer to "the object store is down" and they would all invent different ones.
  */
+@Slf4j
 @Service
 public class ImageStorageService {
+
     private final MinioClient internal;
     private final MinioClient publicSigner;
     private final MinioConfig.MinioProperties props;
@@ -28,7 +37,7 @@ public class ImageStorageService {
     }
 
     /** Uploads through the internal endpoint. Returns the object key. */
-    public String upload(MultipartFile file, String objectKey) throws Exception {
+    public String upload(MultipartFile file, String objectKey) {
         try (InputStream in = file.getInputStream()) {
             internal.putObject(PutObjectArgs.builder()
                     .bucket(props.bucket())
@@ -40,8 +49,12 @@ public class ImageStorageService {
                     .contentType(file.getContentType() == null
                             ? "application/octet-stream" : file.getContentType())
                     .build());
+            return objectKey;
+        } catch (Exception e) {
+            log.error("MinIO upload failed for key {}", objectKey, e);
+            throw new ApiException.ServiceUnavailableException(ErrorCode.IMAGE_STORAGE_UNAVAILABLE);
         }
-        return objectKey;
+
     }
 
     /**
@@ -52,20 +65,29 @@ public class ImageStorageService {
      * required: the signature includes the host, so if either side substitutes a different one the
      * object store rejects the request.
      */
-    public String presignedUrl(String objectKey) throws Exception {
-        return publicSigner.getPresignedObjectUrl(GetPresignedObjectUrlArgs.builder()
-                .method(Method.GET)
-                .bucket(props.bucket())
-                .object(objectKey)
-                .expiry(props.presignedMinutes(), TimeUnit.MINUTES)
-                .build());
+    public String presignedUrl(String objectKey) {
+        try {
+            String signed = publicSigner.getPresignedObjectUrl(GetPresignedObjectUrlArgs.builder()
+                    .method(Method.GET)
+                    .bucket(props.bucket())
+                    .object(objectKey)
+                    .expiry(props.presignedMinutes(), TimeUnit.MINUTES)
+                    .build());
+            return withPublicPrefix(signed);
+        } catch (Exception e) {
+            log.error("MinIO presign failed for key {}", objectKey, e);
+            throw new ApiException.ServiceUnavailableException(ErrorCode.IMAGE_STORAGE_UNAVAILABLE);
+        }
     }
 
     /** Reads raw bytes through the internal endpoint; used when embedding images in exports. */
-    public byte[] readBytes(String objectKey) throws Exception {
+    public byte[] readBytes(String objectKey) {
         try (InputStream in = internal.getObject(GetObjectArgs.builder()
                 .bucket(props.bucket()).object(objectKey).build())) {
             return in.readAllBytes();
+        } catch (Exception e) {
+            log.error("MinIO read failed for key {}", objectKey, e);
+            throw new ApiException.ServiceUnavailableException(ErrorCode.IMAGE_STORAGE_UNAVAILABLE);
         }
     }
 
@@ -76,9 +98,14 @@ public class ImageStorageService {
      * commit succeeds. The database is what knows whether a published version still references the
      * image; deleting the object first would leave a permanent record pointing at nothing.
      */
-    public void delete(String objectKey) throws Exception {
-        internal.removeObject(RemoveObjectArgs.builder()
-                .bucket(props.bucket()).object(objectKey).build());
+    public void delete(String objectKey) {
+        try {
+            internal.removeObject(RemoveObjectArgs.builder()
+                    .bucket(props.bucket()).object(objectKey).build());
+        } catch (Exception e) {
+            log.error("MinIO delete failed for key {}", objectKey, e);
+            throw new ApiException.ServiceUnavailableException(ErrorCode.IMAGE_STORAGE_UNAVAILABLE);
+        }
     }
 
     public String bucket() {

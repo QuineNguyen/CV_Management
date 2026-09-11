@@ -26,6 +26,7 @@ public record UserResponse(
         String phoneNumber,
         String address,
         UUID avatarImageId,
+        String avatarUrl,
         List<UserTeamInfo> teams,
         // Teams this user currently leads, drives the deactivate dialog.
         List<TeamResponse> ledTeams,

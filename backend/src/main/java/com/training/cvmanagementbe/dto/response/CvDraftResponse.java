@@ -13,6 +13,7 @@ public record CvDraftResponse(
         int reviewRound,
         CvContent content,
         UUID avatarImageId,
+        String avatarUrl,
         String lastRejectionReason,
         boolean submittable,
         long untranslatedItemCount,

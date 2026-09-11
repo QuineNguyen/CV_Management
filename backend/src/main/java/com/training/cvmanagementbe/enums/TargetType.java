@@ -4,6 +4,8 @@ public enum TargetType {
     USER,
     DEPARTMENT,
     TEAM,
+    IMAGE_FILE,
+    PROFILE_UPDATE_REQUEST,
     CV_PROFILE,
     CV,
     CV_VERSION,
@@ -11,6 +13,5 @@ public enum TargetType {
     APPROVAL_ASSIGNMENT,
     UPDATE_REQUEST,
     SKILL,
-    IMAGE_FILE,
     SYSTEM_CONFIG
 }
