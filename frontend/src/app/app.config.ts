@@ -9,7 +9,8 @@ import { provideRouter, withComponentInputBinding, withInMemoryScrolling } from 
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { registerLocaleData } from '@angular/common';
 import localeVi from '@angular/common/locales/vi';
-import { MAT_DATE_LOCALE } from '@angular/material/core';
+import { MAT_DATE_LOCALE, DateAdapter, MAT_DATE_FORMATS } from '@angular/material/core';
+import { CustomDateAdapter, DD_MM_YYYY_FORMATS } from './core/utils/app-date-adapter.util';
 
 import { routes } from './app.routes';
 import { authInterceptor } from './core/interceptors/auth.interceptor';
@@ -36,6 +37,8 @@ export const appConfig: ApplicationConfig = {
 
     { provide: LOCALE_ID, useValue: 'vi' },
     { provide: MAT_DATE_LOCALE, useValue: 'vi-VN' },
+    { provide: DateAdapter, useClass: CustomDateAdapter },
+    { provide: MAT_DATE_FORMATS, useValue: DD_MM_YYYY_FORMATS },
 
     // Restore user session before route guards run on application startup.
     provideAppInitializer(() => inject(AuthService).restoreSession()),

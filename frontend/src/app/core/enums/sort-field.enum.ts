@@ -27,6 +27,12 @@ export enum CvSortField {
     UpdateAt = 'UPDATED_AT',
 }
 
+export enum ProfileUpdateSortField {
+    CreateAt = 'CREATED_AT',
+    ReviewedAt = 'REVIEWED_AT',
+    Status = 'STATUS',
+}
+
 export enum SortDirection {
     Asc = 'ASC',
     Desc = 'DESC',

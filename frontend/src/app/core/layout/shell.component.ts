@@ -7,9 +7,9 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatDividerModule } from '@angular/material/divider';
-import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
-import { toSignal } from '@angular/core/rxjs-interop';
-import { map } from 'rxjs';
+import { BreakpointObserver } from '@angular/cdk/layout';
+import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
+import { catchError, EMPTY, map } from 'rxjs';
 import { AuthService } from '../services/auth.service';
 import { ROLE_LABELS } from '../models/user.model';
 import { UserRole } from '../enums/user-role.enum';
@@ -17,6 +17,8 @@ import { AppRoute } from '../enums/app-route.enum';
 import { NavItem } from '../models/nav-item.model';
 import { NavIconEnum } from '../enums/nav-icon.enum';
 import { ConfirmService } from '../services/confirm.service';
+import { ProfileUpdateRequestService } from '../services/profile-update-request.service';
+import { MyProfileService } from '../services/my-profile.service';
 
 
 /**
@@ -50,10 +52,13 @@ export class ShellComponent {
   private readonly router = inject(Router);
   private readonly breakpoints = inject(BreakpointObserver);
   private readonly confirm = inject(ConfirmService);
+  private readonly profileUpdateRequests = inject(ProfileUpdateRequestService);
+  private readonly myProfile = inject(MyProfileService);
 
   readonly user = this.auth.user;
   readonly navOpen = signal(true);
   readonly homeRoute = '/' + AppRoute.Home;
+  readonly myProfileRoute = '/' + AppRoute.MyProfile;
   private confirmBackdropMouseDownTarget: EventTarget | null = null;
 
   /**
@@ -69,6 +74,7 @@ export class ShellComponent {
   private readonly navItems: NavItem[] = [
     { label: 'Home', icon: NavIconEnum.Home, route: AppRoute.Home },
     { label: 'Users', icon: NavIconEnum.People, route: AppRoute.Users, roles: [UserRole.Admin, UserRole.HR, UserRole.TechLead] },
+    { label: 'Profile Requests', icon: NavIconEnum.PendingActions, route: AppRoute.ProfileUpdateRequests, roles: [UserRole.Admin, UserRole.HR], showsPendingCount: true },
     { label: 'Departments', icon: NavIconEnum.Departments, route: AppRoute.Departments, roles: [UserRole.Admin] },
     { label: 'Teams', icon: NavIconEnum.Teams, route: AppRoute.Teams, roles: [UserRole.Admin] },
     { label: 'Competency Profiles', icon: NavIconEnum.Profiles, route: AppRoute.Profiles },
@@ -77,6 +83,33 @@ export class ShellComponent {
     // Later stages add their entries here. Each one declares the roles it is offered to; the
     // server still enforces access independently.
   ];
+
+  readonly pendingRequestCount = this.profileUpdateRequests.pendingCount;
+
+  constructor() {
+    /*
+     * The count is scoped server-side, so an HR sees a number that excluded Admin and HR
+     * requests - a badge you tap into an empty list is worse than no badge.
+     * 
+     * Loaded once on start rather than polled: at this scale a stale count until the next
+     * navigation costs nothing and a timer here would outlive every screen.
+     */
+    if (this.auth.hasRole(UserRole.Admin, UserRole.HR)) {
+      this.profileUpdateRequests.refreshPendingCount();
+    }
+
+    /*
+     * Refreshes the cached session from the server once per app start. The signed avatar URL
+     * expires and an approved profile update changes values this session copy was taken before.
+     */
+    this.myProfile.getMyProfile()
+      .pipe(catchError(() => EMPTY), takeUntilDestroyed())
+      .subscribe(profile => this.auth.patchUser({
+        fullName: profile.fullName,
+        avatarImageId: profile.avatarImageId,
+        avatarUrl: profile.avatarUrl,
+      }));
+  }
 
   // Sidebar visibility is convenience only; the backend enforces scope on every query.
   readonly visibleNavItems = computed(() => {

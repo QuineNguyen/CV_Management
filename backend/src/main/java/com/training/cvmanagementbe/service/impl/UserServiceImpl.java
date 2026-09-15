@@ -30,6 +30,7 @@ public class UserServiceImpl implements UserService {
 
     // The system must always keep at least one active admin
     private static final long MIN_ACTIVE_ADMINS = 1L;
+    private static final Set<Role> HR_MANAGEABLE_ROLES = Set.of(Role.EMPLOYEE, Role.TECH_LEAD);
 
     private final UserRepository userRepository;
     private final TeamRepository teamRepository;
@@ -117,6 +118,7 @@ public class UserServiceImpl implements UserService {
     @Transactional
     public UserResponse update(UUID id, UpdateUserRequest request) {
         User user = requireUser(id);
+        validateManageable(user);
         validateManageableTarget(user.getRole(), request.role());
         requireDepartmentExists(request.primaryDepartmentId());
         validateTeamAssignments(request.teams());
@@ -158,6 +160,7 @@ public class UserServiceImpl implements UserService {
     @Transactional
     public void deactivate(UUID id, DeactivateUserRequest request) {
         User user = requireUser(id);
+        validateManageable(user);
         validateDeactivatable(user);
 
         UserResponse before = toFlatResponse(user);
@@ -184,6 +187,7 @@ public class UserServiceImpl implements UserService {
     @Transactional
     public void activate(UUID id) {
         User user = requireUser(id);
+        validateManageable(user);
         if (user.isActive()) {
             throw new ApiException.BusinessRuleException(ErrorCode.USER_ALREADY_ACTIVE);
         }
@@ -267,7 +271,7 @@ public class UserServiceImpl implements UserService {
     // HR must not promote anyone to ADMIN — only an Admin can grant that role
     private void rejectHrAssigningAdmin(Role targetRole) {
         if (targetRole == Role.ADMIN && CurrentActor.requireRole() == Role.HR) {
-            throw new ApiException.BusinessRuleException(ErrorCode.HR_CANNOT_ASSIGN_ADMIN);
+            throw new ApiException.BusinessRuleException(ErrorCode.HR_CANNOT_MANAGE_ROLE);
         }
     }
 
@@ -323,6 +327,13 @@ public class UserServiceImpl implements UserService {
         // set check above is what keeps ADMIN and HR out of that choice.
         if (actorRole == Role.HR && currentRole != null && currentRole != incomingRole) {
             throw new ApiException.ForbiddenException(ErrorCode.OUT_OF_SCOPE);
+        }
+    }
+
+    // HR handles employee records; administrator accounts stay with Admin
+    private void validateManageable(User target) {
+        if (CurrentActor.requireRole() == Role.HR && !HR_MANAGEABLE_ROLES.contains(target.getRole())) {
+            throw new ApiException.BusinessRuleException(ErrorCode.HR_CANNOT_MANAGE_ROLE);
         }
     }
 

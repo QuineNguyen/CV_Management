@@ -1,0 +1,221 @@
+@if (loading()) {
+  <section class="page">
+    <div class="skeleton-stack" aria-busy="true">
+      @for (row of [1, 2, 3]; track row) {
+        <div class="skeleton-row"></div>
+      }
+    </div>
+  </section>
+} @else if (profile(); as profile) {
+  <section class="page">
+
+    <header class="page-toolbar">
+      <div>
+        <h1 class="page-title">My Profile</h1>
+        <p class="page-subtitle">
+          @if (requiresApproval()) {
+            Changes to your name, date of birth, phone, address or photo are reviewed before they
+            take effect
+          } @else {
+            As an administrator, your changes take effect immediately
+          }
+        </p>
+      </div>
+
+      @if (!editing() && canEdit()) {
+        <div class="page-toolbar-actions">
+          <button type="button" class="btn btn-primary" (click)="startEditing()">Edit</button>
+        </div>
+      }
+    </header>
+
+    <!-- Latest request banner -->
+    @if (latestRequest(); as request) {
+      <div class="notice"
+           [class.notice-warning]="request.status === status.Pending"
+           [class.notice-danger]="request.status === status.Rejected"
+           [class.notice-success]="request.status === status.Approved"
+           role="status">
+        <div class="notice-head">
+          <strong>{{ statusLabels[request.status] }}</strong>
+          <span class="cell-muted">
+            Submitted {{ request.createdAt | date:'dd/MM/yyyy HH:mm' }}
+          </span>
+        </div>
+
+        @switch (request.status) {
+          @case (status.Pending) {
+            <p class="notice-detail">
+              An administrator will review this shortly. You can withdraw it and send a new one
+            </p>
+            <button type="button" class="link-btn" (click)="askWithdraw()">Withdraw request</button>
+          }
+          @case (status.Rejected) {
+            <p class="notice-detail">
+              Declined by {{ request.reviewedByName ?? '—' }}
+              on {{ request.reviewedAt | date:'dd/MM/yyyy HH:mm' }}
+            </p>
+            <p class="notice-detail notice-reason">{{ request.rejectReason }}</p>
+          }
+          @case (status.Approved) {
+            <p class="notice-detail">
+              Applied by {{ request.reviewedByName ?? '—' }}
+              on {{ request.reviewedAt | date:'dd/MM/yyyy HH:mm' }}
+            </p>
+          }
+          @case (status.Cancelled) {
+            <p class="notice-detail">You withdrew this request. You can send a new one any time</p>
+          }
+        }
+      </div>
+    }
+
+    <div class="profile-layout">
+
+      <!-- Photo -->
+      <aside class="profile-photo">
+        @if (editing()) {
+          <app-avatar-upload
+            [avatarUrl]="avatarUrl()"
+            [disabled]="saving()"
+            emptyLabel="Add a photo"
+            (avatarChanged)="onAvatarChanged($event)" />
+        } @else {
+          <div class="avatar-frame-static">
+            @if (profile.avatarUrl) {
+              <img [src]="profile.avatarUrl" alt="Your photo" class="avatar-photo-static" />
+            } @else {
+              <span class="material-symbols-outlined avatar-placeholder-static"
+                    aria-hidden="true">person</span>
+            }
+          </div>
+        }
+      </aside>
+
+      <!-- Details -->
+      <div class="profile-details">
+        @if (editing()) {
+          <form class="form" [formGroup]="form" (ngSubmit)="save()">
+            <div class="form-grid">
+              <label class="field field-grow">
+                <span class="field-label">
+                  Full name <span class="field-required" aria-hidden="true">*</span>
+                </span>
+                <input class="field-input" type="text" formControlName="fullName"
+                       autocomplete="name" maxlength="200" />
+                @if (form.controls.fullName.touched && form.controls.fullName.invalid) {
+                  <span class="field-error">A full name is required</span>
+                }
+              </label>
+
+              <div class="field">
+                <label class="field-label" for="profile-dob">Date of birth</label>
+                <div class="field-date-wrap">
+                  <input id="profile-dob" class="field-input field-date-input" type="text"
+                         [matDatepicker]="dobPicker" formControlName="dateOfBirth"
+                         autocomplete="bday" placeholder="dd/MM/yyyy" />
+                  <mat-datepicker-toggle [for]="dobPicker" class="field-date-toggle" />
+                  <mat-datepicker #dobPicker />
+                </div>
+                @if (form.controls.dateOfBirth.touched && form.controls.dateOfBirth.invalid) {
+                  <span class="field-error">Please enter a valid date (dd/MM/yyyy)</span>
+                }
+              </div>
+
+              <label class="field">
+                <span class="field-label">Phone number</span>
+                <input class="field-input" type="tel" formControlName="phoneNumber"
+                       autocomplete="tel" maxlength="30" />
+              </label>
+
+              <label class="field field-wide">
+                <span class="field-label">Address</span>
+                <input class="field-input" type="text" formControlName="address"
+                       autocomplete="street-address" maxlength="500" />
+              </label>
+            </div>
+
+            <p class="text-muted">
+              Leaving a field empty keeps its current value — this form cannot clear one
+            </p>
+
+            <div class="profile-footer">
+              <button type="button" class="btn btn-ghost" (click)="cancelEditing()"
+                      [disabled]="saving()">Cancel</button>
+              <button type="submit" class="btn btn-primary" [disabled]="saving()">
+                {{ saveLabel() }}
+              </button>
+            </div>
+          </form>
+        } @else {
+          <dl class="profile-facts">
+            <div>
+              <dt>Full name</dt>
+              <dd>{{ profile.fullName }}</dd>
+            </div>
+            <div>
+              <dt>Date of birth</dt>
+              <dd>{{ (profile.dateOfBirth | date:'dd/MM/yyyy') ?? '—' }}</dd>
+            </div>
+            <div>
+              <dt>Phone number</dt>
+              <dd>{{ profile.phoneNumber ?? '—' }}</dd>
+            </div>
+            <div>
+              <dt>Address</dt>
+              <dd>{{ profile.address ?? '—' }}</dd>
+            </div>
+          </dl>
+
+          <h2 class="profile-section-title">Managed by your administrator</h2>
+          <dl class="profile-facts">
+            <div>
+              <dt>Email</dt>
+              <dd class="is-mono">{{ profile.email }}</dd>
+            </div>
+            <div>
+              <dt>Username</dt>
+              <dd class="is-mono">{{ profile.username }}</dd>
+            </div>
+            <div>
+              <dt>Role</dt>
+              <dd>{{ roleLabels[profile.role] }}</dd>
+            </div>
+            <div>
+              <dt>Department</dt>
+              <dd>
+                @if (profile.departmentCode) {
+                  <span class="code-chip">{{ profile.departmentCode }}</span>
+                }
+                {{ profile.departmentName ?? '—' }}
+              </dd>
+            </div>
+          </dl>
+        }
+      </div>
+    </div>
+  </section>
+}
+
+<!-- Withdraw confirmation -->
+@if (withdrawOpen()) {
+  <div class="modal-backdrop" [class.is-closing]="isWithdrawClosing()"
+       (mousedown)="onWithdrawBackdropMouseDown($event)" (click)="onWithdrawBackdropClick($event)">
+    <div class="modal modal-sm" role="alertdialog" aria-modal="true"
+         (click)="$event.stopPropagation()">
+      <h2 class="modal-title">Withdraw request</h2>
+      <p class="modal-body">
+        Your pending changes will not be applied, and you can submit a new request straight away.
+        The request stays in your history
+      </p>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-ghost" (click)="cancelWithdraw()"
+                [disabled]="withdrawing()">Keep it</button>
+        <button type="button" class="btn btn-danger" (click)="confirmWithdraw()"
+                [disabled]="withdrawing()">
+          {{ withdrawing() ? 'Withdrawing...' : 'Withdraw' }}
+        </button>
+      </div>
+    </div>
+  </div>
+}

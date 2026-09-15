@@ -92,6 +92,22 @@ export const routes: Routes = [
           import('./core/pages/cvs/cv-edit/cv-edit.component')
             .then(m => m.CvEditComponent),
       },
+      {
+        path: AppRoute.MyProfile,
+        title: 'My Profile',
+        loadComponent: () =>
+          import('./core/pages/my-profile/my-profile.component')
+            .then(m => m.MyProfileComponent),
+      },
+      {
+        path: AppRoute.ProfileUpdateRequests,
+        // Convenience only: the server scopes every row by the requester's role regardless.
+        canActivate: [roleGuard(UserRole.Admin, UserRole.HR)],
+        title: 'Profile Update Requests',
+        loadComponent: () =>
+          import('./core/pages/profile-update-requests/profile-update-requests.component')
+            .then(m => m.ProfileUpdateRequestsComponent),
+      }
     ],
   },
   { path: '**', redirectTo: '' },

@@ -11,4 +11,6 @@ export enum NavIconEnum {
   Profiles = 'badge',
   AddCv = 'note_add',
   Deleted = 'delete_history',
+  Person = 'person',
+  PendingActions = 'pending_actions',
 }

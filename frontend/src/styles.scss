@@ -1,5 +1,6 @@
 @use '@angular/material' as mat;
 @use './styles/ui';
+@use 'cropperjs/dist/cropper.css';
 
 $vt-theme: mat.define-theme((
   color: (
@@ -257,6 +258,21 @@ body {
     font-weight: 600;
     white-space: nowrap;
   }
+}
+
+/* ---------- Circular crop guide ----------
+   Cropper still outputs a square canvas; this is a visual guide only. */
+.crop-stage .cropper-view-box,
+.crop-stage .cropper-face {
+  border-radius: 50%;
+}
+
+.crop-stage .cropper-view-box {
+  outline-color: var(--vt-red);
+}
+
+.crop-stage .cropper-point {
+  background-color: var(--vt-red);
 }
 
 /* Keep the toast clear of the bottom edge on phones and above the safe area. */

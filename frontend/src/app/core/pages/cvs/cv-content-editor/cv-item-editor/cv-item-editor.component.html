@@ -52,9 +52,28 @@
                           [attr.placeholder]="field.placeholder"></textarea>
               }
               @case (FieldKind.Date) {
-                <input class="field-input" type="date"
-                       [id]="section().key + '-' + index() + '-' + field.key"
-                       [formControlName]="field.key" />
+                <div class="field-date-wrap">
+                  <input
+                    class="field-input field-date-input"
+                    type="text"
+                    [matDatepicker]="itemDatePicker"
+                    [id]="section().key + '-' + index() + '-' + field.key"
+                    [formControlName]="field.key"
+                    [disabled]="readOnly()"
+                    placeholder="dd/MM/yyyy" />
+                  <mat-datepicker-toggle [for]="itemDatePicker" class="field-date-toggle" [disabled]="readOnly()" />
+                  <mat-datepicker #itemDatePicker />
+                </div>
+
+                <!--
+                  The native picker renders in the OS locale, which has nothing to do with the CV's
+                  language. This line shows what a reader of the finished CV will actually see.
+                -->
+                @if (group().get(field.key)?.value; as isoDate) {
+                  <span class="field-preview">
+                    {{ isoDate | cvDate : language() : (field.dateStyle ?? 'full') }}
+                  </span>
+                }
               }
               @case (FieldKind.Number) {
                 <input class="field-input" type="number" min="1"

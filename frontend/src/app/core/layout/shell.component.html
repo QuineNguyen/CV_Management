@@ -25,6 +25,12 @@
           (click)="isCompact() && drawer.close()">
           <span matListItemIcon class="material-symbols-outlined">{{ item.icon }}</span>
           <span matListItemTitle>{{ item.label }}</span>
+          @if (item.showsPendingCount && pendingRequestCount() > 0) {
+            <span matListItemMeta class="nav-badge"
+                  [attr.aria-label]="pendingRequestCount() + ' awaiting review'">
+              {{ pendingRequestCount() }}
+            </span>
+          }
         </a>
       }
     </mat-nav-list>
@@ -40,7 +46,11 @@
 
       <button mat-button [matMenuTriggerFor]="accountMenu" aria-label="Account menu">
         <div class="shell-user">
-          <span class="material-symbols-outlined">account_circle</span>
+          @if (user()?.avatarUrl) {
+            <img [src]="user()!.avatarUrl" alt="" class="shell-avatar" />
+          } @else {
+            <span class="material-symbols-outlined">account_circle</span>
+          }
           <span class="shell-user-name">{{ user()?.fullName }}</span>
         </div>
       </button>
@@ -52,6 +62,12 @@
           <small>{{ roleLabel() }}</small>
         </div>
         <mat-divider />
+        <button mat-menu-item [routerLink]="myProfileRoute">
+          <span class="shell-menu-item">
+            <span class="material-symbols-outlined">person</span>
+            <span>My Profile</span>
+          </span>
+        </button>
         <button mat-menu-item (click)="signOut()">
           <span class="shell-logout-item">
             <span class="material-symbols-outlined">logout</span>

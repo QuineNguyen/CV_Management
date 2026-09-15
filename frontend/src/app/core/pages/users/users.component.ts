@@ -43,6 +43,10 @@ export class UsersComponent implements OnInit {
     private static readonly SEARCH_DEBOUNCE_MS = 300;
     private static readonly DEPARTMENT_LOOKUP_SIZE = 100;
     private static readonly AVATAR_TONES = 6;
+    private static readonly HR_MANAGEABLE_ROLES: readonly UserRole[] = [
+        UserRole.Employee,
+        UserRole.TechLead,
+    ];
 
     private readonly userService = inject(UserService);
     private readonly departmentService = inject(DepartmentService);
@@ -131,6 +135,8 @@ export class UsersComponent implements OnInit {
 
     // The server blocks self-deactivation, so the action is hidden up front
     readonly currentUserId = computed(() => this.auth.user()?.id ?? null);
+
+    readonly isHr = computed(() => this.auth.hasRole(UserRole.HR));
 
     readonly isEmpty = computed(() => !this.loading() && this.users().length === 0);
 
@@ -569,6 +575,24 @@ export class UsersComponent implements OnInit {
         return userId === this.currentUserId()
             ? `You cannot ${action} your own account`
             : action.charAt(0).toUpperCase() + action.slice(1);
+    }
+    
+    // HR handles employee records; administrator accounts are outside their remit.
+    hrBlocked(user: UserResponse): boolean {
+        return this.isHr() && !UsersComponent.HR_MANAGEABLE_ROLES.includes(user.role);
+    }
+
+    // One tooltip for both reasons an action can be unavailable on a row.
+    actionHint(user: UserResponse, action: string): string {
+        if (this.hrBlocked(user)) {
+            return `HR cannot ${action} a ${this.roleLabels[user.role]} account`;
+        }
+        return this.selfActionHint(user.id, action);
+    }
+
+    // True when the row is locked either by the HR rule or the self-action rule.
+    actionLocked(user: UserResponse): boolean {
+        return this.hrBlocked(user) || user.id === this.currentUserId();
     }
 
     // ---------- Internals ----------

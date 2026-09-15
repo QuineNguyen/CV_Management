@@ -54,3 +54,7 @@
   user-select: all;
   overflow-wrap: anywhere;
 }
+
+.tooltip-host {
+  display: inline-flex;
+}

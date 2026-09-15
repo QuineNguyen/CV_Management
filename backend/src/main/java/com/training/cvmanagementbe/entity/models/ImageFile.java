@@ -13,12 +13,13 @@ import java.util.UUID;
  * published CV version still points at.
  *
  * - Does not extend BaseEntity: the table only records who uploaded and when and the row is
- * immutable once written - there is no updated_by/updated_at to keep. The two columns it does
- * have are still filled by the auditing listener rather than by hand.
+ * immutable once written - there is no updated_by/updated_at to keep.
+ * - The two columns are filled here rather than by AuditingEntityListener. That listener drives
+ * BaseEntity's four columns and wiring a second path for two columns on one immutable table buys
+ * an indirection that fails silently when it does not fire - which is exactly what happened.
  */
 @Entity
 @Table(name = "image_files")
-@EntityListeners(AuditingEntityListener.class)
 @Getter
 @Setter
 public class ImageFile {
@@ -35,4 +36,13 @@ public class ImageFile {
 
     @Column(name = "uploaded_at", nullable = false, updatable = false)
     private LocalDateTime uploadedAt;
+
+    // Last line of defence: the columns are NOT NULL and a caller that forgets to set them
+    // would otherwise fail at flush time with a constraint error instead of here.
+    @PrePersist
+    void stampUpload() {
+        if (uploadedAt == null) {
+            uploadedAt = LocalDateTime.now();
+        }
+    }
 }

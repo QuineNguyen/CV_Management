@@ -1,5 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, DestroyRef, HostListener, inject, input, OnInit, output, signal } from "@angular/core";
 import { FormBuilder, FormControl, ReactiveFormsModule, Validators } from "@angular/forms";
+import { MatDatepickerModule } from "@angular/material/datepicker";
+import { DateAdapter, MAT_DATE_FORMATS, MatNativeDateModule } from "@angular/material/core";
 import { DepartmentService } from "../../../services/department.service";
 import { TeamService } from "../../../services/team.service";
 import { UserDialogState } from "../../../models/user-page.model";
@@ -11,11 +13,17 @@ import { TeamResponse } from "../../../dtos/team.dto";
 import { DialogMode } from "../../../enums/dialog-mode.enum";
 import { catchError, debounceTime, distinctUntilChanged, EMPTY, forkJoin, map, merge, Subject, switchMap, tap } from "rxjs";
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
+import { AuthService } from "../../../services/auth.service";
+import { CustomDateAdapter, DD_MM_YYYY_FORMATS } from "../../../utils/app-date-adapter.util";
 
 @Component({
     selector: 'app-user-form-dialog',
     standalone: true,
-    imports: [ReactiveFormsModule],
+    imports: [ReactiveFormsModule, MatDatepickerModule, MatNativeDateModule],
+    providers: [
+        { provide: DateAdapter, useClass: CustomDateAdapter },
+        { provide: MAT_DATE_FORMATS, useValue: DD_MM_YYYY_FORMATS },
+    ],
     templateUrl: './user-form-dialog.component.html',
     styleUrl: './user-form-dialog.component.css',
     changeDetection: ChangeDetectionStrategy.OnPush,
@@ -29,6 +37,7 @@ export class UserFormDialogComponent implements OnInit {
     private readonly departmentService = inject(DepartmentService);
     private readonly teamService = inject(TeamService);
     private readonly destroyRef = inject(DestroyRef);
+    private readonly auth = inject(AuthService);
 
     readonly state = input.required<UserDialogState>();
     readonly submitting = input(false);
@@ -41,7 +50,6 @@ export class UserFormDialogComponent implements OnInit {
     private backdropMouseDownTarget: EventTarget | null = null;
 
     readonly roleLabels = ROLE_LABELS;
-    readonly roleOptions = Object.values(UserRole);
     readonly roleOpen = signal(false);
     private readonly selectedRole = signal<UserRole | ''>('');
 
@@ -60,7 +68,7 @@ export class UserFormDialogComponent implements OnInit {
             Validators.pattern(/^[a-zA-Z0-9._-]+$/),
         ]],
         role: ['' as UserRole | '', [Validators.required]],
-        dateOfBirth: [''],
+        dateOfBirth: [null as Date | null],
         phoneNumber: ['', [Validators.maxLength(30)]],
         address: ['', [Validators.maxLength(500)]],
     });
@@ -95,6 +103,24 @@ export class UserFormDialogComponent implements OnInit {
         && this.primaryTeamId() !== null
     );
 
+    /*
+     * HR administers tech leads and employees only, so offering them ADMIN and HR in the
+     * dropdown just invites a 403 after they fill in the whole form. The server enforces the same
+     * set; this is about not proposing a dead end.
+     */
+    readonly roleOptions = computed<UserRole[]>(() =>
+        this.auth.hasRole(UserRole.Admin)
+            ? Object.values(UserRole)
+            : [UserRole.TechLead, UserRole.Employee]
+    );
+
+    /*
+     * HR may pick a role when creating an account but may never change one afterwards - setting
+     * role is the self-escalation path and it is also why HR's edits never revoke tokens.
+     */
+    readonly roleLocked = computed(() =>
+        this.state().mode === DialogMode.Edit && !this.auth.hasRole(UserRole.Admin));
+
     private readonly reloadDepartment$ = new Subject<void>();
     private readonly reloadTeam$ = new Subject<void>();
     private departmentLookupStarted = false;
@@ -107,7 +133,7 @@ export class UserFormDialogComponent implements OnInit {
             email: user?.email ?? '',
             username: user?.username ?? '',
             role: user?.role ?? '',
-            dateOfBirth: user?.dateOfBirth ?? '',
+            dateOfBirth: this.parseIsoDate(user?.dateOfBirth ?? null),
             phoneNumber: user?.phoneNumber ?? '',
             address: user?.address ?? '',
         });
@@ -119,6 +145,12 @@ export class UserFormDialogComponent implements OnInit {
             this.form.controls.username.disable();
         }
 
+        // Disabled controls are excluded from getRawValue()'s siblings, so read it from the source
+        // record when building the request rather than from the form.
+        if (this.roleLocked()) {
+            this.form.controls.role.disable({ emitEvent: false });
+        }
+
         this.loadInitialDepartment(user?.primaryDepartmentId ?? null);
         this.loadInitialTeams();
         this.watchDepartmentKeyword();
@@ -128,6 +160,9 @@ export class UserFormDialogComponent implements OnInit {
     // ---------- Role dropdown ----------
     toggleRoleDropdown(event: MouseEvent): void {
         event.stopPropagation();
+        if (this.roleLocked()) {
+            return;
+        }
         const next = !this.roleOpen();
         if (next) {
             this.pickerOpen.set(false);
@@ -136,6 +171,11 @@ export class UserFormDialogComponent implements OnInit {
     }
 
     selectRole(role: UserRole | ''): void {
+        // The dropdown only offers roles this caller may assign; this keeps that true for any
+        // other caller of the method as well.
+        if (role && !this.roleOptions().includes(role)) {
+            return;
+        }
         this.form.controls.role.setValue(role);
         this.form.controls.role.markAsDirty();
         this.selectedRole.set(role);
@@ -235,7 +275,7 @@ export class UserFormDialogComponent implements OnInit {
 
     // ---------- Submit ----------
 
-    hasError(control: 'fullName' | 'email' | 'username' | 'role', error: string): boolean {
+    hasError(control: 'fullName' | 'email' | 'username' | 'role' | 'dateOfBirth', error: string): boolean {
         const field = this.form.controls[control];
         return field.touched && field.hasError(error);
     }
@@ -259,7 +299,7 @@ export class UserFormDialogComponent implements OnInit {
             fullName: raw.fullName.trim(),
             role: raw.role as UserRole,
             primaryDepartmentId: department.id,
-            dateOfBirth: raw.dateOfBirth || null,
+            dateOfBirth: this.formatIsoDate(raw.dateOfBirth),
             phoneNumber: raw.phoneNumber.trim() || null,
             address: raw.address.trim() || null,
             teams,
@@ -380,5 +420,23 @@ export class UserFormDialogComponent implements OnInit {
             this.hasMoreTeamMatches.set(page.totalElements > page.content.length);
             this.teamLookupLoading.set(false);
         });
+    }
+
+    // Parses an ISO date string (YYYY-MM-DD) into a local Date, or returns null.
+    private parseIsoDate(iso: string | null | undefined): Date | null {
+        if (!iso) {
+            return null;
+        }
+        const [y, m, d] = iso.split('-').map(Number);
+        return new Date(y, m - 1, d);
+    }
+
+    // Formats a Date into an ISO date string (YYYY-MM-DD), or returns null.
+    private formatIsoDate(date: Date | null): string | null {
+        if (!date || !(date instanceof Date) || isNaN(date.getTime())) {
+            return null;
+        }
+        const pad = (n: number) => String(n).padStart(2, '0');
+        return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
     }
 }

@@ -2,6 +2,7 @@ import { CvLanguage } from "../enums/cv-language.enum";
 import { CvSectionKey } from "../enums/cv-section-key.enum";
 import { LANGUAGE_PROFICIENCY_LABELS, LANGUAGE_PROFICIENCY_ORDER, NOT_SPECIFIED_LABELS } from "../enums/proficiency.enum";
 import { PROFICIENCY_LEVEL_LABELS, PROFICIENCY_LEVEL_ORDER, ProficiencyLevel } from "../enums/proficiency.enum";
+import { CvDateStyle } from "../utils/cv-date.util";
 
 export enum FieldKind {
     Text = 'TEXT',
@@ -32,6 +33,8 @@ export interface FieldDescriptor {
     placeholder?: string;
     hint?: string;
     optionSet?: OptionSet;
+    // For Date fields: how the preview renders. Ranges read as month and year on a CV.
+    dateStyle?: CvDateStyle;
     // Half-width on desktop; full width below the iPad breakpoint regardless.
     half?: boolean;
 }
@@ -79,7 +82,7 @@ export const CV_SECTIONS: readonly SectionDescriptor[] = [
             { key: 'position', label: 'Job title', kind: FieldKind.Text, maxLength: 255, half: true, placeholder: 'e.g. Backend Developer' },
             { key: 'email', label: 'Email', kind: FieldKind.Text, maxLength: 255, half: true },
             { key: 'phone', label: 'Phone', kind: FieldKind.Text, maxLength: 50, half: true },
-            { key: 'date_of_birth', label: 'Date of birth', kind: FieldKind.Date, half: true },
+            { key: 'date_of_birth', label: 'Date of birth', kind: FieldKind.Date, dateStyle: 'full', half: true },
             { key: 'address', label: 'Address', kind: FieldKind.Text, maxLength: 500, half: true },
         ],
     },
@@ -117,8 +120,8 @@ export const CV_SECTIONS: readonly SectionDescriptor[] = [
         fields: [
             { key: 'company', label: 'Company', kind: FieldKind.Text, required: true, maxLength: 255, half: true },
             { key: 'position', label: 'Position', kind: FieldKind.Text, required: true, maxLength: 255, half: true },
-            { key: 'start_date', label: 'From', kind: FieldKind.Date, half: true },
-            { key: 'end_date', label: 'To', kind: FieldKind.Date, half: true, hint: 'Leave empty if this is your current role' },
+            { key: 'start_date', label: 'From', kind: FieldKind.Date, dateStyle: 'monthYear', half: true },
+            { key: 'end_date', label: 'To', kind: FieldKind.Date, dateStyle: 'monthYear', half: true, hint: 'Leave empty if this is your current role' },
             { key: 'description', label: 'What you did', kind: FieldKind.Textarea, maxLength: 4000 },
         ],
     },
@@ -134,8 +137,8 @@ export const CV_SECTIONS: readonly SectionDescriptor[] = [
             { key: 'institution', label: 'Institution', kind: FieldKind.Text, required: true, maxLength: 255, half: true },
             { key: 'degree', label: 'Degree', kind: FieldKind.Text, maxLength: 255, half: true },
             { key: 'field', label: 'Field of study', kind: FieldKind.Text, maxLength: 255, half: true },
-            { key: 'start_date', label: 'From', kind: FieldKind.Date, half: true },
-            { key: 'end_date', label: 'To', kind: FieldKind.Date, half: true, hint: 'Leave empty if still studying' },
+            { key: 'start_date', label: 'From', kind: FieldKind.Date, dateStyle: 'monthYear', half: true },
+            { key: 'end_date', label: 'To', kind: FieldKind.Date, dateStyle: 'monthYear', half: true, hint: 'Leave empty if still studying' },
             { key: 'description', label: 'Notes', kind: FieldKind.Textarea, maxLength: 2000 },
         ],
     },
@@ -150,8 +153,8 @@ export const CV_SECTIONS: readonly SectionDescriptor[] = [
         fields: [
             { key: 'name', label: 'Certificate', kind: FieldKind.Text, required: true, maxLength: 255, half: true },
             { key: 'issuing_organization', label: 'Issued by', kind: FieldKind.Text, maxLength: 255, half: true },
-            { key: 'issue_date', label: 'Issued on', kind: FieldKind.Date, half: true },
-            { key: 'expiry_date', label: 'Expires on', kind: FieldKind.Date, half: true, hint: 'Leave empty if it does not expire' },
+            { key: 'issue_date', label: 'Issued on', kind: FieldKind.Date, dateStyle: 'full', half: true },
+            { key: 'expiry_date', label: 'Expires on', kind: FieldKind.Date, dateStyle: 'full', half: true, hint: 'Leave empty if it does not expire' },
             { key: 'credential_id', label: 'Credential ID', kind: FieldKind.Text, maxLength: 255 },
         ],
     },
@@ -167,8 +170,8 @@ export const CV_SECTIONS: readonly SectionDescriptor[] = [
             { key: 'name', label: 'Project', kind: FieldKind.Text, required: true, maxLength: 255, half: true },
             { key: 'role', label: 'Your role', kind: FieldKind.Text, maxLength: 255, half: true },
             { key: 'team_size', label: 'Team size', kind: FieldKind.Number, half: true },
-            { key: 'start_date', label: 'From', kind: FieldKind.Date, half: true },
-            { key: 'end_date', label: 'To', kind: FieldKind.Date, half: true, hint: 'Leave empty if ongoing' },
+            { key: 'start_date', label: 'From', kind: FieldKind.Date, dateStyle: 'monthYear', half: true },
+            { key: 'end_date', label: 'To', kind: FieldKind.Date, dateStyle: 'monthYear', half: true, hint: 'Leave empty if ongoing' },
             { key: 'technologies', label: 'Technologies', kind: FieldKind.Tags, placeholder: 'Java, Angular, MariaDB', hint: 'Separate with commas' },
             { key: 'description', label: 'Description', kind: FieldKind.Textarea, maxLength: 4000 },
         ],

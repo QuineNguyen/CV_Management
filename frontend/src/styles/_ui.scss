@@ -127,6 +127,19 @@
   cursor: not-allowed;
 }
 
+.field-static {
+  margin: 0;
+  min-height: var(--vt-touch-target);
+  display: flex;
+  align-items: center;
+  padding-inline: clamp(0.5rem, 1.5vw, 0.75rem);
+  border: 0.0625rem solid var(--vt-line);
+  border-radius: var(--vt-radius);
+  background: var(--vt-canvas);
+  color: var(--vt-ink);
+  font-size: var(--vt-fs-md);
+}
+
 .field-hint {
   font-size: var(--vt-fs-sm);
   color: var(--vt-ink-muted);
@@ -149,6 +162,72 @@
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(16rem, 100%), 1fr));
   gap: var(--vt-gap);
+}
+
+// mat-form-field used as a .field inside grids: strip the subscript wrapper so the
+// outline box aligns exactly with sibling label + .field-input combos.
+mat-form-field.field,
+.field-datepicker {
+  width: 100%;
+}
+
+mat-form-field.field .mat-mdc-form-field-subscript-wrapper,
+.field-datepicker .mat-mdc-form-field-subscript-wrapper {
+  display: none;
+}
+
+/* ---------- Date input wrapper with mat-datepicker ---------- */
+.field-date-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.field-date-input {
+  width: 100%;
+  padding-inline-end: 2.75rem !important;
+}
+
+.field-date-toggle {
+  position: absolute;
+  inset-inline-end: 0.25rem;
+  top: 50%;
+  transform: translateY(-50%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--vt-ink-muted);
+}
+
+.field-date-toggle .mat-mdc-icon-button,
+.field-date-toggle button {
+  width: 2.25rem !important;
+  height: 2.25rem !important;
+  padding: 0 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-radius: var(--vt-radius-sm) !important;
+  color: var(--vt-ink-muted) !important;
+  background: transparent !important;
+  border: 0 !important;
+  cursor: pointer;
+  transition: color 0.15s ease, background-color 0.15s ease;
+}
+
+.field-date-toggle:hover .mat-mdc-icon-button,
+.field-date-toggle button:hover,
+.field-date-toggle.mat-datepicker-toggle-active button {
+  color: var(--vt-red) !important;
+  background-color: var(--vt-red-tint) !important;
+}
+
+.field-date-toggle button:disabled,
+.field-date-wrap:has(.field-input:disabled) .field-date-toggle,
+.field-date-wrap .field-input:disabled ~ .field-date-toggle {
+  opacity: 0.4;
+  pointer-events: none;
 }
 
 .search-input-wrap {

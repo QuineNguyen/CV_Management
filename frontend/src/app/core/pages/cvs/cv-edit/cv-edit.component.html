@@ -61,6 +61,47 @@
       </div>
     }
 
+    <!-- Photo. Applies on save like the rest of the draft; no separate review step -->
+    <section class="cv-avatar-panel">
+      <div class="cv-avatar-main">
+        @if (locked()) {
+          <div class="cv-avatar-static">
+            @if (avatarUrl(); as url) {
+              <img [src]="url" alt="CV photo" class="cv-avatar-photo" />
+            } @else {
+              <span class="material-symbols-outlined cv-avatar-placeholder"
+                    aria-hidden="true">person</span>
+            }
+          </div>
+        } @else {
+          <app-avatar-upload
+            [avatarUrl]="avatarUrl()"
+            [disabled]="saving()"
+            emptyLabel="Add a photo"
+            (avatarChanged)="onAvatarChanged($event)" />
+        }
+      </div>
+
+      <div class="cv-avatar-text">
+        <h2 class="cv-avatar-title">Photo</h2>
+        <p class="text-muted">
+          @if (locked()) {
+            Frozen along with the rest of the draft while it is under review
+          } @else if (directPublish()) {
+            Saved into the published version, so it appears on the exported CV straight away
+          } @else {
+            Saved with the draft. It becomes part of the CV once the draft is approved
+          }
+        </p>
+
+        @if (!locked() && avatarUrl()) {
+          <button type="button" class="link-btn" (click)="removeAvatar()" [disabled]="saving()">
+            Remove photo
+          </button>
+        }
+      </div>
+    </section>
+
     <app-cv-content-editor
       [content]="editorContent()"
       [language]="detail.cv.language"

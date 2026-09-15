@@ -11,6 +11,8 @@ import { UserRole } from "../../../enums/user-role.enum";
 import { CvContent, emptyCvContent } from "../../../models/cv-content.model";
 import { AppRoute } from "../../../enums/app-route.enum";
 import { HasUnsavedChanges } from "../../../services/unsaved-changes.guard";
+import { AvatarUploadComponent } from "../../avatar-upload/avatar-upload.component";
+import { AvatarChange } from "../../../models/avatar-change.model";
 
 /*
  * Edit CV content. The screen branches on the owner's role, not on anything the user picks:
@@ -23,7 +25,7 @@ import { HasUnsavedChanges } from "../../../services/unsaved-changes.guard";
 @Component({
     selector: 'app-cv-edit',
     standalone: true,
-    imports: [CvContentEditorComponent],
+    imports: [CvContentEditorComponent, AvatarUploadComponent],
     templateUrl: './cv-edit.component.html',
     styleUrl: './cv-edit.component.css',
     changeDetection: ChangeDetectionStrategy.OnPush,
@@ -44,7 +46,12 @@ export class CvEditComponent implements OnInit, HasUnsavedChanges {
     readonly detail = signal<CvDetailResponse | null>(null);
     readonly loading = signal(true);
     readonly saving = signal(false);
-    readonly dirty = signal(false);
+
+    private readonly editorDirty = signal(false);
+    private readonly avatarDirty = signal(false);
+    readonly dirty = computed(() => this.editorDirty() || this.avatarDirty());
+    readonly avatarImageId = signal<string | null>(null);
+    readonly avatarUrl = signal<string | null>(null);
 
     readonly confirmOpen = signal(false);
     readonly isConfirmClosing = signal(false);
@@ -75,10 +82,39 @@ export class CvEditComponent implements OnInit, HasUnsavedChanges {
         this.cvService.getById(id).subscribe({
             next: detail => {
                 this.detail.set(detail);
+                this.seedAvatar(detail);
                 this.loading.set(false);
             },
             error: () => this.loading.set(false),
         });
+    }
+
+    // Draft first, published version second - the same precedence editorContent() uses, so the
+    // photo and the text on screen always come from the same place.
+    private seedAvatar(detail: CvDetailResponse): void {
+        const draft = detail.openDraft;
+        this.avatarImageId.set(draft?.avatarImageId ?? detail.avatarImageId ?? null);
+        this.avatarUrl.set(draft?.avatarUrl ?? detail.avatarUrl ?? null);
+    }
+
+    onAvatarChanged(change: AvatarChange): void {
+        this.avatarImageId.set(change.imageId);
+        this.avatarUrl.set(change.presignedUrl);
+        this.avatarDirty.set(true);
+    }
+
+    /*
+     * Removing is allowed here and nowhere else: this request writes avatar_image_id directly, so
+     * null reaches the column. The old image stays in the bucket - a published version may still
+     * point at it and nothing in this screen can know that.
+     */
+    removeAvatar(): void {
+        if (this.locked() || this.saving()) {
+            return;
+        }
+        this.avatarImageId.set(null);
+        this.avatarUrl.set(null);
+        this.avatarDirty.set(true);
     }
 
     // ---------- Save ----------
@@ -115,7 +151,7 @@ export class CvEditComponent implements OnInit, HasUnsavedChanges {
         }
         this.saving.set(true);
 
-        this.cvService.edit(detail.cv.id, { content: editor.toContent() }).subscribe({
+        this.cvService.edit(detail.cv.id, { content: editor.toContent(), avatarImageId: this.avatarImageId(), }).subscribe({
             next: result => {
                 this.toast.success(result.directPublish
                     ? `Published as v${result.publishedVersion?.versionNumber}`
@@ -164,7 +200,7 @@ export class CvEditComponent implements OnInit, HasUnsavedChanges {
     // ---------- Misc ----------
 
     onDirtyChanged(dirty: boolean): void {
-        this.dirty.set(dirty);
+        this.editorDirty.set(dirty);
     }
 
     cancel(): void {

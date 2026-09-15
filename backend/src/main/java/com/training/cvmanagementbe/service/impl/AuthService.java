@@ -26,6 +26,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.Set;
 import java.util.UUID;
 import java.util.function.Supplier;
 
@@ -33,6 +34,7 @@ import java.util.function.Supplier;
 public class AuthService {
 
     private static final String USER_ENTITY = "user";
+    private static final Set<Role> HR_MANAGEABLE_ROLES = Set.of(Role.EMPLOYEE, Role.TECH_LEAD);
 
     private final UserRepository userRepository;
     private final ExternalAccountLinkRepository linkRepository;
@@ -187,6 +189,7 @@ public class AuthService {
     @Transactional
     public ResetPasswordResponse resetPassword(UUID targetUserId) {
         User target = requireUser(targetUserId);
+        validateManageable(target);
         if (!target.isActive()) {
             throw new ApiException.BusinessRuleException(ErrorCode.ACCOUNT_INACTIVE);
         }
@@ -250,6 +253,13 @@ public class AuthService {
             if (!charset.isPresentIn(password)) {
                 throw new ApiException.BusinessRuleException(ErrorCode.PASSWORD_TOO_WEAK);
             }
+        }
+    }
+
+    // HR handles employee records; administrator accounts stay with Admin
+    private void validateManageable(User target) {
+        if (CurrentActor.requireRole() == Role.HR && !HR_MANAGEABLE_ROLES.contains(target.getRole())) {
+            throw new ApiException.BusinessRuleException(ErrorCode.HR_CANNOT_MANAGE_ROLE);
         }
     }
 

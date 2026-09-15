@@ -5,6 +5,7 @@ import com.training.cvmanagementbe.dto.request.ProfileUpdateSubmitRequest;
 import com.training.cvmanagementbe.dto.request.RejectProfileUpdateRequest;
 import com.training.cvmanagementbe.dto.response.PagedResponse;
 import com.training.cvmanagementbe.dto.response.ProfileUpdateRequestResponse;
+import com.training.cvmanagementbe.dto.response.UserResponse;
 import com.training.cvmanagementbe.entity.models.CurrentActor;
 import com.training.cvmanagementbe.entity.models.ProfileUpdateRequest;
 import com.training.cvmanagementbe.entity.models.User;
@@ -66,7 +67,7 @@ public class ProfileUpdateRequestServiceImpl implements ProfileUpdateRequestServ
         auditLogger.record(Action.SUBMIT_PROFILE_UPDATE, TargetType.PROFILE_UPDATE_REQUEST,
                 saved.getId(), null, saved.getStatus());
 
-        return toResponse(saved, user, Map.of());
+        return toResponse(saved, user, new HashMap<>());
     }
 
     @Override
@@ -122,7 +123,7 @@ public class ProfileUpdateRequestServiceImpl implements ProfileUpdateRequestServ
 
     @Override
     public ProfileUpdateRequestResponse getById(UUID id) {
-        ProfileUpdateRequest request = requireRequest(id);
+        ProfileUpdateRequest request = requireInScope(id);
         return toResponse(request, requireUser(request.getUserId()), reviewerNames(List.of(request)));
     }
 
@@ -139,6 +140,7 @@ public class ProfileUpdateRequestServiceImpl implements ProfileUpdateRequestServ
         // Re-read: the bulk update cleared the persistence context.
         ProfileUpdateRequest closed = requireRequest(id);
         User user = requireUser(closed.getUserId());
+        UserResponse before = snapshot(user);
 
         applyIfPresent(closed.getRequestedFullName(), user::setFullName);
         applyIfPresent(closed.getRequestedPhoneNumber(), user::setPhoneNumber);
@@ -151,10 +153,16 @@ public class ProfileUpdateRequestServiceImpl implements ProfileUpdateRequestServ
         }
         // No token revocation: role and status are not in scope here.
         // No CV is touched either - users only ever seeds Personal info at creation.
-        userRepository.save(user);
+        User saved = userRepository.save(user);
 
         auditLogger.record(Action.APPROVE_PROFILE_UPDATE, TargetType.PROFILE_UPDATE_REQUEST,
                 closed.getId(), ProfileUpdateStatus.PENDING, closed.getStatus());
+        auditLogger.record(Action.UPDATE_USER, TargetType.USER, user.getId(),
+                before, snapshot(saved));
+
+        // TODO [Phase 4 - notifications]: emit event #17 so the requester learns the outcome.
+        //  Must fire inside this transaction's commit, not before it - an email announcing an
+        //  approval that later rolls back is worse than a late one.
 
         return toResponse(closed, user, reviewerNames(List.of(closed)));
     }
@@ -171,6 +179,9 @@ public class ProfileUpdateRequestServiceImpl implements ProfileUpdateRequestServ
         auditLogger.record(Action.REJECT_PROFILE_UPDATE, TargetType.PROFILE_UPDATE_REQUEST,
                 closed.getId(), ProfileUpdateStatus.PENDING, closed.getStatus());
 
+        // TODO [Phase 4 - notifications]: emit event #17 to the requester with the outcome.
+        //  For reject, the reason travels with it - it is the only thing that tells them what
+        //  to change before resubmitting.
         return toResponse(closed, requireUser(closed.getUserId()), reviewerNames(List.of(closed)));
     }
 
@@ -233,7 +244,7 @@ public class ProfileUpdateRequestServiceImpl implements ProfileUpdateRequestServ
                 .filter(Objects::nonNull)
                 .collect(Collectors.toSet());
 
-        return reviewerIds.isEmpty() ? Map.of() : userRepository.findAllById(reviewerIds).stream()
+        return reviewerIds.isEmpty() ? new HashMap<>() : userRepository.findAllById(reviewerIds).stream()
                 .collect(Collectors.toMap(User::getId, User::getFullName));
     }
 
@@ -303,9 +314,28 @@ public class ProfileUpdateRequestServiceImpl implements ProfileUpdateRequestServ
         }
     }
 
+    /*
+     * Flat audit snapshot, same shape UserServiceImpl writes for TargetType.USER, so a diff on a
+     * user record reads identically whichever path produced it. Joined names and the signed URL
+     * are left out: they cost extra queries, cannot change here and a signed URL expires anyway.
+     */
+    private UserResponse snapshot(User user) {
+        return new UserResponse(
+                user.getId(), user.getFullName(), user.getEmail(), user.getUsername(),
+                user.getRole(), user.getStatus(), user.getPrimaryDepartmentId(), null, null,
+                user.getDateOfBirth(), user.getPhoneNumber(), user.getAddress(),
+                user.getAvatarImageId(), null, List.of(), List.of(),
+                user.isMustChangePassword(), user.getCreatedAt()
+        );
+    }
+
     // No ADMIN request ever exists, so this doubles as "reviewer is never the requester".
     private Set<Role> reviewableRequesterRoles() {
-        return CurrentActor.requireRole().manageableRoles();
+        Set<Role> roles = CurrentActor.requireRole().manageableRoles();
+        if (roles.isEmpty()) {
+            throw new ApiException.ForbiddenException(ErrorCode.OUT_OF_SCOPE);
+        }
+        return roles;
     }
 
     /*
