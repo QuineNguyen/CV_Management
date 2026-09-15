@@ -26,4 +26,14 @@ export enum ApiEndpoint {
 
     // CV routes
     Cvs = '/cvs',
+
+    // Image routes
+    Images = '/images',
+
+    // My profile (self-service)
+    MyProfile = '/me/profile',
+    MyProfileUpdateRequest = '/me/profile-update-request',
+
+    // Profile update requests (Admin + HR)
+    ProfileUpdateRequests = '/profile-update-requests',
 }

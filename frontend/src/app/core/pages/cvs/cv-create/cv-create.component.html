@@ -121,6 +121,33 @@
           </p>
         </div>
 
+        <section class="cv-avatar-panel">
+          <div class="cv-avatar-main">
+            <app-avatar-upload
+              [avatarUrl]="avatarUrl()"
+              [disabled]="saving()"
+              emptyLabel="Add a photo"
+              (avatarChanged)="onAvatarChanged($event)" />
+          </div>
+
+          <div class="cv-avatar-text">
+            <h3 class="cv-avatar-title">Photo</h3>
+            <p class="text-muted">
+              @if (avatarImageId()) {
+                Taken from your account. Replacing it here changes this CV only
+              } @else {
+                Optional. Add one here, or leave it out and add it later
+              }
+            </p>
+
+            @if (avatarUrl()) {
+              <button type="button" class="link-btn" (click)="removeAvatar()" [disabled]="saving()">
+                Remove photo
+              </button>
+            }
+          </div>
+        </section>
+
         <app-cv-content-editor [content]="seedContent()" [language]="selectedLanguage()!" />
       </div>
     </div>

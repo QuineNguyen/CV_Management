@@ -1,0 +1,225 @@
+:host {
+  display: block;
+  color: var(--vt-ink);
+}
+
+/* ---------- Filters ---------- */
+.status-filter-field {
+  display: inline-flex;
+  align-items: center;
+  gap: calc(var(--vt-gap) * 0.75);
+}
+
+.status-filter-field .field-label {
+  white-space: nowrap;
+}
+
+.status-select-wrap {
+  width: 14rem;
+  max-width: 100%;
+}
+
+/* ---------- List ---------- */
+.requester-cell {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--vt-gap) * 0.5);
+  min-width: 0;
+}
+
+.requester-text {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.avatar-img {
+  object-fit: cover;
+}
+
+.avatar .material-symbols-outlined {
+  font-size: var(--vt-fs-md);
+  color: var(--vt-ink-muted);
+}
+
+.cell-date {
+  display: block;
+  white-space: nowrap;
+}
+
+.status-badge.is-pending {
+  background: rgba(237, 108, 2, 0.14);
+  color: var(--vt-warning);
+}
+
+.status-badge.is-approved {
+  background: rgba(46, 125, 50, 0.12);
+  color: var(--vt-success);
+}
+
+.status-badge.is-rejected {
+  background: var(--vt-red-tint);
+  color: var(--vt-red);
+}
+
+.col-actions {
+  width: 7rem;
+  white-space: nowrap;
+}
+
+.data-table td.col-submitted,
+.data-table td.col-status,
+.data-table td.col-reviewer,
+.data-table td.col-actions {
+  text-align: center;
+}
+
+.data-table td.col-reviewer .cell-muted {
+  margin-inline: auto;
+  max-width: 100%;
+}
+
+.row-actions {
+  justify-content: center;
+  gap: 0;
+}
+
+/* ---------- Review dialog ---------- */
+.review-modal {
+  --vt-modal-w: min(44rem, 100%);
+}
+
+.diff-table {
+  display: flex;
+  flex-direction: column;
+  margin-block: var(--vt-gap);
+  border: 0.0625rem solid var(--vt-line);
+  border-radius: var(--vt-radius-sm);
+  overflow: hidden;
+}
+
+.diff-row {
+  display: grid;
+  grid-template-columns: minmax(6rem, 1fr) minmax(0, 1.4fr) minmax(0, 1.4fr);
+  gap: calc(var(--vt-gap) * 0.5);
+  padding: calc(var(--vt-gap) * 0.55) calc(var(--vt-gap) * 0.65);
+  border-block-end: 0.0625rem solid var(--vt-line);
+  font-size: var(--vt-fs-md);
+  align-items: center;
+}
+
+.diff-row:last-child {
+  border-block-end: 0;
+}
+
+.diff-head {
+  background: var(--vt-canvas);
+  font-size: var(--vt-fs-sm);
+  font-weight: 700;
+  color: var(--vt-ink-muted);
+}
+
+/* The only visual cue that separates "they changed this" from "this is just context". */
+.diff-row.is-changed {
+  background: var(--vt-red-surface);
+}
+
+.diff-row.is-changed .diff-value:last-child {
+  font-weight: 600;
+  color: var(--vt-red-dark);
+}
+
+.diff-label {
+  font-size: var(--vt-fs-sm);
+  color: var(--vt-ink-muted);
+}
+
+.diff-value {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.diff-empty {
+  color: var(--vt-ink-muted);
+  font-style: italic;
+}
+
+.diff-photo {
+  width: clamp(3rem, 12vw, 4rem);
+  height: clamp(3rem, 12vw, 4rem);
+  object-fit: cover;
+  border-radius: 50%;
+  border: 0.125rem solid var(--vt-line);
+}
+
+.diff-photo.is-proposed {
+  border-color: var(--vt-red);
+}
+
+/* ---------- Outcome & reject ---------- */
+.review-outcome {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: calc(var(--vt-gap) * 0.5);
+  padding: calc(var(--vt-gap) * 0.75);
+  border-radius: var(--vt-radius-sm);
+  background: var(--vt-canvas);
+  font-size: var(--vt-fs-sm);
+}
+
+.review-reason {
+  flex: 1 1 100%;
+  margin: 0.25rem 0 0;
+  padding-inline-start: var(--vt-gap);
+  border-inline-start: 0.125rem solid var(--vt-line);
+  overflow-wrap: anywhere;
+}
+
+.reject-field {
+  margin-block-start: var(--vt-gap);
+}
+
+.reject-input {
+  min-height: 4.5rem;
+  resize: vertical;
+}
+
+/* ---------- Phone ---------- */
+@media (max-width: 40rem) {
+  /* Three columns do not fit; the label becomes a heading and the two values stack. */
+  .diff-row {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.125rem;
+  }
+
+  .diff-head {
+    display: none;
+  }
+
+  .diff-label {
+    font-weight: 700;
+  }
+
+  .diff-value::before {
+    display: block;
+    font-size: var(--vt-fs-sm);
+    color: var(--vt-ink-muted);
+  }
+
+  .diff-value:nth-child(2)::before {
+    content: 'Current';
+  }
+
+  .diff-value:nth-child(3)::before {
+    content: 'Proposed';
+  }
+
+  .modal-footer {
+    flex-direction: column-reverse;
+  }
+
+  .modal-footer .btn {
+    width: 100%;
+  }
+}

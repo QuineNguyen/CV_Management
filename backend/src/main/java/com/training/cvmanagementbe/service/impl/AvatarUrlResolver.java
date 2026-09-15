@@ -36,12 +36,13 @@ public class AvatarUrlResolver {
 
     // Bulk variant: one query for the whole page, values may be null per id.
     public Map<UUID, String> resolveAll(Collection<UUID> imageIds) {
+        Map<UUID, String> urls = new HashMap<>();
+
         Set<UUID> ids = imageIds.stream().filter(Objects::nonNull).collect(Collectors.toSet());
         if (ids.isEmpty()) {
-            return Map.of();
+            return urls;
         }
 
-        Map<UUID, String> urls = new HashMap<>();
         for (ImageFile image : imageFileRepository.findAllById(ids)) {
             String url = presignedOrNull(image.getObjectKey());
             if (url != null) {

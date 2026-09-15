@@ -1,0 +1,123 @@
+:host {
+  display: block;
+}
+
+.avatar-upload {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: calc(var(--vt-gap) * 0.5);
+}
+
+.avatar-frame {
+  width: clamp(6rem, 22vw, 9rem);
+  height: clamp(6rem, 22vw, 9rem);
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border-radius: 50%;
+  border: 0.1875rem solid var(--vt-red);
+  background: var(--vt-canvas);
+}
+
+.avatar-photo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.avatar-placeholder {
+  font-size: clamp(2.5rem, 10vw, 4rem);
+  color: var(--vt-ink-muted);
+}
+
+.avatar-action {
+  width: 100%;
+  max-width: min(12rem, 100%);
+}
+
+.avatar-hint {
+  margin: 0;
+  max-width: min(14rem, 100%);
+  font-size: var(--vt-fs-sm);
+  color: var(--vt-ink-muted);
+  text-align: center;
+}
+
+/* ---------- Crop dialog ---------- */
+.crop-modal {
+  --vt-modal-w: min(46rem, 100%);
+  --vt-modal-h: min(92vh, 42rem);
+}
+
+.crop-body {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--vt-gap);
+  margin-block-end: var(--vt-gap);
+}
+
+.crop-stage {
+  flex: 1 1 min(22rem, 100%);
+  min-width: 0;
+  max-height: min(50vh, 24rem);
+  background: var(--vt-canvas);
+  border-radius: var(--vt-radius-sm);
+  overflow: hidden;
+}
+
+/* Cropper replaces this element with its own container; the cap keeps the stage from growing. */
+.crop-stage img {
+  display: block;
+  max-width: 100%;
+  max-height: min(50vh, 24rem);
+}
+
+.crop-side {
+  flex: 0 1 min(10rem, 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: calc(var(--vt-gap) * 0.5);
+}
+
+.crop-side-label {
+  margin: 0;
+  font-size: var(--vt-fs-sm);
+  font-weight: 600;
+  color: var(--vt-ink-muted);
+}
+
+/* Cropper writes the live preview into this box; the size is what it scales to. */
+.crop-preview {
+  width: clamp(5rem, 20vw, 8rem);
+  height: clamp(5rem, 20vw, 8rem);
+  overflow: hidden;
+  border-radius: 50%;
+  border: 0.1875rem solid var(--vt-red);
+  background: var(--vt-surface);
+}
+
+.crop-side-hint {
+  margin: 0;
+  font-size: var(--vt-fs-sm);
+  color: var(--vt-ink-muted);
+  text-align: center;
+}
+
+/* ---------- iPad and phone ---------- */
+@media (max-width: 48rem) {
+  .crop-body {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .crop-stage {
+    width: 100%;
+    max-height: 40vh;
+  }
+
+  .crop-stage img {
+    max-height: 40vh;
+  }
+}

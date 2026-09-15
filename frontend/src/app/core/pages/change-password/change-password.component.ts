@@ -9,7 +9,7 @@ import { ActivatedRoute, Router } from "@angular/router";
 import { ToastService } from "../../services/toast.service";
 import { firstValueFrom } from "rxjs";
 import { HttpErrorResponse } from "@angular/common/http";
-import { changePasswordGroupValidator, evaluatePassword, passwordPolicyValidator, PasswordRule } from "../../validators/password.validator";
+import { changePasswordGroupValidator, evaluatePassword, passwordPolicyValidator, PasswordRule } from "../../utils/password.util";
 import { AppRoute } from "../../enums/app-route.enum";
 import { ApiErrorResponse } from "../../dtos/api-error.dto";
 import { messageFor } from "../../models/error-messages.model";

@@ -13,4 +13,6 @@ export enum AppRoute {
     Cvs = 'cvs',
     CvsNew = 'cvs/new',
     CvsDeleted = 'cvs/deleted',
+    MyProfile = 'my-profile',
+    ProfileUpdateRequests = 'profile-update-requests',
 }

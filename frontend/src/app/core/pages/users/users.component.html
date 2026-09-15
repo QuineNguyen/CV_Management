@@ -215,7 +215,7 @@
               </button>
             </th>
             <!-- Joined data is outside the backend sort whitelist -->
-              <th scope="col" class="col-dept">Department</th>
+            <th scope="col" class="col-dept">Department</th>
             <th scope="col" class="col-teams">Teams</th>
             <th scope="col" class="col-status" [attr.aria-sort]="ariaSort(sortField.Status)">
               <button type="button" class="sort-header" (click)="toggleSort(sortField.Status)">
@@ -247,7 +247,7 @@
                 <span class="cell-username">{{ user.username }}</span>
               </td>
               <td class="col-role">{{ roleLabels[user.role] }}</td>
-                <td class="col-dept">{{ user.departmentName ?? '—' }}</td>
+              <td class="col-dept">{{ user.departmentName ?? '—' }}</td>
               <td class="col-teams">
                 <div class="chip-list">
                   @for (team of user.teams; track team.teamId) {
@@ -272,24 +272,34 @@
                               (click)="openProfiles(user)">🪪</button>
                     }
                     @if (canCreateOrEdit()) {
-                      <button type="button" class="icon-btn" matTooltip="Edit" (click)="openEdit(user)">✎</button>
-                    }
-                    @if (canManageAccount()) {
-                      @if (user.status === activeStatus) {
+                      <span class="tooltip-host" [matTooltip]="actionHint(user, 'edit')">
                         <button
                           type="button"
                           class="icon-btn"
-                          [matTooltip]="selfActionHint(user.id, 'reset the password')"
-                          [disabled]="user.id === currentUserId()"
-                          (click)="askResetPassword(user)">🔑</button>
-                        <button
-                          type="button"
-                          class="icon-btn icon-btn-danger"
-                          [matTooltip]="selfActionHint(user.id, 'deactivate')"
-                          [disabled]="user.id === currentUserId()"
-                          (click)="askDeactivate(user)">⊘</button>
+                          [disabled]="hrBlocked(user)"
+                          (click)="openEdit(user)">✎</button>
+                      </span>
+                    }
+
+                    @if (canManageAccount()) {
+                      @if (user.status === activeStatus) {
+                        <span class="tooltip-host" [matTooltip]="selfActionHint(user.id, 'reset the password')">
+                          <button
+                            type="button"
+                            class="icon-btn"
+                            [disabled]="user.id === currentUserId()"
+                            (click)="askResetPassword(user)">🔑</button>
+                        </span>
+                        <span class="tooltip-host" [matTooltip]="selfActionHint(user.id, 'deactivate')">
+                          <button
+                            type="button"
+                            class="icon-btn icon-btn-danger"
+                            [disabled]="user.id === currentUserId()"
+                            (click)="askDeactivate(user)">⊘</button>
+                        </span>
                       } @else {
-                        <button type="button" class="icon-btn" matTooltip="Reactivate" (click)="askActivate(user)">↻</button>
+                        <button type="button" class="icon-btn" matTooltip="Reactivate"
+                                (click)="askActivate(user)">↻</button>
                       }
                     }
                   </div>
@@ -326,24 +336,34 @@
                           (click)="openProfiles(user)">🪪</button>
                 }
                 @if (canCreateOrEdit()) {
-                  <button type="button" class="icon-btn" matTooltip="Edit" (click)="openEdit(user)">✎</button>
-                }
-                @if (canManageAccount()) {
-                  @if (user.status === activeStatus) {
+                  <span class="tooltip-host" [matTooltip]="actionHint(user, 'edit')">
                     <button
                       type="button"
                       class="icon-btn"
-                      [matTooltip]="selfActionHint(user.id, 'reset the password')"
-                      [disabled]="user.id === currentUserId()"
-                      (click)="askResetPassword(user)">🔑</button>
-                    <button
-                      type="button"
-                      class="icon-btn icon-btn-danger"
-                      [matTooltip]="selfActionHint(user.id, 'deactivate')"
-                      [disabled]="user.id === currentUserId()"
-                      (click)="askDeactivate(user)">⊘</button>
+                      [disabled]="hrBlocked(user)"
+                      (click)="openEdit(user)">✎</button>
+                  </span>
+                }
+
+                @if (canManageAccount()) {
+                  @if (user.status === activeStatus) {
+                    <span class="tooltip-host" [matTooltip]="selfActionHint(user.id, 'reset the password')">
+                      <button
+                        type="button"
+                        class="icon-btn"
+                        [disabled]="user.id === currentUserId()"
+                        (click)="askResetPassword(user)">🔑</button>
+                    </span>
+                    <span class="tooltip-host" [matTooltip]="selfActionHint(user.id, 'deactivate')">
+                      <button
+                        type="button"
+                        class="icon-btn icon-btn-danger"
+                        [disabled]="user.id === currentUserId()"
+                        (click)="askDeactivate(user)">⊘</button>
+                    </span>
                   } @else {
-                    <button type="button" class="icon-btn" matTooltip="Reactivate" (click)="askActivate(user)">↻</button>
+                    <button type="button" class="icon-btn" matTooltip="Reactivate"
+                            (click)="askActivate(user)">↻</button>
                   }
                 }
               </div>
@@ -359,10 +379,10 @@
               <dt>Role</dt>
               <dd>{{ roleLabels[user.role] }}</dd>
             </div>
-              <div>
-                <dt>Department</dt>
-                <dd>{{ user.departmentName ?? '—' }}</dd>
-              </div>
+            <div>
+              <dt>Department</dt>
+              <dd>{{ user.departmentName ?? '—' }}</dd>
+            </div>
             <div>
               <dt>Status</dt>
               <dd>

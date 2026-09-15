@@ -133,6 +133,13 @@
   z-index: 30;
 }
 
+.field-preview {
+  margin-block-start: 0.25rem;
+  font-size: var(--vt-fs-sm);
+  color: var(--vt-ink-muted);
+  font-variant-numeric: tabular-nums;
+}
+
 .cv-item-body {
   padding: clamp(0.75rem, 2vw, 1.25rem);
   border-block-start: 0.0625rem solid var(--vt-line);

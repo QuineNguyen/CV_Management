@@ -165,8 +165,9 @@ export class CvContentEditorComponent {
 
         for (const section of this.sections) {
             if (!section.repeated) {
+                const sectionData = (raw[section.key] ?? {}) as Record<string, unknown>;
                 (this.form.get(section.key) as FormGroup)
-                    .patchValue(raw[section.key] ?? {}, { emitEvent: false });
+                    .patchValue(this.writeSingle(section, sectionData), { emitEvent: false });
                 continue;
             }
 
@@ -184,7 +185,12 @@ export class CvContentEditorComponent {
         this.form.markAsPristine();
     }
 
-    // Wire shape into form values: a tag list becomes the comma-separated text the input shows.
+    // Wire shape into form values: a tag list becomes the comma-separated text the input shows,
+    // and ISO date strings become Date objects for the matDatepicker.
+    private writeSingle(section: SectionDescriptor, item: Record<string, unknown>): Record<string, unknown> {
+        return this.convertDatesForForm(section, item);
+    }
+
     private writeItem(section: SectionDescriptor, item: Record<string, unknown>): Record<string, unknown> {
         const patched: Record<string, unknown> = { ...item };
 
@@ -192,6 +198,18 @@ export class CvContentEditorComponent {
             if (field.kind === FieldKind.Tags) {
                 const tags = (item[field.key] as string[] | undefined) ?? [];
                 patched[field.key] = tags.join(', ');
+            } else if (field.kind === FieldKind.Date) {
+                patched[field.key] = this.parseIsoDate(item[field.key] as string | null);
+            }
+        }
+        return patched;
+    }
+
+    private convertDatesForForm(section: SectionDescriptor, data: Record<string, unknown>): Record<string, unknown> {
+        const patched: Record<string, unknown> = { ...data };
+        for (const field of section.fields) {
+            if (field.kind === FieldKind.Date) {
+                patched[field.key] = this.parseIsoDate(data[field.key] as string | null);
             }
         }
         return patched;
@@ -240,6 +258,9 @@ export class CvContentEditorComponent {
             const parsed = Number(value);
             return value === null || value === '' || Number.isNaN(parsed) ? null : parsed;
         }
+        if (kind === FieldKind.Date) {
+            return this.formatIsoDate(value as Date | null);
+        }
         if (typeof value === 'string') {
             const trimmed = value.trim();
             return trimmed.length ? trimmed : null;
@@ -263,5 +284,23 @@ export class CvContentEditorComponent {
             return crypto.randomUUID();
         }
         return `${Date.now().toString(16)}-${Math.random().toString(16).slice(2, 10)}`;
+    }
+
+    // Parses an ISO date string (YYYY-MM-DD) into a local Date, or returns null.
+    private parseIsoDate(iso: string | null | undefined): Date | null {
+        if (!iso) {
+            return null;
+        }
+        const [y, m, d] = iso.split('-').map(Number);
+        return new Date(y, m - 1, d);
+    }
+
+    // Formats a Date into an ISO date string (YYYY-MM-DD), or returns null.
+    private formatIsoDate(date: Date | null): string | null {
+        if (!date || !(date instanceof Date) || isNaN(date.getTime())) {
+            return null;
+        }
+        const pad = (n: number) => String(n).padStart(2, '0');
+        return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
     }
 }

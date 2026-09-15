@@ -99,6 +99,23 @@
   background: var(--vt-red-surface);
 }
 
+.detail-identity {
+  display: flex;
+  align-items: center;
+  gap: var(--vt-gap);
+  min-width: 0;
+}
+
+/* Shown only when the version actually carries a photo, so no empty circle is reserved. */
+.detail-avatar {
+  flex: 0 0 auto;
+  width: clamp(3.5rem, 12vw, 5rem);
+  height: clamp(3.5rem, 12vw, 5rem);
+  object-fit: cover;
+  border-radius: 50%;
+  border: 0.1875rem solid var(--vt-red);
+}
+
 @media (max-width: 40rem) {
   .page-toolbar-actions {
     width: 100%;

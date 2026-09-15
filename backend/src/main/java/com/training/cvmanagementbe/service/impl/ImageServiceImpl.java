@@ -2,6 +2,7 @@ package com.training.cvmanagementbe.service.impl;
 
 import com.training.cvmanagementbe.common.AuditLogger;
 import com.training.cvmanagementbe.dto.response.ImageUploadResponse;
+import com.training.cvmanagementbe.entity.models.CurrentActor;
 import com.training.cvmanagementbe.entity.models.ImageFile;
 import com.training.cvmanagementbe.enums.*;
 import com.training.cvmanagementbe.exception.ApiException;
@@ -12,6 +13,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Service
@@ -37,6 +39,8 @@ public class ImageServiceImpl implements ImageService {
 
         ImageFile image = new ImageFile();
         image.setObjectKey(objectKey);
+        image.setUploadedBy(CurrentActor.requireUserId());
+        image.setUploadedAt(LocalDateTime.now());
 
         ImageFile saved = imageFileRepository.save(image);
         auditLogger.record(Action.UPLOAD_IMAGE, TargetType.IMAGE_FILE, saved.getId(), null, objectKey);

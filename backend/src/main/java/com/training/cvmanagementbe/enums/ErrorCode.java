@@ -92,7 +92,7 @@ public enum ErrorCode {
     USER_ALREADY_INACTIVE("User is already inactive"),
     CANNOT_DEACTIVATE_SELF("You cannot deactivate your own account"),
     CANNOT_CHANGE_OWN_ROLE("You cannot change your own role"),
-    HR_CANNOT_ASSIGN_ADMIN("Only an administrator can assign the Admin role"),
+    HR_CANNOT_MANAGE_ROLE("HR can only manage employee and tech lead accounts"),
 
     // ---------- Generic ----------
     /** Returned as 403 whenever the caller's role does not cover the requested data. */

@@ -2,8 +2,12 @@ import { CdkDrag, CdkDragHandle } from "@angular/cdk/drag-drop";
 import { ChangeDetectionStrategy, Component, HostListener, input, output, signal } from "@angular/core";
 import { FormGroup, ReactiveFormsModule } from "@angular/forms";
 import { MatToolbarModule } from "@angular/material/toolbar";
+import { MatDatepickerModule } from "@angular/material/datepicker";
+import { DateAdapter, MAT_DATE_FORMATS, MatNativeDateModule } from "@angular/material/core";
 import { FieldDescriptor, FieldKind, notSpecifiedLabel, optionsFor, SectionDescriptor, SelectOption } from "../../../../models/cv-section-descriptor.model";
 import { CvLanguage } from "../../../../enums/cv-language.enum";
+import { CvDatePipe } from "../../../../utils/cv-date.util";
+import { CustomDateAdapter, DD_MM_YYYY_FORMATS } from "../../../../utils/app-date-adapter.util";
 
 /*
  * One entry of a REPEATED section, rendered from its section descriptor rather than a bespoke
@@ -15,7 +19,11 @@ import { CvLanguage } from "../../../../enums/cv-language.enum";
 @Component({
     selector: 'app-cv-item-editor',
     standalone: true,
-    imports: [ReactiveFormsModule, CdkDrag, CdkDragHandle, MatToolbarModule],
+    imports: [ReactiveFormsModule, CdkDrag, CdkDragHandle, MatToolbarModule, MatDatepickerModule, MatNativeDateModule, CvDatePipe],
+    providers: [
+        { provide: DateAdapter, useClass: CustomDateAdapter },
+        { provide: MAT_DATE_FORMATS, useValue: DD_MM_YYYY_FORMATS },
+    ],
     templateUrl: './cv-item-editor.component.html',
     styleUrl: './cv-item-editor.component.css',
     changeDetection: ChangeDetectionStrategy.OnPush,

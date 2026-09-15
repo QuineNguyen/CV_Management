@@ -15,52 +15,60 @@
         </label>
 
         <!-- Role -->
-        <div class="field custom-select-wrap">
-          <span class="field-label">Role <span class="field-required" aria-hidden="true">*</span></span>
+        @if (roleLocked()) {
+          <div class="field">
+            <span class="field-label">Role</span>
+            <p class="field-static">{{ roleLabels[state().user!.role] }}</p>
+            <span class="field-hint">Only an administrator can change a role</span>
+          </div>
+        } @else {
+          <div class="field custom-select-wrap">
+            <span class="field-label">Role <span class="field-required" aria-hidden="true">*</span></span>
 
-          <button
-            type="button"
-            class="field-input custom-select-trigger"
-            [class.is-open]="roleOpen()"
-            (click)="toggleRoleDropdown($event)"
-            aria-haspopup="listbox"
-            [attr.aria-expanded]="roleOpen()">
-            <span class="custom-select-label">
-              {{ selectedRoleLabel() }}
-            </span>
-          </button>
+            <button
+              type="button"
+              class="field-input custom-select-trigger"
+              [class.is-open]="roleOpen()"
+              (click)="toggleRoleDropdown($event)"
+              aria-haspopup="listbox"
+              [attr.aria-expanded]="roleOpen()">
+              <span class="custom-select-label">
+                {{ selectedRoleLabel() }}
+              </span>
+            </button>
 
-          @if (roleOpen()) {
-            <div class="custom-select-panel" (click)="$event.stopPropagation()">
-              <ul class="custom-select-list" role="listbox">
-                <li role="option" [attr.aria-selected]="!form.controls.role.value">
-                  <button
-                    type="button"
-                    class="custom-select-option"
-                    [class.is-selected]="!form.controls.role.value"
-                    (click)="selectRole('')">
-                    Select a role
-                  </button>
-                </li>
-                @for (role of roleOptions; track role) {
-                  <li role="option" [attr.aria-selected]="form.controls.role.value === role">
+            @if (roleOpen()) {
+              <div class="custom-select-panel" (click)="$event.stopPropagation()">
+                <ul class="custom-select-list" role="listbox">
+                  <li role="option" [attr.aria-selected]="!form.controls.role.value">
                     <button
                       type="button"
                       class="custom-select-option"
-                      [class.is-selected]="form.controls.role.value === role"
-                      (click)="selectRole(role)">
-                      {{ roleLabels[role] }}
+                      [class.is-selected]="!form.controls.role.value"
+                      (click)="selectRole('')">
+                      Select a role
                     </button>
                   </li>
-                }
-              </ul>
-            </div>
-          }
+                  @for (role of roleOptions(); track role) {
+                    <li role="option" [attr.aria-selected]="form.controls.role.value === role">
+                      <button
+                        type="button"
+                        class="custom-select-option"
+                        [class.is-selected]="form.controls.role.value === role"
+                        (click)="selectRole(role)">
+                        {{ roleLabels[role] }}
+                      </button>
+                    </li>
+                  }
+                </ul>
+              </div>
+            }
 
-          @if (hasError('role', 'required')) {
-            <span class="field-error">Select a role.</span>
-          }
-        </div>
+            @if (hasError('role', 'required')) {
+              <span class="field-error">Select a role.</span>
+            }
+          </div>
+        }
 
         <label class="field">
           <span class="field-label">Email <span class="field-required" aria-hidden="true">*</span></span>
@@ -140,10 +148,24 @@
           }
         </div>
 
-        <label class="field">
-          <span class="field-label">Date of birth</span>
-          <input type="date" class="field-input" formControlName="dateOfBirth" />
-        </label>
+        <div class="field">
+          <label class="field-label" for="user-dob">Date of birth</label>
+          <div class="field-date-wrap">
+            <input
+              id="user-dob"
+              class="field-input field-date-input"
+              type="text"
+              [matDatepicker]="dobPicker"
+              formControlName="dateOfBirth"
+              autocomplete="off"
+              placeholder="dd/MM/yyyy" />
+            <mat-datepicker-toggle [for]="dobPicker" class="field-date-toggle" />
+            <mat-datepicker #dobPicker />
+          </div>
+          @if (hasError('dateOfBirth', 'matDatepickerParse')) {
+            <span class="field-error">Please enter a valid date (dd/MM/yyyy)</span>
+          }
+        </div>
 
         <label class="field">
           <span class="field-label">Phone number</span>

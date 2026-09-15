@@ -27,8 +27,14 @@ public record AuthenticatedUser(
 
         boolean mustChangePassword,
 
+        UUID avatarImageId,
+
         String avatarUrl
 ) {
+    public static AuthenticatedUser from(User user) {
+        return from(user, null);
+    }
+
     // Static Factory Method: Useful utility to convert Entity User to DTO
     public static AuthenticatedUser from(User user, String avatarUrl) {
         return new AuthenticatedUser(
@@ -38,6 +44,7 @@ public record AuthenticatedUser(
                 user.getEmail(),
                 user.getRole(),
                 user.isMustChangePassword(),
+                user.getAvatarImageId(),
                 avatarUrl
         );
     }

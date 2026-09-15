@@ -10,17 +10,22 @@
   <section class="page">
 
     <header class="page-toolbar">
-      <div>
-        <h1 class="page-title">
-          {{ languageLabels[detail.cv.language] }} CV
-          @if (detail.cv.master) {
-            <span class="status-badge">Master</span>
-          }
-        </h1>
-        <p class="page-subtitle">
-          <a class="link-btn" [routerLink]="['/cv-profiles']">{{ detail.cv.profileName }}</a>
-          <span class="employee-name">· {{ detail.cv.employeeName }}</span>
-        </p>
+      <div class="detail-identity">
+        @if (detail.avatarUrl; as avatarUrl) {
+          <img [src]="avatarUrl" alt="CV photo" class="detail-avatar" />
+        }
+        <div>
+          <h1 class="page-title">
+            {{ languageLabels[detail.cv.language] }} CV
+            @if (detail.cv.master) {
+              <span class="status-badge">Master</span>
+            }
+          </h1>
+          <p class="page-subtitle">
+            <a class="link-btn" [routerLink]="['/cv-profiles']">{{ detail.cv.profileName }}</a>
+            <span class="employee-name">· {{ detail.cv.employeeName }}</span>
+          </p>
+        </div>
       </div>
 
       <div class="page-toolbar-actions">

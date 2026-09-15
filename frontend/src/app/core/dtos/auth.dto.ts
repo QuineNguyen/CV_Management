@@ -24,6 +24,8 @@ export interface AuthenticatedUser {
   email: string;
   role: UserRole;
   mustChangePassword: boolean;
+  avatarImageId: string | null;
+  avatarUrl: string | null;
 }
 
 export interface LoginResponse {

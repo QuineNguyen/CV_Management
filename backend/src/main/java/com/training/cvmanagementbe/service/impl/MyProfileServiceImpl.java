@@ -126,6 +126,9 @@ public class MyProfileServiceImpl implements MyProfileService {
 
         User saved = userRepository.save(user);
         auditLogger.record(Action.UPDATE_USER, TargetType.USER, user.getId(), before, snapshot(saved));
+
+        // No notification on this path: the Admin is both the actor and the subject, so there is
+        // nobody left to tell. Worth stating, since every other write here does notify.
     }
 
     // ---------- Helpers ----------

@@ -1,0 +1,286 @@
+<section class="page">
+
+  <header class="page-toolbar">
+    <div>
+      <h1 class="page-title">Profile Update Requests</h1>
+      <p class="page-subtitle">
+        Name, date of birth, phone, address and photo — {{ pageState().total }} in this view
+      </p>
+    </div>
+  </header>
+
+  <div class="page-filters">
+    <div class="status-filter-field">
+      <span class="field-label" id="status-filter-label">Status</span>
+      <div class="custom-select-wrap status-select-wrap">
+        <button type="button" class="field-input custom-select-trigger"
+                [class.is-open]="statusOpen()"
+                aria-haspopup="listbox" [attr.aria-expanded]="statusOpen()"
+                aria-labelledby="status-filter-label"
+                (click)="toggleStatusDropdown($event)">
+          <span class="custom-select-label">{{ selectedStatusLabel() }}</span>
+        </button>
+
+        @if (statusOpen()) {
+          <div class="custom-select-panel" (click)="$event.stopPropagation()">
+            <ul class="custom-select-list" role="listbox">
+              <li>
+                <button type="button" class="custom-select-option"
+                        [class.is-selected]="!statusFilter()"
+                        (click)="selectStatus(null)">All statuses</button>
+              </li>
+              @for (option of statusOptions; track option) {
+                <li>
+                  <button type="button" class="custom-select-option"
+                          [class.is-selected]="statusFilter() === option"
+                          (click)="selectStatus(option)">{{ statusLabels[option] }}</button>
+                </li>
+              }
+            </ul>
+          </div>
+        }
+      </div>
+    </div>
+  </div>
+
+  <!-- Body -->
+  @if (loading()) {
+    <div class="skeleton-stack" aria-busy="true">
+      @for (row of [1, 2, 3]; track row) {
+        <div class="skeleton-row"></div>
+      }
+    </div>
+  } @else if (isEmpty()) {
+    <div class="empty-state">
+      <p class="empty-state-title">Nothing to review</p>
+      <p class="empty-state-hint">
+        Requests appear here when someone proposes a change to their own name, date of birth,
+        phone, address or photo
+      </p>
+    </div>
+  } @else {
+
+    <!-- Table: desktop -->
+    <div class="data-table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th scope="col" class="col-requester">Requester</th>
+            <th scope="col" class="col-submitted">Submitted</th>
+            <th scope="col" class="col-status">Status</th>
+            <th scope="col" class="col-reviewer">Decided by</th>
+            <th scope="col" class="col-actions">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (request of requests(); track request.id) {
+            <tr>
+              <td class="col-requester">
+                <div class="requester-cell">
+                  @if (request.currentAvatarUrl) {
+                    <img [src]="request.currentAvatarUrl" alt="" class="avatar avatar-img" />
+                  } @else {
+                    <span class="avatar" aria-hidden="true">
+                      <span class="material-symbols-outlined">person</span>
+                    </span>
+                  }
+                  <div class="requester-text">
+                    <span class="cell-strong">{{ request.userFullName ?? '—' }}</span>
+                    <span class="cell-muted">{{ request.userEmail ?? '—' }}</span>
+                  </div>
+                </div>
+              </td>
+              <td class="col-submitted">
+                <span class="cell-date">{{ request.createdAt | date:'dd/MM/yyyy HH:mm' }}</span>
+              </td>
+              <td class="col-status">
+                <span class="status-badge"
+                      [class.is-pending]="request.status === status.Pending"
+                      [class.is-approved]="request.status === status.Approved"
+                      [class.is-rejected]="request.status === status.Rejected">
+                  {{ statusLabels[request.status] }}
+                </span>
+              </td>
+              <td class="col-reviewer">
+                @if (request.reviewedByName) {
+                  <span class="cell-strong">{{ request.reviewedByName }}</span>
+                  <span class="cell-muted">{{ request.reviewedAt | date:'dd/MM/yyyy HH:mm' }}</span>
+                } @else {
+                  <span class="cell-muted">—</span>
+                }
+              </td>
+              <td class="col-actions">
+                <div class="row-actions">
+                  <button type="button" class="link-btn" (click)="openReview(request)">
+                    {{ request.status === status.Pending ? 'Review' : 'View' }}
+                  </button>
+                </div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Cards: iPad and phone -->
+    <ul class="data-cards">
+      @for (request of requests(); track request.id) {
+        <li class="data-card">
+          <div class="data-card-head">
+            <div class="data-card-identity">
+              @if (request.currentAvatarUrl) {
+                <img [src]="request.currentAvatarUrl" alt="" class="avatar avatar-lg avatar-img" />
+              } @else {
+                <span class="avatar avatar-lg" aria-hidden="true">
+                  <span class="material-symbols-outlined">person</span>
+                </span>
+              }
+              <div class="data-card-text">
+                <p class="data-card-title">{{ request.userFullName ?? '—' }}</p>
+                <p class="data-card-line">{{ request.userEmail ?? '—' }}</p>
+              </div>
+            </div>
+
+            <div class="row-actions">
+              <button type="button" class="link-btn" (click)="openReview(request)">
+                {{ request.status === status.Pending ? 'Review' : 'View' }}
+              </button>
+            </div>
+          </div>
+
+          <dl class="data-card-facts">
+            <div>
+              <dt>Submitted</dt>
+              <dd>{{ request.createdAt | date:'dd/MM/yyyy HH:mm' }}</dd>
+            </div>
+            <div>
+              <dt>Status</dt>
+              <dd>
+                <span class="status-badge"
+                      [class.is-pending]="request.status === status.Pending"
+                      [class.is-approved]="request.status === status.Approved"
+                      [class.is-rejected]="request.status === status.Rejected">
+                  {{ statusLabels[request.status] }}
+                </span>
+              </dd>
+            </div>
+            <div>
+              <dt>Decided by</dt>
+              <dd>{{ request.reviewedByName ?? '—' }}</dd>
+            </div>
+          </dl>
+        </li>
+      }
+    </ul>
+
+    <mat-paginator
+      class="page-paginator"
+      [length]="pageState().total"
+      [pageIndex]="pageState().index"
+      [pageSize]="pageState().size"
+      [pageSizeOptions]="pageSizeOptions"
+      showFirstLastButtons
+      (page)="onPageChange($event)" />
+  }
+</section>
+
+<!-- Review dialog -->
+@if (reviewTarget(); as target) {
+  <div class="modal-backdrop" [class.is-closing]="isReviewClosing()"
+       (mousedown)="onReviewBackdropMouseDown($event)" (click)="onReviewBackdropClick($event)">
+    <div class="modal review-modal" role="dialog" aria-modal="true"
+         (click)="$event.stopPropagation()">
+
+      <h2 class="modal-title">Request from {{ target.userFullName }}</h2>
+      <p class="modal-subtitle">
+        {{ target.userEmail }} · submitted {{ target.createdAt | date:'dd/MM/yyyy HH:mm' }}
+      </p>
+
+      <!-- Current vs proposed -->
+      <div class="diff-table" role="table" aria-label="Current and proposed values">
+        <div class="diff-row diff-head" role="row">
+          <span role="columnheader">Field</span>
+          <span role="columnheader">Current</span>
+          <span role="columnheader">Proposed</span>
+        </div>
+
+        @for (row of diffRows(); track row.label) {
+          <div class="diff-row" role="row" [class.is-changed]="row.changed">
+            <span class="diff-label" role="cell">{{ row.label }}</span>
+
+            @if (row.isPhoto) {
+              <span class="diff-value" role="cell">
+                @if (row.current) {
+                  <img [src]="row.current" alt="Current photo" class="diff-photo" />
+                } @else {
+                  <span class="diff-empty">—</span>
+                }
+              </span>
+              <span class="diff-value" role="cell">
+                @if (row.changed && row.requested) {
+                  <img [src]="row.requested" alt="Proposed photo" class="diff-photo is-proposed" />
+                } @else {
+                  <span class="diff-empty">unchanged</span>
+                }
+              </span>
+            } @else {
+              <span class="diff-value" role="cell">{{ row.current }}</span>
+              <span class="diff-value" role="cell"
+                    [class.diff-empty]="!row.changed">{{ row.requested }}</span>
+            }
+          </div>
+        }
+      </div>
+
+      <!-- Outcome of a request already decided -->
+      @if (!canDecide()) {
+        <div class="review-outcome">
+          <strong>{{ statusLabels[target.status] }}</strong>
+          @if (target.reviewedByName) {
+            <span class="cell-muted">
+              by {{ target.reviewedByName }} on {{ target.reviewedAt | date:'dd/MM/yyyy HH:mm' }}
+            </span>
+          }
+          @if (target.rejectReason) {
+            <p class="review-reason">{{ target.rejectReason }}</p>
+          }
+        </div>
+      }
+
+      <!-- Reject reason, revealed only when rejecting -->
+      @if (rejecting()) {
+        <label class="field field-wide reject-field">
+          <span class="field-label">
+            Reason <span class="field-required" aria-hidden="true">*</span>
+          </span>
+          <textarea class="field-input reject-input" rows="3" maxlength="500"
+                    [formControl]="rejectReason"
+                    placeholder="The requester sees this word for word"></textarea>
+          @if (rejectReason.touched && rejectReason.invalid) {
+            <span class="field-error">A reason is required</span>
+          }
+        </label>
+      }
+
+      <div class="modal-footer">
+        @if (!canDecide()) {
+          <button type="button" class="btn btn-ghost" (click)="closeReview()">Close</button>
+        } @else if (rejecting()) {
+          <button type="button" class="btn btn-ghost" (click)="cancelRejecting()"
+                  [disabled]="deciding()">Back</button>
+          <button type="button" class="btn btn-danger" (click)="reject()" [disabled]="deciding()">
+            {{ deciding() ? 'Declining...' : 'Decline request' }}
+          </button>
+        } @else {
+          <button type="button" class="btn btn-ghost" (click)="closeReview()"
+                  [disabled]="deciding()">Cancel</button>
+          <button type="button" class="btn btn-ghost" (click)="startRejecting()"
+                  [disabled]="deciding()">Decline</button>
+          <button type="button" class="btn btn-primary" (click)="approve()" [disabled]="deciding()">
+            {{ deciding() ? 'Applying...' : 'Approve' }}
+          </button>
+        }
+      </div>
+    </div>
+  </div>
+}

@@ -55,7 +55,7 @@ export const ERROR_MESSAGES: Readonly<Record<ClientErrorCode, string>> = {
 
   // Generic
   OUT_OF_SCOPE: 'You do not have access to this data',
-  STALE_STATE: 'Someone changed this item first. Reload to see the current state',
+  STALE_STATE: 'Someone acted on this first. Reload to see the current state',
   VALIDATION_FAILED: 'Please check the highlighted fields',
   BAD_REQUEST: 'The request could not be processed',
   UNAUTHENTICATED: 'Your session has ended. Please sign in again',
@@ -104,6 +104,20 @@ export const ERROR_MESSAGES: Readonly<Record<ClientErrorCode, string>> = {
   USER_ALREADY_INACTIVE: 'This account is already inactive',
   CANNOT_DEACTIVATE_SELF: 'You cannot deactivate your own account',
   CANNOT_CHANGE_OWN_ROLE: 'You cannot change your own role',
+  HR_CANNOT_MANAGE_ROLE: 'HR can only manage employee and tech lead accounts',
+
+  // Images
+  IMAGE_EMPTY: 'That file is empty. Pick another image',
+  IMAGE_TOO_LARGE: 'The image must be 5 MB or smaller',
+  IMAGE_UNSUPPORTED_TYPE: 'Only JPEG and PNG images are accepted',
+  IMAGE_STORAGE_UNAVAILABLE: 'The image store is unavailable. Try again shortly',
+
+  // Profiel update requests
+  PROFILE_UPDATE_PENDING_EXISTS:
+    'You already have a request awaiting review. Withdraw it before sending another',
+  PROFILE_UPDATE_NOT_PENDING: 'This request has already been decided. Reload to see the outcome',
+  PROFILE_UPDATE_NO_CHANGES: 'Nothing in this request differs from the current details',
+  PROFILE_UPDATE_NO_PENDING_REQUEST: 'There is no pending request to withdraw',
 };
 
 export function messageFor(code: string, fallback?: string): string {

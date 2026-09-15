@@ -34,9 +34,18 @@
                         [attr.placeholder]="field.placeholder"></textarea>
             }
             @case (FieldKind.Date) {
-              <input class="field-input" type="date"
-                     [id]="section().key + '-' + field.key"
-                     [formControlName]="field.key" />
+              <div class="field-date-wrap">
+                <input
+                  class="field-input field-date-input"
+                  type="text"
+                  [matDatepicker]="sectionDatePicker"
+                  [id]="section().key + '-' + field.key"
+                  [formControlName]="field.key"
+                  [disabled]="readOnly()"
+                  placeholder="dd/MM/yyyy" />
+                <mat-datepicker-toggle [for]="sectionDatePicker" class="field-date-toggle" [disabled]="readOnly()" />
+                <mat-datepicker #sectionDatePicker />
+              </div>
             }
             @case (FieldKind.Select) {
               <button

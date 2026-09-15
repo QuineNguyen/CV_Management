@@ -1,0 +1,56 @@
+<div class="avatar-upload">
+  <div class="avatar-frame">
+    @if (avatarUrl(); as url) {
+      <img [src]="url" alt="Current photo" class="avatar-photo" />
+    } @else {
+      <span class="avatar-placeholder material-symbols-outlined" aria-hidden="true">person</span>
+    }
+  </div>
+
+  <button type="button" class="btn btn-ghost avatar-action"
+          (click)="openFilePicker()"
+          [disabled]="disabled() || uploading()">
+    {{ avatarUrl() ? 'Change photo' : emptyLabel() }}
+  </button>
+
+  <p class="avatar-hint">JPEG or PNG, up to 5 MB. Cropped to a square</p>
+
+  <input #fileInput type="file" class="sr-only"
+         accept="image/jpeg,image/png"
+         (change)="onFileSelected($event)" />
+</div>
+
+<!-- Crop dialog -->
+@if (cropOpen()) {
+  <div class="modal-backdrop" [class.is-closing]="isCropClosing()"
+       (mousedown)="onCropBackdropMouseDown($event)" (click)="onCropBackdropClick($event)">
+    <div class="modal crop-modal" role="dialog" aria-modal="true" aria-label="Crop photo"
+         (click)="$event.stopPropagation()">
+      <h2 class="modal-title">Crop photo</h2>
+
+      <div class="crop-body">
+        <div class="crop-stage">
+          @if (sourceUrl(); as source) {
+            <!-- Cropper reads natural dimensions, so it is initialised on load, not on open -->
+            <img #cropImage [src]="source" alt="Photo to crop" (load)="onCropImageLoaded()" />
+          }
+        </div>
+
+        <div class="crop-side">
+          <p class="crop-side-label">Preview</p>
+          <div class="crop-preview"></div>
+          <p class="crop-side-hint">Drag to move, pinch or scroll to zoom</p>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-ghost" (click)="cancelCrop()" [disabled]="uploading()">
+          Cancel
+        </button>
+        <button type="button" class="btn btn-primary" (click)="confirmCrop()" [disabled]="uploading()">
+          {{ uploading() ? 'Uploading...' : 'Use this photo' }}
+        </button>
+      </div>
+    </div>
+  </div>
+}

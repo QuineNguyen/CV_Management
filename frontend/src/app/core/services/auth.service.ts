@@ -104,6 +104,26 @@ export class AuthService {
     return role !== undefined && roles.includes(role);
   }
 
+  /*
+   * Updates the cached session in place.
+   *
+   * - The toolbar and anything else reading `user` work from a copy taken at sign-in. Without
+   * this, changing your own photo elsewhere in the app leaves that copy stale until the next
+   * sign-in - and a screen seeding a new CV from the account would seed the old image id.
+   * - Does not call the server: this reflects a change the server already accepted, it does not
+   * request one. Nothing here can grant a role or a permission and `role` is not among the
+   * fields any caller patches.
+   */
+  patchUser(changes: Partial<AuthenticatedUser>): void {
+    const current = this.userSignal();
+    if (!current) {
+      return;
+    }
+    const updated = { ...current, ...changes };
+    this.userSignal.set(updated);
+    this.persistUser(updated);
+  }
+
   // ---------- Helpers ----------
 
   private applySession(response: LoginResponse): AuthenticatedUser {
@@ -112,9 +132,16 @@ export class AuthService {
 
     if (this.isBrowser) {
       localStorage.setItem(StorageKey.Token, response.token);
-      localStorage.setItem(StorageKey.User, JSON.stringify(response.user));
     }
+    this.persistUser(response.user);
     return response.user;
+  }
+
+  // Single place the cached user is written, so applySession and patchUser cannot drift.
+  private persistUser(user: AuthenticatedUser): void {
+    if (this.isBrowser) {
+      localStorage.setItem(StorageKey.User, JSON.stringify(user));
+    }
   }
 
   private get isBrowser(): boolean {

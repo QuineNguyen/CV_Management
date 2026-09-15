@@ -15,6 +15,8 @@ import { CvContent, emptyCvContent } from "../../../models/cv-content.model";
 import { QueryParam } from "../../../enums/query-param.enum";
 import { AppRoute } from "../../../enums/app-route.enum";
 import { HasUnsavedChanges } from "../../../services/unsaved-changes.guard";
+import { AvatarUploadComponent } from "../../avatar-upload/avatar-upload.component";
+import { AvatarChange } from "../../../models/avatar-change.model";
 
 /*
  * Three-step create flow: pick the profile, pick the language, fill in the content.
@@ -28,7 +30,7 @@ import { HasUnsavedChanges } from "../../../services/unsaved-changes.guard";
 @Component({
     selector: 'app-cv-create',
     standalone: true,
-    imports: [MatTooltipModule, CvContentEditorComponent],
+    imports: [MatTooltipModule, CvContentEditorComponent, AvatarUploadComponent],
     templateUrl: './cv-create.component.html',
     styleUrl: './cv-create.component.css',
     changeDetection: ChangeDetectionStrategy.OnPush,
@@ -84,6 +86,18 @@ export class CvCreateComponent implements OnInit, HasUnsavedChanges {
 
     // Shown pre-filled so the seeding is visible; the server re-applies it from the account.
     readonly seedContent = signal<CvContent>(emptyCvContent());
+
+    /*
+     * Seeded from the account photo for the same reason personal info is: someone who already
+     * uploaded a photo to their profile should not have to find and crop it again. Replacing it
+     * here does not touch the account - this id only travels with the CV.
+     */
+    readonly avatarImageId = signal<string | null>(null);
+    readonly avatarUrl = signal<string | null>(null);
+
+    // Tracked apart from the content editor, which owns its own dirty flag and emits on every
+    // transition including back to false.
+    private readonly avatarDirty = signal(false);
 
     ngOnInit(): void {
         const params = this.route.snapshot.queryParamMap;
@@ -228,7 +242,7 @@ export class CvCreateComponent implements OnInit, HasUnsavedChanges {
 
         this.saving.set(true);
 
-        this.cvService.create(profileId, { language, content: editor.toContent() }).subscribe({
+        this.cvService.create(profileId, { language, content: editor.toContent(), avatarImageId: this.avatarImageId() }).subscribe({
             next: created => {
                 this.toast.success(this.directPublish()
                     ? `${this.languageLabels[language]} CV created and published as v1`
@@ -262,6 +276,28 @@ export class CvCreateComponent implements OnInit, HasUnsavedChanges {
                 position: null,
             },
         });
+
+        // The URL is the session's own signed copy and may already have expired; a broken image
+        // falls back to the placeholder and the id is what actually gets saved.
+        this.avatarImageId.set(user.avatarImageId);
+        this.avatarUrl.set(user.avatarUrl);
+    }
+
+    onAvatarChanged(change: AvatarChange): void {
+        this.avatarImageId.set(change.imageId);
+        this.avatarUrl.set(change.presignedUrl);
+        this.avatarDirty.set(true);
+    }
+
+    // Clears the photo for this CV only. Unlike the profile path, null here reaches the column
+    // directly - a CV without a photo is a normal CV.
+    removeAvatar(): void {
+        if (this.saving()) {
+            return;
+        }
+        this.avatarImageId.set(null);
+        this.avatarUrl.set(null);
+        this.avatarDirty.set(true);
     }
 
     // Anything not one of the three known codes is treated as absent, not as an error.
@@ -272,8 +308,11 @@ export class CvCreateComponent implements OnInit, HasUnsavedChanges {
     /*
      * Only the content step holds work worth protecting - abandoning a profile or language pick
      * costs a click and prompting for it would train people to dismiss the prompt.
+     * 
+     * A replaced photo counts as work: the file was cropped and uploaded and leaving now means
+     * doing it again.
      */
     hasUnsavedChanges(): boolean {
-        return this.step() === 3 && !this.saving() && !!this.editor()?.dirty;
+        return this.step() === 3 && !this.saving() && (!!this.editor()?.dirty || this.avatarDirty());
     }
 }

@@ -1,0 +1,160 @@
+:host {
+  display: block;
+  color: var(--vt-ink);
+}
+
+/* ---------- Layout ---------- */
+.profile-layout {
+  display: grid;
+  grid-template-columns: minmax(0, auto) minmax(0, 1fr);
+  gap: var(--vt-pad);
+  align-items: start;
+  padding: var(--vt-pad);
+  background: var(--vt-surface);
+  border: 0.0625rem solid var(--vt-line);
+  border-radius: var(--vt-radius-md);
+}
+
+.profile-photo {
+  min-width: min(12rem, 100%);
+}
+
+.profile-details {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--vt-gap);
+}
+
+/* ---------- Read-only view ---------- */
+.avatar-frame-static {
+  width: clamp(6rem, 22vw, 9rem);
+  height: clamp(6rem, 22vw, 9rem);
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border-radius: 50%;
+  border: 0.1875rem solid var(--vt-red);
+  background: var(--vt-canvas);
+  margin-inline: auto;
+}
+
+.avatar-photo-static {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.avatar-placeholder-static {
+  font-size: clamp(2.5rem, 10vw, 4rem);
+  color: var(--vt-ink-muted);
+}
+
+.profile-facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(14rem, 100%), 1fr));
+  gap: var(--vt-gap);
+  margin: 0;
+}
+
+.profile-facts dt {
+  font-size: var(--vt-fs-sm);
+  color: var(--vt-ink-muted);
+}
+
+.profile-facts dd {
+  margin: 0.25rem 0 0;
+  font-size: var(--vt-fs-md);
+  overflow-wrap: anywhere;
+}
+
+.profile-facts dd.is-mono {
+  font-family: ui-monospace, 'SFMono-Regular', Menlo, monospace;
+  font-size: var(--vt-fs-sm);
+}
+
+.profile-section-title {
+  margin: var(--vt-gap) 0 0;
+  padding-block-start: var(--vt-gap);
+  border-block-start: 0.0625rem solid var(--vt-line);
+  font-size: var(--vt-fs-md);
+  font-weight: 700;
+  color: var(--vt-ink-muted);
+}
+
+/* ---------- Status banner ---------- */
+.notice {
+  border: 0.0625rem solid var(--vt-line);
+  border-inline-start: 0.25rem solid var(--vt-ink-muted);
+  border-radius: var(--vt-radius-sm);
+  background: var(--vt-surface);
+  padding: clamp(0.6rem, 2vw, 1rem);
+  font-size: var(--vt-fs-sm);
+  line-height: 1.5;
+}
+
+.notice-warning {
+  border-inline-start-color: var(--vt-warning);
+  background: #fdf7ef;
+}
+
+.notice-danger {
+  border-inline-start-color: var(--vt-red);
+  background: var(--vt-red-surface);
+}
+
+.notice-success {
+  border-inline-start-color: var(--vt-success);
+  background: #f1f8f2;
+}
+
+.notice-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: calc(var(--vt-gap) * 0.5);
+}
+
+.notice-detail {
+  margin: 0.5rem 0 0;
+  color: var(--vt-ink-muted);
+}
+
+/* The reason is the reviewer's own words, so it is quoted rather than paraphrased. */
+.notice-reason {
+  padding-inline-start: var(--vt-gap);
+  border-inline-start: 0.125rem solid var(--vt-line);
+  color: var(--vt-ink);
+  overflow-wrap: anywhere;
+}
+
+/* ---------- Form footer ---------- */
+.profile-footer {
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: calc(var(--vt-gap) * 0.5);
+}
+
+/* ---------- iPad ---------- */
+@media (max-width: 64rem) {
+  .profile-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .profile-photo {
+    min-width: 0;
+  }
+}
+
+/* ---------- Phone ---------- */
+@media (max-width: 40rem) {
+  .profile-footer {
+    flex-direction: row-reverse;
+  }
+
+  .profile-footer .btn {
+    flex: 1 1 0;
+  }
+}

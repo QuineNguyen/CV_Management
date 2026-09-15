@@ -7,13 +7,13 @@ import { CvContent } from "../models/cv-content.model";
 
 export interface CvCreateRequest {
     language: CvLanguage;
-    content?: CvContent | null;
-    avatarImageId?: string | null;
+    content: CvContent;
+    avatarImageId: string | null;
 }
 
 export interface CvEditRequest {
     content: CvContent;
-    avatarImageId?: string | null;
+    avatarImageId: string | null;
 }
 
 export interface CvDeleteRequest {
@@ -64,6 +64,7 @@ export interface CvDetailResponse {
     currentVersion: CvVersionSummary | null;
     content: CvContent | null;
     avatarImageId: string | null;
+    avatarUrl: string | null;
     openDraft: CvDraftResponse | null;
 }
 
@@ -74,6 +75,7 @@ export interface CvDraftResponse {
     reviewRound: number;
     content: CvContent;
     avatarImageId: string | null;
+    avatarUrl: string | null;
     lastRejectionReason: string | null;
     submittable: boolean;
     untranslatedItemCount: number;
