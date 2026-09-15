@@ -25,6 +25,7 @@ export interface UserResponse {
     phoneNumber: string | null;
     address: string | null;
     avatarImageId: string | null;
+    avatarUrl: string | null;
     teams: UserTeamInfo[];
     // Teams this user currently leads. Drives the deactivate dialog.
     ledTeams: TeamResponse[];

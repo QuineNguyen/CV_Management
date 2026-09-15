@@ -12,6 +12,8 @@ services:
 
   minio:
     environment:
+      MINIO_PUBLIC_ENDPOINT: ${MINIO_PUBLIC_ENDPOINT:-http://localhost:8000}
+      MINIO_PUBLIC_PATH_PREFIX: ${MINIO_PUBLIC_PATH_PREFIX:-/storage}
       MINIO_ROOT_USER: ${MINIO_ROOT_USER}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
     ports:

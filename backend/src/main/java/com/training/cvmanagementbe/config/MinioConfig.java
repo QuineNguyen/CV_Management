@@ -9,14 +9,20 @@ import org.springframework.context.annotation.Configuration;
 /**
  * Configures dual MinIO clients for internal operations and public URL signing.
  *
- * <ul>
- *   <li><b>minioInternal:</b> Handles internal I/O operations (uploads, reads, deletions) within the private network.</li>
- *   <li><b>minioPublic:</b> Used exclusively for generating presigned URLs accessible by external browsers.</li>
- * </ul>
+ * - minioInternal: Handles internal I/O operations (uploads, reads, deletions) within the private network.
+ * - minioPublic: Used exclusively for generating presigned URLs accessible by external browsers.
  */
 @Configuration
 @EnableConfigurationProperties(MinioConfig.MinioProperties.class)
 public class MinioConfig {
+    /*
+     * Pinned so the SDK never issues a GetBucketLocation lookup to resolve the
+     * region. Without it, presigned URL generation becomes a network call - which
+     * fails for the public client, whose endpoint is browser-reachable only.
+     * MinIO ignores the value but requires it to be consistent across signing.
+     */
+    private static final String MINIO_REGION = "us-east-1";
+
     @ConfigurationProperties(prefix = "app.minio")
     public record MinioProperties(
             /** Service address inside the private network. */
@@ -39,6 +45,7 @@ public class MinioConfig {
     MinioClient minioInternal(MinioProperties p) {
         return MinioClient.builder()
                 .endpoint(p.internalEndpoint())
+                .region(MINIO_REGION)
                 .credentials(p.accessKey(), p.secretKey())
                 .build();
     }
@@ -51,6 +58,7 @@ public class MinioConfig {
     MinioClient minioPublic(MinioProperties p) {
         return MinioClient.builder()
                 .endpoint(p.publicEndpoint())
+                .region(MINIO_REGION)
                 .credentials(p.accessKey(), p.secretKey())
                 .build();
     }

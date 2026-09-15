@@ -476,6 +476,12 @@ th[aria-sort]:not([aria-sort='none']) .sort-icon {
   font-size: var(--vt-fs-sm);
 }
 
+.avatar-img {
+  object-fit: cover;
+  background: var(--vt-canvas);
+  border: 0.0625rem solid var(--vt-line);
+}
+
 /* Deterministic tone assigned by the component from the display name. */
 .avatar[data-tone='0'] { background: #fde7ea; color: #a11834; }
 .avatar[data-tone='1'] { background: #e5efff; color: #1c4f9c; }

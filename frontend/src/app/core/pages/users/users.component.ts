@@ -70,6 +70,9 @@ export class UsersComponent implements OnInit {
     readonly departments = signal<DepartmentNode[]>([]);
     readonly loading = signal(false);
 
+    // Ids whose presigned avatar URL failed to load; reset on every refetch
+    private readonly brokenAvatars = signal<ReadonlySet<string>>(new Set<string>());
+
     readonly keyword = new FormControl('', { nonNullable: true });
     readonly roleFilter = signal<UserRole | null>(null);
     readonly roleOpen = signal(false);
@@ -178,6 +181,7 @@ export class UsersComponent implements OnInit {
             next: result => {
                 this.users.set(result.content);
                 this.pageState.update(state => ({ ...state, total: result.totalElements }));
+                this.brokenAvatars.set(new Set<string>());
                 this.loading.set(false);
             },
             error: () => this.loading.set(false),
@@ -552,6 +556,16 @@ export class UsersComponent implements OnInit {
 
     // ---------- Avatar (initially setup colour) ----------
     
+    // A stored photo wins; otherwise the row falls back to generated initials.
+    avatarUrlOf(user: UserResponse): string | null {
+        return user.avatarUrl && !this.brokenAvatars().has(user.id) ? user.avatarUrl : null;
+    }
+
+    // A presigned URL can expire while the page is open, so a failed load degrades to initials.
+    onAvatarError(user: UserResponse): void {
+        this.brokenAvatars.update(ids => new Set(ids).add(user.id));
+    }
+
     // Initials plus a stable colour tone, so the same person always looks the same.
     avatarOf(user: UserResponse): AvatarView {
         const parts = user.fullName.trim().split(/\s+/);

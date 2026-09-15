@@ -234,7 +234,10 @@
           @for (user of users(); track user.id) {
             <tr [class.is-inactive]="user.status !== activeStatus">
               <td class="col-avatar">
-                @if (avatarOf(user); as avatar) {
+                @if (avatarUrlOf(user); as avatarUrl) {
+                  <img class="avatar avatar-img" [src]="avatarUrl" alt="" loading="lazy"
+                       (error)="onAvatarError(user)" />
+                } @else if (avatarOf(user); as avatar) {
                   <span class="avatar" [attr.data-tone]="avatar.tone" aria-hidden="true">
                     {{ avatar.initials }}
                   </span>
@@ -317,7 +320,10 @@
         <li class="data-card" [class.is-inactive]="user.status !== activeStatus">
           <div class="data-card-head">
             <div class="data-card-identity">
-              @if (avatarOf(user); as avatar) {
+              @if (avatarUrlOf(user); as avatarUrl) {
+                <img class="avatar avatar-lg avatar-img" [src]="avatarUrl" alt="" loading="lazy"
+                     (error)="onAvatarError(user)" />
+              } @else if (avatarOf(user); as avatar) {
                 <span class="avatar avatar-lg" [attr.data-tone]="avatar.tone" aria-hidden="true">
                   {{ avatar.initials }}
                 </span>

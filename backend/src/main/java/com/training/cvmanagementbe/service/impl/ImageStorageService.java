@@ -4,9 +4,12 @@ import com.training.cvmanagementbe.config.MinioConfig;
 import com.training.cvmanagementbe.enums.ErrorCode;
 import com.training.cvmanagementbe.exception.ApiException;
 import io.minio.*;
+import io.minio.errors.ErrorResponseException;
 import io.minio.http.Method;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
+
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.InputStream;
@@ -15,7 +18,7 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * Thin wrapper over the object store that keeps the two endpoints separate:
- * <b>bytes move through the internal endpoint, URLs are signed against the public one</b>.
+ * bytes move through the internal endpoint, URLs are signed against the public one.
  *
  * - Nothing here throws a checked exception. Translating a MinIO failure into an API error is
  * this class's job - leaking throws Exception would force every caller to invent its own
@@ -25,14 +28,20 @@ import java.util.concurrent.TimeUnit;
 @Service
 public class ImageStorageService {
 
+    // MinIO error code returned when the requested object key does not exist.
+    private static final String ERR_NO_SUCH_KEY = "NoSuchKey";
+
     private final MinioClient internal;
     private final MinioClient publicSigner;
     private final MinioConfig.MinioProperties props;
 
-    public ImageStorageService(MinioClient minioInternal, MinioClient minioPublic,
+    // Qualifiers are explicit: both beans share a type and matching by parameter name
+    // would break silently on rename.
+    public ImageStorageService(@Qualifier("minioInternal") MinioClient internal,
+                               @Qualifier("minioPublic") MinioClient publicSigner,
                                MinioConfig.MinioProperties props) {
-        this.internal = minioInternal;
-        this.publicSigner = minioPublic;
+        this.internal = internal;
+        this.publicSigner = publicSigner;
         this.props = props;
     }
 
@@ -85,6 +94,14 @@ public class ImageStorageService {
         try (InputStream in = internal.getObject(GetObjectArgs.builder()
                 .bucket(props.bucket()).object(objectKey).build())) {
             return in.readAllBytes();
+        } catch (ErrorResponseException e) {
+            // Storage answered, so it is healthy; a missing key is a 404, not an outage.
+            if (ERR_NO_SUCH_KEY.equals(e.errorResponse().code())) {
+                log.warn("MinIO object not found for key {}", objectKey);
+                throw new ApiException.NotFoundException("image", objectKey);
+            }
+            log.error("MinIO read failed for key {}", objectKey, e);
+            throw new ApiException.ServiceUnavailableException(ErrorCode.IMAGE_STORAGE_UNAVAILABLE);
         } catch (Exception e) {
             log.error("MinIO read failed for key {}", objectKey, e);
             throw new ApiException.ServiceUnavailableException(ErrorCode.IMAGE_STORAGE_UNAVAILABLE);
@@ -102,6 +119,14 @@ public class ImageStorageService {
         try {
             internal.removeObject(RemoveObjectArgs.builder()
                     .bucket(props.bucket()).object(objectKey).build());
+        } catch (ErrorResponseException e) {
+            // Already gone is the outcome this method asks for - retries stay idempotent.
+            if (ERR_NO_SUCH_KEY.equals(e.errorResponse().code())) {
+                log.warn("MinIO object already absent for key {}", objectKey);
+                return;
+            }
+            log.error("MinIO delete failed for key {}", objectKey, e);
+            throw new ApiException.ServiceUnavailableException(ErrorCode.IMAGE_STORAGE_UNAVAILABLE);
         } catch (Exception e) {
             log.error("MinIO delete failed for key {}", objectKey, e);
             throw new ApiException.ServiceUnavailableException(ErrorCode.IMAGE_STORAGE_UNAVAILABLE);
