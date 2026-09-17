@@ -18,7 +18,6 @@ import java.util.UUID;
 public record ApprovalQueueItem(
         UUID assignmentId,
         UUID draftId,
-        UUID cvId,
         Language cvLanguage,
         String profileName,
         String employeeName,

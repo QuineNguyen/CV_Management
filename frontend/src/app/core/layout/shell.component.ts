@@ -80,6 +80,7 @@ export class ShellComponent {
     { label: 'Competency Profiles', icon: NavIconEnum.Profiles, route: AppRoute.Profiles },
     { label: 'Create CV', icon: NavIconEnum.AddCv, route: AppRoute.CvsNew },
     { label: 'Deleted CVs', icon: NavIconEnum.Deleted, route: AppRoute.CvsDeleted, roles: [UserRole.Admin, UserRole.HR] },
+    { label: 'Approval Queue', icon: NavIconEnum.ApprovalQueue, route: AppRoute.ApprovalQueue, roles: [UserRole.Admin, UserRole.HR, UserRole.TechLead] },
     // Later stages add their entries here. Each one declares the roles it is offered to; the
     // server still enforces access independently.
   ];

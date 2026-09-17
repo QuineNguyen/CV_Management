@@ -1,0 +1,130 @@
+@if (loading()) {
+  <section class="page">
+    <div class="skeleton-stack" aria-busy="true">
+      @for (row of [1, 2, 3]; track row) {
+        <div class="skeleton-row"></div>
+      }
+    </div>
+  </section>
+} @else if (review(); as review) {
+  <section class="page">
+
+    <header class="page-toolbar">
+      <div>
+        <h1 class="page-title">Review CV</h1>
+        <p class="page-subtitle">
+          <span class="code-chip is-primary">{{ review.cvLanguage }}</span>
+          {{ languageLabels[review.cvLanguage] }} ·
+          {{ review.employeeName ?? '—' }} ·
+          {{ review.profileName ?? '—' }} ·
+          round {{ review.draft.reviewRound }}
+        </p>
+      </div>
+
+      <div class="page-toolbar-actions">
+        <button type="button" class="btn btn-ghost" (click)="backToQueue()">Back to queue</button>
+      </div>
+    </header>
+
+    <div class="review-layout">
+
+      <!-- Left: the draft, read-only -->
+      <div class="review-content">
+        <div class="notice" role="status">
+          <strong>Read-only.</strong>
+          Content is frozen while the draft is under review, for everyone including its owner, so
+          your decision applies to exactly what is on this page
+        </div>
+
+        @if (review.avatarUrl) {
+          <div class="review-photo">
+            <img [src]="review.avatarUrl" alt="CV photo" class="review-photo-img" />
+            <span class="text-muted">Photo submitted with this draft</span>
+          </div>
+        }
+
+        <app-cv-content-editor
+          [content]="review.draft.content"
+          [language]="review.cvLanguage"
+          [readOnly]="true" />
+      </div>
+
+      <!-- Right: assignment context and history -->
+      <aside class="review-side">
+
+        @if (assignment(); as assignment) {
+          <section class="side-card">
+            <h2 class="side-card-title">Your assignment</h2>
+
+            <dl class="side-facts">
+              <div>
+                <dt>Level</dt>
+                <dd>
+                  {{ levelLabels[assignment.level] }}
+                  <span class="text-muted">— {{ levelDescriptions[assignment.level] }}</span>
+                </dd>
+              </div>
+              <div>
+                <dt>Assigned</dt>
+                <dd>{{ assignment.assignedAt | date:'dd/MM/yyyy HH:mm' }}</dd>
+              </div>
+              <div>
+                <dt>Deadline</dt>
+                <dd>
+                  <span class="sla-badge" [class]="slaTone()">{{ slaLabel() }}</span>
+                  <span class="text-muted">{{ assignment.dueAt | date:'dd/MM/yyyy HH:mm' }}</span>
+                </dd>
+              </div>
+            </dl>
+
+            <!-- Team membership keeps no history, so this sentence is the only lasting record of
+                 why this round came to this person -->
+            <p class="side-reason">{{ assignment.reason }}</p>
+          </section>
+        }
+
+        <section class="side-card">
+          <h2 class="side-card-title">Earlier rounds</h2>
+
+          @if (!decisions().length) {
+            <p class="text-muted">
+              First time through. Nothing has been decided on this draft yet
+            </p>
+          } @else {
+            <ol class="decision-list">
+              @for (decision of decisions(); track decision.id) {
+                <li class="decision-item">
+                  <div class="decision-head">
+                    <span class="decision-badge" [class]="decisionTones[decision.result]">
+                      {{ decisionLabels[decision.result] }}
+                    </span>
+                    <span class="decision-meta">
+                      {{ levelLabels[decision.level] }} · round {{ decision.reviewRound }}
+                    </span>
+                  </div>
+
+                  <p class="decision-line">
+                    {{ decision.approverName ?? 'System' }} ·
+                    {{ decision.decidedAt | date:'dd/MM/yyyy HH:mm' }}
+                  </p>
+
+                  @if (decision.reason) {
+                    <p class="decision-reason">{{ decision.reason }}</p>
+                  }
+                </li>
+              }
+            </ol>
+          }
+        </section>
+
+        <section class="side-card side-card-pending">
+          <h2 class="side-card-title">Decision</h2>
+          <p class="text-muted">
+            Approving and rejecting arrive with the next part of this stage, together with comments
+            anchored to individual lines of the CV
+          </p>
+        </section>
+      </aside>
+    </div>
+  </section>
+}

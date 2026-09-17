@@ -5,7 +5,7 @@ import { AuthService } from "../../../services/auth.service";
 import { ActivatedRoute, Router } from "@angular/router";
 import { ToastService } from "../../../services/toast.service";
 import { CV_LANGUAGE_LABELS } from "../../../enums/cv-language.enum";
-import { DRAFT_STATUS_LABELS, LOCKED_DRAFT_STATUSES } from "../../../enums/draft-status.enum";
+import { DRAFT_STATUS_LABELS, DraftStatus, LOCKED_DRAFT_STATUSES } from "../../../enums/draft-status.enum";
 import { CvDetailResponse } from "../../../dtos/cv.dto";
 import { UserRole } from "../../../enums/user-role.enum";
 import { CvContent, emptyCvContent } from "../../../models/cv-content.model";
@@ -13,6 +13,9 @@ import { AppRoute } from "../../../enums/app-route.enum";
 import { HasUnsavedChanges } from "../../../services/unsaved-changes.guard";
 import { AvatarUploadComponent } from "../../avatar-upload/avatar-upload.component";
 import { AvatarChange } from "../../../models/avatar-change.model";
+import { ApprovalService } from "../../../services/approval.service";
+import { missingRequiredSections } from "../../../models/approval-queue.model";
+import { CV_SECTION_LABELS } from "../../../enums/cv-section-key.enum";
 
 /*
  * Edit CV content. The screen branches on the owner's role, not on anything the user picks:
@@ -37,15 +40,35 @@ export class CvEditComponent implements OnInit, HasUnsavedChanges {
     private readonly route = inject(ActivatedRoute);
     private readonly router = inject(Router);
     private readonly toast = inject(ToastService);
+    private readonly approvalService = inject(ApprovalService);
 
     private readonly editor = viewChild(CvContentEditorComponent);
 
     readonly languageLabels = CV_LANGUAGE_LABELS;
     readonly draftStatusLabels = DRAFT_STATUS_LABELS;
+    
+    // Only the two statuses a draft can enter the approval flow
+    private static readonly SUBMITTABLE_STATUSES: readonly DraftStatus[] = [
+        DraftStatus.Draft,
+        DraftStatus.Rejected
+    ];
+
+    /*
+     * An Admin/HR owner publishes directly, so there is nothing to submit. Everyone else sees the
+     * button as soon as an open draft exists in a submittable status - including a draft that is
+     * still incomplete, because hiding it would leave no way to find out what is missing.
+     */
+    readonly canSubmitForApproval = computed(() => {
+        const status = this.openDraft()?.status;
+        return !this.directPublish()
+            && !!status
+            && CvEditComponent.SUBMITTABLE_STATUSES.includes(status);
+    });
 
     readonly detail = signal<CvDetailResponse | null>(null);
     readonly loading = signal(true);
     readonly saving = signal(false);
+    readonly submitting = signal(false);
 
     private readonly editorDirty = signal(false);
     private readonly avatarDirty = signal(false);
@@ -219,5 +242,47 @@ export class CvEditComponent implements OnInit, HasUnsavedChanges {
     // A save in flight is not "unsaved": the navigation it triggers must not be blocked.
     hasUnsavedChanges(): boolean {
         return this.dirty() && !this.saving();
+    }
+
+    /*
+     * Submitting is a one-way door: the content locks the moment this succeeds, so unsaved editor
+     * changes must be saved first or they are lost behind the lock.
+     */
+    onSubmitForApproval(): void {
+        const draft = this.openDraft();
+        if (!draft || this.submitting() || this.saving()) {
+            return;
+        }
+
+        if (this.dirty()) {
+            this.toast.error('Save your changes before submitting');
+            return;
+        }
+
+        /*
+         * Checked here purely so the toast can name the gaps. The server validates the same three
+         * sections and is the authority; this screen already holds the content, so re-deriving the
+         * list costs one pass over an object it owns.
+         */
+        const missing = missingRequiredSections(draft.content);
+        if (missing.length) {
+            this.toast.error(`Fill in: ${missing.map(key => CV_SECTION_LABELS[key]).join(', ')}`);
+            return;
+        }
+
+        this.submitting.set(true);
+
+        this.approvalService.submit(draft.id).subscribe({
+            next: result => {
+                this.toast.success(result.level1Skipped
+                    ? 'Submitted - sent straight to HR, since you are the tech lead who would review it'
+                    : 'Submitted for tech lead review'
+                );
+
+                void this.router.navigate(['/' + AppRoute.Cvs, this.detail()!.cv.id]);
+            },
+            // 422 and 409 are both rendered by the error interceptor from their code.
+            error: () => this.submitting.set(false),
+        });
     }
 }

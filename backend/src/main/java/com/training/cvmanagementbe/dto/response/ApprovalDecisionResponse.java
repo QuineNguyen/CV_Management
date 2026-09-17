@@ -13,7 +13,6 @@ public record ApprovalDecisionResponse(
         UUID id,
         ApprovalLevel level,
         int reviewRound,
-        UUID approverId,
         String approverName,
         DecisionResult result,
         String reason,

@@ -36,4 +36,8 @@ export enum ApiEndpoint {
 
     // Profile update requests (Admin + HR)
     ProfileUpdateRequests = '/profile-update-requests',
+
+    // Approval routes
+    Approvals = '/approvals',
+    ApprovalQueue = '/approvals/queue',
 }

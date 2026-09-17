@@ -1,0 +1,151 @@
+<section class="page">
+
+  <!-- Toolbar -->
+  <header class="page-toolbar">
+    <div>
+      <h1 class="page-title">Approval queue</h1>
+      <p class="page-subtitle">
+        Assigned to you · {{ pageState().total }} waiting
+        @if (overdueCount()) {
+          · {{ overdueCount() }} past the deadline
+        }
+      </p>
+    </div>
+  </header>
+
+  <!-- Body -->
+  @if (loading()) {
+    <div class="skeleton-stack" aria-busy="true">
+      @for (row of [1, 2, 3]; track row) {
+        <div class="skeleton-row"></div>
+      }
+    </div>
+  } @else if (isEmpty()) {
+    <div class="empty-state">
+      <p class="empty-state-title">Nothing waiting on you</p>
+      <p class="empty-state-hint">
+        A CV appears here only once it is assigned to you. Each draft goes to exactly one reviewer
+        per level, so nobody else's work shows up in this list
+      </p>
+    </div>
+  } @else {
+
+    <!-- Table: desktop -->
+    <div class="data-table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th scope="col" class="col-employee">Employee</th>
+            <th scope="col" class="col-profile">Profile</th>
+            <th scope="col" class="col-language">Language</th>
+            <th scope="col" class="col-level">Level</th>
+            <th scope="col" class="col-round">Round</th>
+            <th scope="col" class="col-assigned">Assigned</th>
+            <th scope="col" class="col-sla">Deadline</th>
+            <th scope="col" class="col-actions">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (item of items(); track item.assignmentId) {
+            <tr>
+              <td class="col-employee">
+                <span class="cell-strong">{{ item.employeeName ?? '—' }}</span>
+              </td>
+              <td class="col-profile">
+                <span class="cell-muted">{{ item.profileName ?? '—' }}</span>
+              </td>
+              <td class="col-language">
+                <div class="language-cell">
+                  <span class="code-chip is-primary">{{ item.cvLanguage }}</span>
+                  <span class="language-name">{{ languageLabel(item.cvLanguage) }}</span>
+                </div>
+              </td>
+              <td class="col-level">
+                <span class="status-badge" [matTooltip]="levelDescriptions[item.level]">
+                  {{ levelLabels[item.level] }}
+                </span>
+              </td>
+              <td class="col-round">{{ item.reviewRound }}</td>
+              <td class="col-assigned">
+                <span class="cell-date">{{ item.assignedAt | date:'dd/MM/yyyy HH:mm' }}</span>
+              </td>
+              <td class="col-sla">
+                <span class="sla-badge" [class]="slaTone(item)"
+                      [matTooltip]="'Due ' + (item.dueAt | date:'dd/MM/yyyy HH:mm')">
+                  {{ slaLabel(item) }}
+                </span>
+              </td>
+              <td class="col-actions">
+                <div class="row-actions">
+                  <button type="button" class="btn btn-primary btn-compact"
+                          (click)="openReview(item)">
+                    Review
+                  </button>
+                </div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Cards: iPad and phone -->
+    <ul class="data-cards">
+      @for (item of items(); track item.assignmentId) {
+        <li class="data-card">
+          <div class="data-card-head">
+            <div class="data-card-text">
+              <span class="data-card-title">{{ item.employeeName ?? '—' }}</span>
+              <p class="data-card-line">{{ item.profileName ?? '—' }}</p>
+            </div>
+
+            <span class="sla-badge" [class]="slaTone(item)">{{ slaLabel(item) }}</span>
+          </div>
+
+          <dl class="data-card-facts">
+            <div>
+              <dt>Language</dt>
+              <dd>
+                <div class="language-cell">
+                  <span class="code-chip is-primary">{{ item.cvLanguage }}</span>
+                  <span class="language-name">{{ languageLabel(item.cvLanguage) }}</span>
+                </div>
+              </dd>
+            </div>
+            <div>
+              <dt>Level</dt>
+              <dd>{{ levelLabels[item.level] }} — {{ levelDescriptions[item.level] }}</dd>
+            </div>
+            <div>
+              <dt>Round</dt>
+              <dd>{{ item.reviewRound }}</dd>
+            </div>
+            <div>
+              <dt>Assigned</dt>
+              <dd>{{ item.assignedAt | date:'dd/MM/yyyy HH:mm' }}</dd>
+            </div>
+          </dl>
+
+          <button type="button" class="btn btn-primary data-card-action"
+                  (click)="openReview(item)">
+            Review
+          </button>
+        </li>
+      }
+    </ul>
+
+    <mat-paginator
+      class="page-paginator"
+      [length]="pageState().total"
+      [pageIndex]="pageState().index"
+      [pageSize]="pageState().size"
+      [pageSizeOptions]="pageSizeOptions"
+      showFirstLastButtons
+      (page)="onPageChange($event)" />
+
+    <p class="text-muted">
+      Each level has a three-day deadline. Passing it sends a reminder — it never moves the work to
+      somebody else, because bouncing a CV between reviewers loses the review context
+    </p>
+  }
+</section>

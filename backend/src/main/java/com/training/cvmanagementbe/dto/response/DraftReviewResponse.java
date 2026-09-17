@@ -3,7 +3,6 @@ package com.training.cvmanagementbe.dto.response;
 import com.training.cvmanagementbe.enums.Language;
 
 import java.util.List;
-import java.util.UUID;
 
 /*
  * Everything the review screen needs in one round trip: the content to read, the assignment that
@@ -13,7 +12,6 @@ import java.util.UUID;
  */
 public record DraftReviewResponse(
         CvDraftResponse draft,
-        UUID cvId,
         Language cvLanguage,
         String profileName,
         String employeeName,

@@ -29,9 +29,9 @@
     @if (locked()) {
       <div class="notice notice-warning" role="status">
         <strong>Read-only while under review.</strong>
-        This draft is {{ draftStatusLabels[openDraft()!.status] }}. Content is frozen for everyone,
-        including you, so the reviewer decides on exactly what they read. Cancel the draft if you
-        need to change it
+        This draft is {{ draftStatusLabels[openDraft()!.status] }}, round {{ openDraft()!.reviewRound }}.
+        Content is frozen for everyone, including you, so the reviewer decides on exactly what they
+        read. Only an administrator can cancel an approval already in progress
       </div>
     } @else if (directPublish()) {
       <div class="notice notice-danger" role="status">
@@ -109,15 +109,25 @@
       (dirtyChanged)="onDirtyChanged($event)" />
 
     <div class="edit-footer">
-      <button type="button" class="btn btn-ghost" (click)="cancel()" [disabled]="saving()">
+      <button type="button" class="btn btn-ghost" (click)="cancel()"
+              [disabled]="saving() || submitting()">
         Cancel
       </button>
+
       @if (!locked()) {
-        <button type="button" class="btn btn-primary" (click)="onSaveClicked()" [disabled]="saving()">
+        <button type="button" class="btn btn-primary" (click)="onSaveClicked()"
+                [disabled]="saving() || submitting()">
           {{ saving()
               ? 'Saving...'
               : directPublish() ? 'Save & publish now' : 'Save draft' }}
         </button>
+
+        @if (canSubmitForApproval()) {
+          <button type="button" class="btn btn-primary" (click)="onSubmitForApproval()"
+                  [disabled]="saving() || submitting()">
+            {{ submitting() ? 'Submitting...' : 'Submit for approval' }}
+          </button>
+        }
       }
     </div>
   </section>

@@ -1,0 +1,233 @@
+:host {
+  display: block;
+  color: var(--vt-ink);
+}
+
+.text-muted {
+  margin: 0;
+}
+
+/* ---------- Two-column layout ----------
+   The content column takes the space it needs and the side column is capped, because the review
+   panel is reference material: widening it would only stretch short lines. Below 64rem the side
+   column moves above the content, so a reviewer on an iPad reads the deadline and the previous
+   rejection before scrolling into the CV. */
+.review-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(16rem, 22rem);
+  gap: var(--vt-pad);
+  align-items: start;
+}
+
+.review-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--vt-gap);
+  min-width: 0;
+}
+
+.review-side {
+  display: flex;
+  flex-direction: column;
+  gap: var(--vt-gap);
+  position: sticky;
+  top: var(--vt-pad);
+  min-width: 0;
+}
+
+/* ---------- Photo ---------- */
+.review-photo {
+  display: flex;
+  align-items: center;
+  gap: var(--vt-gap);
+}
+
+.review-photo-img {
+  width: clamp(4rem, 12vw, 6rem);
+  height: clamp(4rem, 12vw, 6rem);
+  object-fit: cover;
+  border-radius: var(--vt-radius-sm);
+  border: 0.0625rem solid var(--vt-line);
+}
+
+/* ---------- Side cards ---------- */
+.side-card {
+  padding: var(--vt-pad);
+  background: var(--vt-surface);
+  border: 0.0625rem solid var(--vt-line);
+  border-radius: var(--vt-radius-md);
+}
+
+.side-card-title {
+  margin: 0 0 var(--vt-gap);
+  padding-block-end: calc(var(--vt-gap) * 0.4);
+  border-block-end: 0.125rem solid var(--vt-red);
+  font-size: var(--vt-fs-md);
+  font-weight: 700;
+}
+
+/* The placeholder card is deliberately quiet: it explains what is coming without competing with
+   the two cards that carry real information today. */
+.side-card-pending {
+  border-style: dashed;
+  background: var(--vt-canvas);
+}
+
+.side-facts {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--vt-gap) * 0.6);
+  margin: 0;
+}
+
+.side-facts dt {
+  font-size: var(--vt-fs-sm);
+  color: var(--vt-ink-muted);
+}
+
+.side-facts dd {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: calc(var(--vt-gap) * 0.4);
+  margin: 0.125rem 0 0;
+  font-size: var(--vt-fs-md);
+}
+
+.side-reason {
+  margin: var(--vt-gap) 0 0;
+  padding: calc(var(--vt-gap) * 0.6);
+  background: var(--vt-canvas);
+  border-inline-start: 0.1875rem solid var(--vt-line);
+  border-radius: 0 var(--vt-radius-sm) var(--vt-radius-sm) 0;
+  font-size: var(--vt-fs-sm);
+  color: var(--vt-ink-muted);
+  line-height: 1.55;
+}
+
+/* ---------- SLA badge ---------- */
+.sla-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: calc(var(--vt-gap) * 0.2) calc(var(--vt-gap) * 0.55);
+  border: 0.0625rem solid transparent;
+  border-radius: var(--vt-radius-sm);
+  font-size: var(--vt-fs-sm);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.sla-badge.is-comfortable {
+  background: var(--vt-canvas);
+  border-color: var(--vt-line);
+  color: var(--vt-ink-muted);
+}
+
+.sla-badge.is-due-soon {
+  background: #fdf3e6;
+  border-color: var(--vt-warning);
+  color: #8a4b02;
+}
+
+.sla-badge.is-overdue {
+  background: var(--vt-red-surface);
+  border-color: var(--vt-red);
+  color: var(--vt-red-dark);
+}
+
+/* ---------- Decision history ---------- */
+.decision-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--vt-gap);
+  margin: 0;
+  padding: 0;
+}
+
+.decision-item {
+  padding-block-end: var(--vt-gap);
+  border-block-end: 0.0625rem solid var(--vt-line);
+}
+
+.decision-item:last-child {
+  padding-block-end: 0;
+  border-block-end: none;
+}
+
+.decision-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: calc(var(--vt-gap) * 0.5);
+}
+
+.decision-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: calc(var(--vt-gap) * 0.2) calc(var(--vt-gap) * 0.55);
+  border: 0.0625rem solid transparent;
+  border-radius: var(--vt-radius-sm);
+  font-size: var(--vt-fs-sm);
+  font-weight: 600;
+}
+
+.decision-badge.is-approved {
+  background: #e4f5ea;
+  border-color: var(--vt-success);
+  color: #1a7f45;
+}
+
+.decision-badge.is-rejected {
+  background: var(--vt-red-surface);
+  border-color: var(--vt-red);
+  color: var(--vt-red-dark);
+}
+
+.decision-badge.is-skipped {
+  background: var(--vt-canvas);
+  border-color: var(--vt-line);
+  color: var(--vt-ink-muted);
+}
+
+.decision-meta,
+.decision-line {
+  font-size: var(--vt-fs-sm);
+  color: var(--vt-ink-muted);
+}
+
+.decision-line {
+  margin: calc(var(--vt-gap) * 0.4) 0 0;
+}
+
+.decision-reason {
+  margin: calc(var(--vt-gap) * 0.4) 0 0;
+  font-size: var(--vt-fs-md);
+  line-height: 1.55;
+}
+
+/* ---------- iPad ---------- */
+@media (max-width: 64rem) {
+  .review-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  /* Context first: the deadline and the last rejection decide how the CV below is read. */
+  .review-side {
+    position: static;
+    order: -1;
+  }
+}
+
+/* ---------- Phone ---------- */
+@media (max-width: 40rem) {
+  .review-photo {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .side-facts dd {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
