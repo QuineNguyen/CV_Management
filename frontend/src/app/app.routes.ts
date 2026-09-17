@@ -107,7 +107,23 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./core/pages/profile-update-requests/profile-update-requests.component')
             .then(m => m.ProfileUpdateRequestsComponent),
-      }
+      },
+      {
+        path: AppRoute.ApprovalQueue,
+        canActivate: [authGuard, roleGuard(UserRole.TechLead, UserRole.HR, UserRole.Admin)],
+        title: 'Approval Queue',
+        loadComponent: () =>
+          import('./core/pages/approvals/approval-queue/approval-queue.component')
+            .then(m => m.ApprovalQueueComponent),
+      },
+      {
+        path: `approvals/drafts/:draftId/review`,
+        canActivate: [authGuard, roleGuard(UserRole.TechLead, UserRole.HR, UserRole.Admin)],
+        title: 'Review Draft',
+        loadComponent: () =>
+          import('./core/pages/approvals/draft-review/draft-review.component')
+            .then(m => m.DraftReviewComponent),
+      },
     ],
   },
   { path: '**', redirectTo: '' },

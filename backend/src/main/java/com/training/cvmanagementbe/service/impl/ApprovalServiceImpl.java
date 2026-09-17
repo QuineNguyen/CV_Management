@@ -189,12 +189,11 @@ public class ApprovalServiceImpl implements ApprovalService {
 
         return new DraftReviewResponse(
                 toResponse(draft, codec.read(draft.getContentJson())),
-                cv.getId(),
                 cv.getLanguage(),
                 profile.getName(),
                 names.get(profile.getEmployeeId()),
                 avatarUrlResolver.resolve(draft.getAvatarImageId()),
-                toAssignmentResponse(assignment, names, now),
+                toAssignmentResponse(assignment, now),
                 decisions.stream().map(decision -> toDecisionResponse(decision, names)).toList()
         );
     }
@@ -339,7 +338,6 @@ public class ApprovalServiceImpl implements ApprovalService {
             return new ApprovalQueueItem(
                     assignment.getId(),
                     assignment.getDraftId(),
-                    cv == null ? null : cv.getId(),
                     cv == null ? null : cv.getLanguage(),
                     profile == null ? null : profile.getName(),
                     profile == null ? null : names.get(profile.getEmployeeId()),
@@ -370,20 +368,14 @@ public class ApprovalServiceImpl implements ApprovalService {
     }
 
     private ApprovalAssignmentResponse toAssignmentResponse(ApprovalAssignment assignment,
-                                                            Map<UUID, String> names,
                                                             LocalDateTime now) {
         return new ApprovalAssignmentResponse(
                 assignment.getId(),
-                assignment.getDraftId(),
                 assignment.approvalLevel(),
-                assignment.getAssigneeId(),
-                assignment.getAssigneeId() == null ? null : names.get(assignment.getAssigneeId()),
                 assignment.getReviewRound(),
-                assignment.getStatus(),
                 assignment.getReason(),
                 assignment.getAssignedAt(),
                 assignment.getDueAt(),
-                assignment.getClosedAt(),
                 minutesUntil(assignment.getDueAt(), now)
         );
     }
@@ -393,7 +385,6 @@ public class ApprovalServiceImpl implements ApprovalService {
                 decision.getId(),
                 decision.approvalLevel(),
                 decision.getReviewRound(),
-                decision.getApproverId(),
                 decision.getApproverId() == null ? null : names.get(decision.getApproverId()),
                 decision.getResult(),
                 decision.getReason(),

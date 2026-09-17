@@ -33,6 +33,13 @@ export enum ProfileUpdateSortField {
     Status = 'STATUS',
 }
 
+export enum ApprovalSortField {
+    DueAt = 'DUE_AT',
+    AssignedAt = 'ASSIGNED_AT',
+    Level = 'LEVEL',
+    ReviewRound = 'REVIEW_ROUND',
+}
+
 export enum SortDirection {
     Asc = 'ASC',
     Desc = 'DESC',

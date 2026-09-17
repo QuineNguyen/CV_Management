@@ -15,16 +15,11 @@ import java.util.UUID;
 @Schema(name = "ApprovalAssignmentResponse", description = "An assignment as the API exposes it")
 public record ApprovalAssignmentResponse(
         UUID id,
-        UUID draftId,
         ApprovalLevel level,
-        UUID assigneeId,
-        String assigneeName,
         int reviewRound,
-        AssignmentStatus status,
         String reason,
         LocalDateTime assignedAt,
         LocalDateTime dueAt,
-        LocalDateTime closedAt,
         long slaRemainingMinutes
 ) {
 }

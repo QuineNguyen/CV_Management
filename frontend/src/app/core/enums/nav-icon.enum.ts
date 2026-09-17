@@ -13,4 +13,5 @@ export enum NavIconEnum {
   Deleted = 'delete_history',
   Person = 'person',
   PendingActions = 'pending_actions',
+  ApprovalQueue = 'fact_check',
 }

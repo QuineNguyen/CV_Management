@@ -10,3 +10,15 @@ export enum CvSectionKey {
     Languages = 'languages',
     AdditionalInfo = 'additional_info',
 }
+
+export const CV_SECTION_LABELS: Record<CvSectionKey, string> = {
+    [CvSectionKey.PersonalInfo]: 'Personal info',
+    [CvSectionKey.CareerObjective]: 'Career objective',
+    [CvSectionKey.Skills]: 'Skills',
+    [CvSectionKey.Experience]: 'Experience',
+    [CvSectionKey.Education]: 'Education',
+    [CvSectionKey.Certifications]: 'Certifications',
+    [CvSectionKey.Projects]: 'Projects',
+    [CvSectionKey.Languages]: 'Languages',
+    [CvSectionKey.AdditionalInfo]: 'Additional info',
+};

@@ -1,0 +1,125 @@
+:host {
+  display: block;
+  color: var(--vt-ink);
+}
+
+/* ---------- Column widths ---------- */
+.col-employee { width: 18%; min-width: 9rem; }
+.col-profile  { width: 20%; min-width: 9rem; }
+.col-language { width: 13rem; }
+.col-level    { width: 8rem; }
+.col-round    { width: 5rem; }
+.col-assigned { width: 11rem; }
+.col-sla      { width: 10rem; }
+.col-actions  { width: 7rem; }
+
+.data-table td.col-profile,
+.data-table td.col-language,
+.data-table td.col-level,
+.data-table td.col-round,
+.data-table td.col-assigned,
+.data-table td.col-sla,
+.data-table td.col-actions {
+  text-align: center;
+  white-space: nowrap;
+}
+
+.data-table td.col-profile .cell-muted {
+  margin-inline: auto;
+  max-width: 100%;
+}
+
+.row-actions {
+  justify-content: center;
+}
+
+/* ---------- Language cell ---------- */
+.language-cell {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: calc(var(--vt-gap) * 0.5);
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+.language-name {
+  font-size: var(--vt-fs-md);
+  color: var(--vt-ink-muted);
+}
+
+.cell-date {
+  font-size: var(--vt-fs-md);
+  color: var(--vt-ink-muted);
+  white-space: nowrap;
+}
+
+/* ---------- SLA badge ----------
+   The one loud element on this page. Everything else stays neutral so the colour here carries
+   the whole "what do I do next" signal rather than competing with row styling. */
+.sla-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: calc(var(--vt-gap) * 0.3);
+  min-height: calc(var(--vt-touch-target) * 0.65);
+  padding: calc(var(--vt-gap) * 0.25) calc(var(--vt-gap) * 0.6);
+  border: 0.0625rem solid transparent;
+  border-radius: var(--vt-radius-sm);
+  font-size: var(--vt-fs-sm);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.sla-badge.is-comfortable {
+  background: var(--vt-canvas);
+  border-color: var(--vt-line);
+  color: var(--vt-ink-muted);
+}
+
+.sla-badge.is-due-soon {
+  background: #fdf3e6;
+  border-color: var(--vt-warning);
+  color: #8a4b02;
+}
+
+.sla-badge.is-overdue {
+  background: var(--vt-red-surface);
+  border-color: var(--vt-red);
+  color: var(--vt-red-dark);
+}
+
+/* ---------- Compact table button ---------- */
+.btn-compact {
+  min-height: calc(var(--vt-touch-target) * 0.75);
+  padding-inline: calc(var(--vt-gap) * 0.9);
+  font-size: var(--vt-fs-sm);
+}
+
+/* ---------- Card action ---------- */
+.data-card-action {
+  width: 100%;
+  margin-block-start: var(--vt-gap);
+}
+
+/* ---------- iPad ---------- */
+@media (max-width: 64rem) {
+  .data-card-head {
+    align-items: flex-start;
+    gap: var(--vt-gap);
+  }
+
+  .data-card-head .sla-badge {
+    flex-shrink: 0;
+  }
+}
+
+/* ---------- Phone ---------- */
+@media (max-width: 40rem) {
+  .data-card-head {
+    flex-direction: column;
+  }
+
+  .data-card-head .sla-badge {
+    align-self: flex-start;
+  }
+}
