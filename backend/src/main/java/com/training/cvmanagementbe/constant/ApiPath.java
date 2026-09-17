@@ -48,5 +48,11 @@ public final class ApiPath {
     public static final String REJECT = "/{id}/reject";
     public static final String PENDING_COUNT = "/pending-count";
 
+    // Approval queue
+    public static final String APPROVALS = "/approvals";
+    public static final String APPROVAL_QUEUE = "/queue";
+    public static final String DRAFT_SUBMIT = "/drafts/{draftId}/submit";
+    public static final String DRAFT_REVIEW = "/drafts/{draftId}/review";
+
     private ApiPath() {}
 }
