@@ -52,6 +52,8 @@ public enum ErrorCode {
 
     // ---------- Approval ----------
     APPROVAL_ALREADY_ASSIGNED("This draft already has an open approval assignment"),
+    DRAFT_MISSING_REQUIRED_SECTIONS("Personal info, at least one skill and at least one experience entry are required before submitting"),
+    APPROVER_NOT_AVAILABLE("No eligible approver could be resolved for this CV"),
 
     // ---------- Update requests ----------
     PENDING_REQUEST_EXISTS("A pending update request already exists for this employee, profile and language"),
