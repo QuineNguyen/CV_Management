@@ -42,6 +42,7 @@ export const ERROR_MESSAGES: Readonly<Record<ClientErrorCode, string>> = {
   APPROVAL_ALREADY_ASSIGNED: 'This draft already has an open approval assignment',
   DRAFT_MISSING_REQUIRED_SECTIONS: 'Personal info, at least one skill and at least one experience entry are required before submitting',
   APPROVER_NOT_AVAILABLE: 'No eligible approver could be resolved for this CV',
+  NOT_CURRENT_ASSIGNEE: 'This CV has already been handled or reassigned to someone else',
 
   // Update requests
   PENDING_REQUEST_EXISTS:

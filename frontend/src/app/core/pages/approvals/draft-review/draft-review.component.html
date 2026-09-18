@@ -17,7 +17,7 @@
           {{ languageLabels[review.cvLanguage] }} ·
           {{ review.employeeName ?? '—' }} ·
           {{ review.profileName ?? '—' }} ·
-          round {{ review.draft.reviewRound }}
+          Round {{ review.draft.reviewRound }}
         </p>
       </div>
 
@@ -117,13 +117,66 @@
           }
         </section>
 
-        <section class="side-card side-card-pending">
-          <h2 class="side-card-title">Decision</h2>
-          <p class="text-muted">
-            Approving and rejecting arrive with the next part of this stage, together with comments
-            anchored to individual lines of the CV
-          </p>
-        </section>
+        @if (assignment()) {
+          <section class="side-card decision-card"
+                   aria-label="Decision"
+                   [class.is-confirming]="confirmOpen()">
+            <h2 class="side-card-title">Decision</h2>
+ 
+            @if (!confirmOpen()) {
+              <p class="decision-hint">
+                @if (isFinalLevel()) {
+                  Check format and spelling. Approving publishes this draft as the CV's new current version
+                } @else {
+                  Check technical accuracy. Approving forwards this draft to HR for a format review
+                }
+              </p>
+ 
+              <button type="button"
+                      class="btn btn-primary decision-btn"
+                      (click)="requestApprove()">
+                {{ approveLabel() }}
+              </button>
+ 
+              <p class="decision-note text-muted">
+                Rejecting with inline comments arrives in the next part of this stage
+              </p>
+            } @else {
+              <div class="inline-confirm"
+                   role="alertdialog"
+                   aria-labelledby="approve-confirm-text"
+                   aria-live="polite">
+                <p id="approve-confirm-text" class="inline-confirm-text">
+                  @if (isFinalLevel()) {
+                    Publish this draft as a <strong>new version</strong>? Published versions are permanent
+                  } @else {
+                    Forward this draft to <strong>HR</strong> for format review? You can't change this decision later
+                  }
+                </p>
+ 
+                <div class="inline-confirm-actions">
+                  <button type="button"
+                          class="btn btn-primary"
+                          (click)="confirmApprove()"
+                          [disabled]="approving()">
+                    @if (approving()) {
+                      <span class="btn-spinner" aria-hidden="true"></span>
+                      Processing…
+                    } @else {
+                      {{ approveLabel() }}
+                    }
+                  </button>
+                  <button type="button"
+                          class="btn btn-ghost"
+                          (click)="cancelApprove()"
+                          [disabled]="approving()">
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            }
+          </section>
+        }
       </aside>
     </div>
   </section>

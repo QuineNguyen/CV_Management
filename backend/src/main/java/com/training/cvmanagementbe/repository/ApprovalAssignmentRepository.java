@@ -5,6 +5,7 @@ import com.training.cvmanagementbe.enums.AssignmentStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -78,4 +79,19 @@ public interface ApprovalAssignmentRepository extends JpaRepository<ApprovalAssi
                     @Param("expectedStatus") AssignmentStatus expectedStatus,
                     @Param("nextStatus") AssignmentStatus nextStatus,
                     @Param("closedAt") LocalDateTime closedAt);
+
+    // Assignment half of the CAS: matches only while still assigned to this reviewer
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query("""
+            UPDATE ApprovalAssignment a
+            SET a.status = :nextStatus, a.closedAt = :closedAt
+            WHERE a.id = :assignmentId
+              AND a.assigneeId = :assigneeId
+              AND a.status = :expectedStatus
+    """)
+    int closeForAssignee(@Param("assignmentId") UUID assignmentId,
+                         @Param("assigneeId") UUID assigneeId,
+                         @Param("expectedStatus") AssignmentStatus expectedStatus,
+                         @Param("nextStatus") AssignmentStatus nextStatus,
+                         @Param("closedAt") LocalDateTime closedAt);
 }

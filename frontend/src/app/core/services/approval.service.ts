@@ -1,7 +1,7 @@
 import { HttpClient, HttpParams } from "@angular/common/http";
 import { inject, Injectable } from "@angular/core";
 import { environment } from "../../../environments/environment";
-import { ApprovalQueueItem, ApprovalQueueQuery, DraftReviewResponse, DraftSubmitResponse } from "../dtos/approval.dto";
+import { ApprovalQueueItem, ApprovalQueueQuery, DraftApproveResponse, DraftReviewResponse, DraftSubmitResponse } from "../dtos/approval.dto";
 import { Observable } from "rxjs";
 import { PagedResponse } from "../dtos/page.dto";
 import { ApiEndpoint } from "../enums/api-endpoint.enum";
@@ -48,6 +48,12 @@ export class ApprovalService {
     openForReview(draftId: string): Observable<DraftReviewResponse> {
         return this.http.get<DraftReviewResponse>(
             this.url(`${ApiEndpoint.Approvals}/drafts/${draftId}/review`)
+        );
+    }
+
+    approve(draftId: string): Observable<DraftApproveResponse> {
+        return this.http.post<DraftApproveResponse>(
+            this.url(`${ApiEndpoint.Approvals}/drafts/${draftId}/approve`), null
         );
     }
 }

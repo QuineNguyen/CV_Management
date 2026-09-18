@@ -2,10 +2,7 @@ package com.training.cvmanagementbe.controller;
 
 import com.training.cvmanagementbe.constant.ApiPath;
 import com.training.cvmanagementbe.constant.PageDefaults;
-import com.training.cvmanagementbe.dto.response.ApprovalQueueItem;
-import com.training.cvmanagementbe.dto.response.DraftReviewResponse;
-import com.training.cvmanagementbe.dto.response.DraftSubmitResponse;
-import com.training.cvmanagementbe.dto.response.PagedResponse;
+import com.training.cvmanagementbe.dto.response.*;
 import com.training.cvmanagementbe.enums.ApprovalSortField;
 import com.training.cvmanagementbe.service.ApprovalService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -56,4 +53,9 @@ public class ApprovalController {
         return ResponseEntity.ok(approvalService.openForReview(draftId));
     }
 
+    @PostMapping(ApiPath.DRAFT_APPROVE)
+    @Operation(summary = "Approve the draft at its current level; level 2 also published a new version")
+    public ResponseEntity<DraftApproveResponse> approve(@PathVariable UUID draftId) {
+        return ResponseEntity.ok(approvalService.approve(draftId));
+    }
 }

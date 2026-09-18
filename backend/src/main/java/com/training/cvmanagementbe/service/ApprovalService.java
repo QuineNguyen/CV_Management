@@ -1,9 +1,6 @@
 package com.training.cvmanagementbe.service;
 
-import com.training.cvmanagementbe.dto.response.ApprovalQueueItem;
-import com.training.cvmanagementbe.dto.response.DraftReviewResponse;
-import com.training.cvmanagementbe.dto.response.DraftSubmitResponse;
-import com.training.cvmanagementbe.dto.response.PagedResponse;
+import com.training.cvmanagementbe.dto.response.*;
 import org.springframework.data.domain.Pageable;
 
 import java.util.UUID;
@@ -30,4 +27,7 @@ public interface ApprovalService {
 
     // Opens a draft for review. Answers 403 to anyone but the current assignee.
     DraftReviewResponse openForReview(UUID draftId);
+
+    // Approves at the current level; level 2 also publishes. CAS on (status, assignee)
+    DraftApproveResponse approve(UUID draftId);
 }

@@ -5,9 +5,7 @@ import com.training.cvmanagementbe.dto.response.*;
 import com.training.cvmanagementbe.entity.models.*;
 import com.training.cvmanagementbe.enums.*;
 import com.training.cvmanagementbe.exception.ApiException;
-import com.training.cvmanagementbe.record.CvContent;
-import com.training.cvmanagementbe.record.DraftSubmittedEvent;
-import com.training.cvmanagementbe.record.ResolverResult;
+import com.training.cvmanagementbe.record.*;
 import com.training.cvmanagementbe.repository.*;
 import com.training.cvmanagementbe.service.ApprovalService;
 import lombok.RequiredArgsConstructor;
@@ -64,6 +62,7 @@ public class ApprovalServiceImpl implements ApprovalService {
     private final ApprovalAssignmentRepository assignmentRepository;
     private final ApprovalDecisionRepository decisionRepository;
     private final ApproverResolver approverResolver;
+    private final VersionPublisher versionPublisher;
     private final CvContentCodec codec;
     private final AvatarUrlResolver avatarUrlResolver;
     private final AuditLogger auditLogger;
@@ -164,16 +163,7 @@ public class ApprovalServiceImpl implements ApprovalService {
     public DraftReviewResponse openForReview(UUID draftId) {
         UUID viewerId = CurrentActor.requireUserId();
 
-        ApprovalAssignment assignment = assignmentRepository
-                .findByDraftIdAndStatus(draftId, AssignmentStatus.ASSIGNED)
-                .orElseThrow(() -> new ApiException.NotFoundException("approval assignment", draftId));
-
-        // Exclusive assignment is what stops two reviewers deciding the same CV at once, so it is
-        // enforced on the read path too - a reviewer must not be able to prepare a decision on
-        // something that is not theirs.
-        if (!viewerId.equals(assignment.getAssigneeId())) {
-            throw new ApiException.ForbiddenException(ErrorCode.OUT_OF_SCOPE);
-        }
+        ApprovalAssignment assignment = requireOwnAssignment(draftId, viewerId);
 
         CvDraft draft = cvDraftRepository.findById(draftId)
                 .orElseThrow(() -> new ApiException.NotFoundException("cv draft", draftId));
@@ -198,7 +188,120 @@ public class ApprovalServiceImpl implements ApprovalService {
         );
     }
 
+    // ---------- Approve ----------
+
+    /*
+     * The transition is a CAS on (expected status, current assignee), split across two
+     * guarded updates in one transaction - the draft status and the open assignment. Either
+     * matching zero rows rolls everything back.
+     */
+    @Override
+    @Transactional
+    public DraftApproveResponse approve(UUID draftId) {
+        UUID approverId = CurrentActor.requireUserId();
+
+        ApprovalAssignment assignment = requireOwnAssignment(draftId, approverId);
+
+        CvDraft draft = cvDraftRepository.findById(draftId)
+                .orElseThrow(() -> new ApiException.NotFoundException("cv draft", draftId));
+
+        ApprovalLevel level = levelOf(draft.getStatus());
+
+        // The open assignment and the draft status must describe the same step.
+        if (level != assignment.approvalLevel()) {
+            throw new ApiException.ConflictException(ErrorCode.STALE_STATE);
+        }
+
+        return level == ApprovalLevel.LEVEL_1
+                ? approveTechnicalReview(draft, assignment, approverId)
+                : approveFormatReviewAndPublish(draft, assignment, approverId);
+    }
+
+    // Level 1: PENDING_TECH_LEAD -> PENDING_HR, then hand over to exactly one HR.
+    private DraftApproveResponse approveTechnicalReview(CvDraft draft, ApprovalAssignment assignment,
+                                                        UUID approverId) {
+        // Resolved before any write, like submit: no reviewer found leaves the draft untouched.
+        ResolverResult level2 = approverResolver.resolveLevel2(draft.getOwnerId());
+        LocalDateTime now = LocalDateTime.now();
+
+        transitionDraft(draft.getId(), DraftStatus.PENDING_TECH_LEAD, DraftStatus.PENDING_HR, approverId, now);
+        recordApproval(assignment, approverId, now);
+
+        createAssignment(draft.getId(), ApprovalLevel.LEVEL_2, level2.assigneeId(),
+                assignment.getReviewRound(), level2.reason(), now);
+
+        auditLogger.record(Action.APPROVE_CV_DRAFT, TargetType.CV_DRAFT, draft.getId(),
+                DraftStatus.PENDING_TECH_LEAD, DraftStatus.PENDING_HR);
+
+        eventPublisher.publishEvent(
+                DraftApprovedEvent.forwarded(draft.getId(), draft.getOwnerId(), level2.assigneeId())
+        );
+
+        return new DraftApproveResponse(draft.getId(), DraftStatus.PENDING_HR, null);
+    }
+
+    /*
+     * Level 2: PENDING_HR -> PUBLISHED and publish in the same transaction.
+     * The CAS row lock serializes two HR clicks, so at most one version is created.
+     */
+    private DraftApproveResponse approveFormatReviewAndPublish(CvDraft draft, ApprovalAssignment assignment,
+                                                               UUID approverId) {
+        LocalDateTime now = LocalDateTime.now();
+        int reviewRound = assignment.getReviewRound();
+
+        // Read everything from the draft first: the CAS clears the persistence context.
+        CvContent content = codec.read(draft.getContentJson());
+        UUID level1ApproverId = level1ApproverOf(draft.getId(), reviewRound);
+
+        transitionDraft(draft.getId(), DraftStatus.PENDING_HR, DraftStatus.PUBLISHED, approverId, now);
+        recordApproval(assignment, approverId, now);
+
+        // Creates the version and change log, completes pending update requests, links the draft.
+        CvVersion version = versionPublisher.publish(PublishCommand.approval(
+                draft.getCvId(),
+                content,
+                draft.getAvatarImageId(),
+                draft.getOwnerId(),
+                level1ApproverId,
+                approverId,
+                draft.getId()
+        ));
+
+        // TODO [Phase-7]: trigger multilingual structure sync when the published CV is not the
+        // only language of its profile.
+
+        auditLogger.record(Action.APPROVE_CV_DRAFT, TargetType.CV_DRAFT, draft.getId(),
+                DraftStatus.PENDING_HR, DraftStatus.PUBLISHED);
+
+        eventPublisher.publishEvent(
+                DraftApprovedEvent.published(draft.getId(), draft.getOwnerId(), version.getVersionNumber())
+        );
+
+        return new DraftApproveResponse(draft.getId(), DraftStatus.PUBLISHED, version.getId());
+    }
+
     // ---------- Validation ----------
+
+    // 404 when nothing is open, 403 when the open item belongs to someone else.
+    private ApprovalAssignment requireOwnAssignment(UUID draftId, UUID actorId) {
+        ApprovalAssignment assignment = assignmentRepository
+                .findByDraftIdAndStatus(draftId, AssignmentStatus.ASSIGNED)
+                .orElseThrow(() -> new ApiException.NotFoundException("approval assignment", draftId));
+
+        if (!actorId.equals(assignment.getAssigneeId())) {
+            throw new ApiException.ForbiddenException(ErrorCode.NOT_CURRENT_ASSIGNEE);
+        }
+        return assignment;
+    }
+
+    // Only the two pending statuses can be approved; anything else was decided or cancelled.
+    private ApprovalLevel levelOf(DraftStatus status) {
+        return switch (status) {
+            case PENDING_TECH_LEAD -> ApprovalLevel.LEVEL_1;
+            case PENDING_HR -> ApprovalLevel.LEVEL_2;
+            default -> throw new ApiException.ConflictException(ErrorCode.STALE_STATE);
+        };
+    }
 
     /*
      * Personal info, skills and experience must carry content.
@@ -295,6 +398,51 @@ public class ApprovalServiceImpl implements ApprovalService {
 
         auditLogger.record(Action.ASSIGN_APPROVER, TargetType.APPROVAL_ASSIGNMENT, saved.getId(),
                 null, assigneeId);
+    }
+
+    // Draft half of the CAS. Zero rows = someone moved the draft first.
+    private void transitionDraft(UUID draftId, DraftStatus expected, DraftStatus next,
+                                 UUID actorId, LocalDateTime now) {
+        int updated = cvDraftRepository.transitionStatus(draftId, expected, next, actorId, now);
+        if (updated == 0) {
+            throw new ApiException.ConflictException(ErrorCode.STALE_STATE);
+        }
+    }
+
+    /*
+     * Assignment half of the CAS, then the decision row.
+     * The close only matches while the assignment is still ASSIGNED to this approver,
+     * so an Admin reassign landing mid-click turns into a 409 here.
+     */
+    private void recordApproval(ApprovalAssignment assignment, UUID approverId, LocalDateTime now) {
+        int closed = assignmentRepository.closeForAssignee(
+                assignment.getId(), approverId,
+                AssignmentStatus.ASSIGNED, AssignmentStatus.COMPLETED, now
+        );
+        if (closed == 0) {
+            throw new ApiException.ConflictException(ErrorCode.STALE_STATE);
+        }
+
+        // Never overwritten: every decision is a new row.
+        decisionRepository.save(ApprovalDecision.builder()
+                .draftId(assignment.getDraftId())
+                .level(assignment.approvalLevel().value())
+                .reviewRound(assignment.getReviewRound())
+                .approverId(approverId)
+                .result(DecisionResult.APPROVED)
+                .reason(null)
+                .decidedAt(now)
+                .build());
+    }
+
+    // Null when level 1 was skipped in this round: nobody vouched technically at that level.
+    private UUID level1ApproverOf(UUID draftId, int reviewRound) {
+        return decisionRepository
+                .findByDraftIdAndLevelAndReviewRoundAndResult(
+                        draftId, ApprovalLevel.LEVEL_1.value(), reviewRound, DecisionResult.APPROVED
+                )
+                .map(ApprovalDecision::getApproverId)
+                .orElse(null);
     }
 
     private void publish(UUID draftId, ApprovalLevel level, UUID assigneeId, boolean skipped) {

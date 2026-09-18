@@ -27,4 +27,11 @@ public record PublishCommand(
         return new PublishCommand(cvId, content, avatarImageId, VersionSource.DIRECT_EDIT,
                 ownerId, null, null, null, null);
     }
+
+    public static PublishCommand approval(UUID cvId, CvContent content, UUID avatarImageId,
+                                          UUID authoredBy, UUID level1ApproverId,
+                                          UUID level2ApproverId, UUID draftId) {
+        return new PublishCommand(cvId, content, avatarImageId, VersionSource.APPROVAL,
+                authoredBy, level1ApproverId, level2ApproverId, null, draftId);
+    }
 }
