@@ -44,4 +44,16 @@ public interface CvDraftRepository extends JpaRepository<CvDraft, UUID> {
                       @Param("reviewRound") int reviewRound,
                       @Param("submittedAt") LocalDateTime submittedAt,
                       @Param("expectedStatuses") Collection<DraftStatus> expectedStatuses);
+
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query("""
+            UPDATE CvDraft d
+            SET d.status = :nextStatus, d.updatedBy = :actorId, d.updatedAt = :now
+            WHERE d.id = :draftId AND d.status = :expectedStatus
+    """)
+    int transitionStatus(@Param("draftId") UUID draftId,
+                         @Param("expectedStatus") DraftStatus expectedStatus,
+                         @Param("nextStatus") DraftStatus nextStatus,
+                         @Param("actorId") UUID actorId,
+                         @Param("now") LocalDateTime now);
 }

@@ -66,3 +66,9 @@ export interface DraftReviewResponse {
     currentAssignment: ApprovalAssignmentResponse;
     previousDecisions: ApprovalDecisionResponse[];
 }
+
+export interface DraftApproveResponse {
+    draftId: string;
+    newStatus: DraftStatus;
+    versionId: string | null;
+}

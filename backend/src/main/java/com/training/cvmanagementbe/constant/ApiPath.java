@@ -53,6 +53,7 @@ public final class ApiPath {
     public static final String APPROVAL_QUEUE = "/queue";
     public static final String DRAFT_SUBMIT = "/drafts/{draftId}/submit";
     public static final String DRAFT_REVIEW = "/drafts/{draftId}/review";
+    public static final String DRAFT_APPROVE = "/drafts/{draftId}/approve";
 
     private ApiPath() {}
 }

@@ -66,11 +66,89 @@
   font-weight: 700;
 }
 
-/* The placeholder card is deliberately quiet: it explains what is coming without competing with
-   the two cards that carry real information today. */
-.side-card-pending {
-  border-style: dashed;
-  background: var(--vt-canvas);
+/* ---------- Decision card ---------- */
+.decision-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--vt-gap);
+}
+ 
+/* Title margin is replaced by the flex gap here */
+.decision-card .side-card-title {
+  margin-block-end: 0;
+}
+ 
+/* Red edge while confirming: the next click is irreversible */
+.decision-card.is-confirming {
+  border-color: var(--vt-red);
+  box-shadow: 0 0 0 0.1875rem var(--vt-red-tint);
+}
+ 
+.decision-hint {
+  margin: 0;
+  font-size: var(--vt-fs-md);
+  line-height: 1.55;
+}
+ 
+.decision-btn {
+  width: 100%;
+  min-height: max(var(--vt-tap), var(--vt-touch-target));
+}
+ 
+.decision-note {
+  font-size: var(--vt-fs-sm);
+  line-height: 1.5;
+}
+ 
+.inline-confirm {
+  display: flex;
+  flex-direction: column;
+  gap: var(--vt-gap);
+  padding: calc(var(--vt-gap) * 0.9);
+  background: var(--vt-red-surface);
+  border-radius: var(--vt-radius-sm);
+}
+ 
+.inline-confirm-text {
+  margin: 0;
+  font-size: var(--vt-fs-md);
+  line-height: 1.55;
+}
+ 
+.inline-confirm-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: calc(var(--vt-gap) * 0.75);
+}
+ 
+.inline-confirm-actions .btn {
+  flex: 1 1 min(9rem, 100%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: calc(var(--vt-gap) * 0.5);
+  min-height: max(var(--vt-tap), var(--vt-touch-target));
+}
+ 
+.btn-spinner {
+  width: 0.9em;
+  height: 0.9em;
+  border: 0.125rem solid currentColor;
+  border-inline-end-color: transparent;
+  border-radius: 50%;
+  animation: btn-spin 0.7s linear infinite;
+}
+ 
+@keyframes btn-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+ 
+@media (prefers-reduced-motion: reduce) {
+  .btn-spinner {
+    animation-duration: 2s;
+  }
 }
 
 .side-facts {
@@ -212,10 +290,28 @@
     grid-template-columns: minmax(0, 1fr);
   }
 
-  /* Context first: the deadline and the last rejection decide how the CV below is read. */
+  /* Flatten the side column so its cards can be placed around the content. */
   .review-side {
-    position: static;
+    display: contents;
+  }
+ 
+  /* Context first: the deadline and the last rejection decide how the CV below is read. */
+  .review-side > .side-card {
     order: -1;
+  }
+ 
+  /* Decision after the content, pinned to the bottom so it stays reachable while reading. */
+  .review-side > .decision-card {
+    order: 1;
+    position: sticky;
+    bottom: 0;
+    z-index: 5;
+    padding-block-end: calc(var(--vt-pad) + env(safe-area-inset-bottom));
+    box-shadow: 0 -0.5rem 1.5rem rgba(0, 0, 0, 0.08);
+  }
+ 
+  .review-side > .decision-card.is-confirming {
+    box-shadow: 0 -0.5rem 1.5rem rgba(0, 0, 0, 0.08), 0 0 0 0.1875rem var(--vt-red-tint);
   }
 }
 
@@ -229,5 +325,25 @@
   .side-facts dd {
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  /* Keep the pinned card short on small screens: title and note add height, not meaning. */
+  .decision-card .side-card-title,
+  .decision-note {
+    display: none;
+  }
+ 
+  .decision-hint {
+    font-size: var(--vt-fs-sm);
+  }
+ 
+  .inline-confirm-actions {
+    flex-direction: column;
+  }
+ 
+  /* In a column, flex-basis would become height */
+  .inline-confirm-actions .btn {
+    flex: 0 0 auto;
+    width: 100%;
   }
 }
