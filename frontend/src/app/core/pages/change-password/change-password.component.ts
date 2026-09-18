@@ -41,7 +41,6 @@ export class ChangePasswordComponent {
 
     readonly rules = PasswordRule;
     readonly submitting = signal(false);
-    readonly hideCurrent = signal(true);
     readonly hideNew = signal(true);
     readonly checklist = signal(evaluatePassword(''));
 
@@ -50,11 +49,10 @@ export class ChangePasswordComponent {
 
     readonly form = this.formBuilder.nonNullable.group(
         {
-            currentPassword: ['', Validators.required],
             newPassword: ['', [Validators.required, passwordPolicyValidator]],
             confirmPassword: ['', Validators.required],
         },
-        { validators: changePasswordGroupValidator('currentPassword', 'newPassword', 'confirmPassword')},
+        { validators: changePasswordGroupValidator('newPassword', 'confirmPassword')},
     );
 
     constructor() {

@@ -11,7 +11,6 @@ export interface GoogleLoginRequest {
 }
 
 export interface ChangePasswordRequest {
-  currentPassword: string;
   newPassword: string;
   confirmPassword: string;
 }

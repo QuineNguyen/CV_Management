@@ -164,9 +164,6 @@ public class AuthService {
     public void changePassword(ChangePasswordRequest request, UUID currentUserId) {
         User user = requireUser(currentUserId);
 
-        if (!passwordEncoder.matches(request.currentPassword(), user.getPasswordHash())) {
-            throw new ApiException.BusinessRuleException(ErrorCode.INVALID_CURRENT_PASSWORD);
-        }
         if (!request.newPassword().equals(request.confirmPassword())) {
             throw new ApiException.BusinessRuleException(ErrorCode.PASSWORD_CONFIRMATION_MISMATCH);
         }

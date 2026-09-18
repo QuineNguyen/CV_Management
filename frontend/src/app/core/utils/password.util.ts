@@ -38,24 +38,18 @@ export const passwordPolicyValidator: ValidatorFn = (control: AbstractControl): 
     return Object.values(passed).every(Boolean) ? null : { passwordPolicy: true};
 }
 
-// Cross-field: new password must differ from the current one and match its confirmation
+// Cross-field: new password must match its confirmation
 export function changePasswordGroupValidator(
-    currentKey: string,
     newKey: string,
     confirmKey: string,
 ): ValidatorFn {
     return (group: AbstractControl): ValidationErrors | null => {
-        const current = group.get(currentKey)?.value;
         const next = group.get(newKey)?.value;
         const confirm = group.get(confirmKey)?.value;
 
-        const errors: ValidationErrors = {};
         if (next && confirm && next !== confirm) {
-            errors['confirmationMismatch'] = true;
+            return { confirmationMismatch: true };
         }
-        if (current && next && current === next) {
-            errors['sameAsOld'] = true;
-        }
-        return Object.keys(errors).length ? errors : null;
+        return null;
     }
 }
