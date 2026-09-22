@@ -1,8 +1,8 @@
 package com.training.cvmanagementbe.exception;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.training.cvmanagementbe.dto.response.ApiResponse;
-import com.training.cvmanagementbe.dto.response.ErrorDetail;
+import com.training.cvmanagementbe.dto.response.configs.ApiResponse;
+import com.training.cvmanagementbe.dto.response.configs.ErrorDetail;
 import com.training.cvmanagementbe.enums.*;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolationException;

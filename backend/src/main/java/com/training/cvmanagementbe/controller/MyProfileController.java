@@ -1,9 +1,8 @@
 package com.training.cvmanagementbe.controller;
 
 import com.training.cvmanagementbe.constant.ApiPath;
-import com.training.cvmanagementbe.dto.request.ProfileUpdateSubmitRequest;
-import com.training.cvmanagementbe.dto.response.MyProfileResponse;
-import com.training.cvmanagementbe.dto.response.ProfileUpdateRequestResponse;
+import com.training.cvmanagementbe.dto.request.profile_updates.ProfileUpdateSubmitRequest;
+import com.training.cvmanagementbe.dto.response.profile_updates.MyProfileResponse;
 import com.training.cvmanagementbe.entity.models.CurrentActor;
 import com.training.cvmanagementbe.service.MyProfileService;
 import com.training.cvmanagementbe.service.ProfileUpdateRequestService;

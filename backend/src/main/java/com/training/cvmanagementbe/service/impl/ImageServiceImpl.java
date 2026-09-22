@@ -1,7 +1,7 @@
 package com.training.cvmanagementbe.service.impl;
 
 import com.training.cvmanagementbe.common.AuditLogger;
-import com.training.cvmanagementbe.dto.response.ImageUploadResponse;
+import com.training.cvmanagementbe.dto.response.profile_updates.ImageUploadResponse;
 import com.training.cvmanagementbe.entity.models.CurrentActor;
 import com.training.cvmanagementbe.entity.models.ImageFile;
 import com.training.cvmanagementbe.enums.*;

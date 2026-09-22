@@ -59,6 +59,12 @@ public enum ErrorCode {
     INVALID_COMMENT_ANCHOR("A comment points at a section, entry or field that does not exist in this draft"),
     CANNOT_REPLY_RESOLVED("This comment belongs to a finished review round and can no longer be replied to"),
     CANNOT_REPLY_COMMENT("Only the CV owner or the current reviewer can reply to this comment"),
+    DRAFT_CANCEL_FORBIDDEN("Only the CV owner or an administrator can cancel this draft"),
+    DRAFT_NOT_CANCELLABLE("This draft can no longer be cancelled from its current status"),
+    DRAFT_CANCEL_REASON_REQUIRED("A reason is required when an administrator cancels a draft under review"),
+    REASSIGN_SAME_PERSON("The new reviewer is the one already assigned"),
+    REASSIGN_INVALID_CANDIDATE("The selected person is not eligible to review this draft at this level"),
+    REASSIGN_NO_OPEN_ASSIGNMENT("This draft has no open assignment to transfer"),
 
     // ---------- Update requests ----------
     PENDING_REQUEST_EXISTS("A pending update request already exists for this employee, profile and language"),

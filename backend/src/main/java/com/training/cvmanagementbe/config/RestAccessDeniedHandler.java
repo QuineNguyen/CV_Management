@@ -1,8 +1,8 @@
 package com.training.cvmanagementbe.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.training.cvmanagementbe.dto.response.ApiResponse;
-import com.training.cvmanagementbe.dto.response.ErrorDetail;
+import com.training.cvmanagementbe.dto.response.configs.ApiResponse;
+import com.training.cvmanagementbe.dto.response.configs.ErrorDetail;
 import com.training.cvmanagementbe.enums.ErrorCode;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;

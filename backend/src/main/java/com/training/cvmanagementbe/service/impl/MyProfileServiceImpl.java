@@ -1,9 +1,9 @@
 package com.training.cvmanagementbe.service.impl;
 
 import com.training.cvmanagementbe.common.AuditLogger;
-import com.training.cvmanagementbe.dto.request.ProfileUpdateSubmitRequest;
-import com.training.cvmanagementbe.dto.response.MyProfileResponse;
-import com.training.cvmanagementbe.dto.response.UserResponse;
+import com.training.cvmanagementbe.dto.request.profile_updates.ProfileUpdateSubmitRequest;
+import com.training.cvmanagementbe.dto.response.profile_updates.MyProfileResponse;
+import com.training.cvmanagementbe.dto.response.users.UserResponse;
 import com.training.cvmanagementbe.entity.models.Department;
 import com.training.cvmanagementbe.entity.models.User;
 import com.training.cvmanagementbe.enums.Action;

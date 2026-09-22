@@ -1,10 +1,10 @@
 package com.training.cvmanagementbe.service.impl;
 
 import com.training.cvmanagementbe.common.AuditLogger;
-import com.training.cvmanagementbe.dto.request.TeamRequest;
-import com.training.cvmanagementbe.dto.response.PagedResponse;
-import com.training.cvmanagementbe.dto.response.TeamMemberResponse;
-import com.training.cvmanagementbe.dto.response.TeamResponse;
+import com.training.cvmanagementbe.dto.request.teams.TeamRequest;
+import com.training.cvmanagementbe.dto.response.configs.PagedResponse;
+import com.training.cvmanagementbe.dto.response.teams.TeamMemberResponse;
+import com.training.cvmanagementbe.dto.response.teams.TeamResponse;
 import com.training.cvmanagementbe.entity.models.Team;
 import com.training.cvmanagementbe.entity.models.TeamMember;
 import com.training.cvmanagementbe.entity.models.User;

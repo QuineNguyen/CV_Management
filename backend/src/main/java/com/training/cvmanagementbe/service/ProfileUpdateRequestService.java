@@ -1,9 +1,9 @@
 package com.training.cvmanagementbe.service;
 
-import com.training.cvmanagementbe.dto.request.ProfileUpdateSubmitRequest;
-import com.training.cvmanagementbe.dto.request.RejectProfileUpdateRequest;
-import com.training.cvmanagementbe.dto.response.PagedResponse;
-import com.training.cvmanagementbe.dto.response.ProfileUpdateRequestResponse;
+import com.training.cvmanagementbe.dto.request.profile_updates.ProfileUpdateSubmitRequest;
+import com.training.cvmanagementbe.dto.request.profile_updates.RejectProfileUpdateRequest;
+import com.training.cvmanagementbe.dto.response.configs.PagedResponse;
+import com.training.cvmanagementbe.dto.response.profile_updates.ProfileUpdateRequestResponse;
 import com.training.cvmanagementbe.enums.ProfileUpdateStatus;
 import org.springframework.data.domain.Pageable;
 

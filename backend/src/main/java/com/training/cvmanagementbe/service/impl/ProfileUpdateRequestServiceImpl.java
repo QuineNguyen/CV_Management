@@ -1,11 +1,11 @@
 package com.training.cvmanagementbe.service.impl;
 
 import com.training.cvmanagementbe.common.AuditLogger;
-import com.training.cvmanagementbe.dto.request.ProfileUpdateSubmitRequest;
-import com.training.cvmanagementbe.dto.request.RejectProfileUpdateRequest;
-import com.training.cvmanagementbe.dto.response.PagedResponse;
-import com.training.cvmanagementbe.dto.response.ProfileUpdateRequestResponse;
-import com.training.cvmanagementbe.dto.response.UserResponse;
+import com.training.cvmanagementbe.dto.request.profile_updates.ProfileUpdateSubmitRequest;
+import com.training.cvmanagementbe.dto.request.profile_updates.RejectProfileUpdateRequest;
+import com.training.cvmanagementbe.dto.response.configs.PagedResponse;
+import com.training.cvmanagementbe.dto.response.profile_updates.ProfileUpdateRequestResponse;
+import com.training.cvmanagementbe.dto.response.users.UserResponse;
 import com.training.cvmanagementbe.entity.models.CurrentActor;
 import com.training.cvmanagementbe.entity.models.ProfileUpdateRequest;
 import com.training.cvmanagementbe.entity.models.User;

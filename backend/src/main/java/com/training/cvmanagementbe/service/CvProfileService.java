@@ -1,10 +1,10 @@
 package com.training.cvmanagementbe.service;
 
-import com.training.cvmanagementbe.dto.request.CvProfileRequest;
-import com.training.cvmanagementbe.dto.request.CvProfileRestoreRequest;
-import com.training.cvmanagementbe.dto.response.CvProfileResponse;
-import com.training.cvmanagementbe.dto.response.EmployeeTeamResponse;
-import com.training.cvmanagementbe.dto.response.PagedResponse;
+import com.training.cvmanagementbe.dto.request.cv_profiles.CvProfileRequest;
+import com.training.cvmanagementbe.dto.request.cv_profiles.CvProfileRestoreRequest;
+import com.training.cvmanagementbe.dto.response.cv_profiles.CvProfileResponse;
+import com.training.cvmanagementbe.dto.response.teams.EmployeeTeamResponse;
+import com.training.cvmanagementbe.dto.response.configs.PagedResponse;
 import org.springframework.data.domain.Pageable;
 
 import java.util.List;
