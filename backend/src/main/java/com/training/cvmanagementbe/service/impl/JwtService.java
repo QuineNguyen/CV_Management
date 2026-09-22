@@ -1,7 +1,7 @@
 package com.training.cvmanagementbe.service.impl;
 
 import com.training.cvmanagementbe.entity.models.User;
-import com.training.cvmanagementbe.enums.JwtClaim;
+import com.training.cvmanagementbe.enums.auth.JwtClaim;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;

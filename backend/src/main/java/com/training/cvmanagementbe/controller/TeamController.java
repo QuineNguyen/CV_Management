@@ -8,7 +8,7 @@ import com.training.cvmanagementbe.dto.response.configs.ApiResponse;
 import com.training.cvmanagementbe.dto.response.configs.PagedResponse;
 import com.training.cvmanagementbe.dto.response.teams.TeamMemberResponse;
 import com.training.cvmanagementbe.dto.response.teams.TeamResponse;
-import com.training.cvmanagementbe.enums.TeamSortField;
+import com.training.cvmanagementbe.enums.teams.TeamSortField;
 import com.training.cvmanagementbe.service.TeamService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;

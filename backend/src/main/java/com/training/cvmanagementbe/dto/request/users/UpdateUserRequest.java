@@ -1,7 +1,7 @@
 package com.training.cvmanagementbe.dto.request.users;
 
 import com.training.cvmanagementbe.dto.request.teams.TeamAssignment;
-import com.training.cvmanagementbe.enums.Role;
+import com.training.cvmanagementbe.enums.users.Role;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;

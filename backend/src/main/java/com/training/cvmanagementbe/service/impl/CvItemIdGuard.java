@@ -1,6 +1,6 @@
 package com.training.cvmanagementbe.service.impl;
 
-import com.training.cvmanagementbe.enums.ErrorCode;
+import com.training.cvmanagementbe.enums.configs.ErrorCode;
 import com.training.cvmanagementbe.exception.ApiException;
 import com.training.cvmanagementbe.record.CvContent;
 import com.training.cvmanagementbe.repository.CvRepository;

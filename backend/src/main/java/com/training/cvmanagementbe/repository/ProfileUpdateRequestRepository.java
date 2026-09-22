@@ -1,8 +1,8 @@
 package com.training.cvmanagementbe.repository;
 
 import com.training.cvmanagementbe.entity.models.ProfileUpdateRequest;
-import com.training.cvmanagementbe.enums.ProfileUpdateStatus;
-import com.training.cvmanagementbe.enums.Role;
+import com.training.cvmanagementbe.enums.profile_updates.ProfileUpdateStatus;
+import com.training.cvmanagementbe.enums.users.Role;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;

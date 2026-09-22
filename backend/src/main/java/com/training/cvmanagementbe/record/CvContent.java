@@ -2,7 +2,7 @@ package com.training.cvmanagementbe.record;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.training.cvmanagementbe.enums.CvSectionKey;
+import com.training.cvmanagementbe.enums.cvs.CvSectionKey;
 
 import java.util.Arrays;
 import java.util.LinkedHashMap;

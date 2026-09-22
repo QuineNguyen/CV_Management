@@ -1,8 +1,8 @@
 package com.training.cvmanagementbe.entity.models;
 
 import com.training.cvmanagementbe.entity.converter.CvSectionKeyConverter;
-import com.training.cvmanagementbe.enums.ChangeType;
-import com.training.cvmanagementbe.enums.CvSectionKey;
+import com.training.cvmanagementbe.enums.cvs.ChangeType;
+import com.training.cvmanagementbe.enums.cvs.CvSectionKey;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;

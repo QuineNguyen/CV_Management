@@ -1,7 +1,7 @@
 package com.training.cvmanagementbe.record;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.training.cvmanagementbe.enums.ProficiencyLevel;
+import com.training.cvmanagementbe.enums.cvs.ProficiencyLevel;
 
 import java.util.UUID;
 

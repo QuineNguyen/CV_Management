@@ -1,9 +1,9 @@
 package com.training.cvmanagementbe.controller;
 
 import com.training.cvmanagementbe.entity.models.CurrentActor;
-import com.training.cvmanagementbe.enums.AccountStatus;
-import com.training.cvmanagementbe.enums.Language;
-import com.training.cvmanagementbe.enums.Role;
+import com.training.cvmanagementbe.enums.users.AccountStatus;
+import com.training.cvmanagementbe.enums.cvs.Language;
+import com.training.cvmanagementbe.enums.users.Role;
 import com.training.cvmanagementbe.exception.ApiException;
 import com.training.cvmanagementbe.service.impl.ImageStorageService;
 import io.swagger.v3.oas.annotations.Operation;

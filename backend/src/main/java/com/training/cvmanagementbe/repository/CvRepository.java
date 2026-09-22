@@ -1,8 +1,8 @@
 package com.training.cvmanagementbe.repository;
 
 import com.training.cvmanagementbe.entity.models.Cv;
-import com.training.cvmanagementbe.enums.Language;
-import com.training.cvmanagementbe.enums.LifecycleStatus;
+import com.training.cvmanagementbe.enums.cvs.Language;
+import com.training.cvmanagementbe.enums.cvs.LifecycleStatus;
 import jakarta.persistence.LockModeType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;

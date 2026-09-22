@@ -1,7 +1,17 @@
 package com.training.cvmanagementbe.service.impl;
 
 import com.training.cvmanagementbe.common.AuditLogger;
-import com.training.cvmanagementbe.dto.request.approvals.DraftRejectedEvent;
+import com.training.cvmanagementbe.enums.approvals.ApprovalLevel;
+import com.training.cvmanagementbe.enums.approvals.AssignmentStatus;
+import com.training.cvmanagementbe.enums.approvals.DecisionResult;
+import com.training.cvmanagementbe.enums.approvals.InlineCommentStatus;
+import com.training.cvmanagementbe.enums.configs.Action;
+import com.training.cvmanagementbe.enums.configs.ErrorCode;
+import com.training.cvmanagementbe.enums.configs.TargetType;
+import com.training.cvmanagementbe.enums.cvs.CvSectionKey;
+import com.training.cvmanagementbe.enums.cvs.DraftStatus;
+import com.training.cvmanagementbe.enums.cvs.LifecycleStatus;
+import com.training.cvmanagementbe.record.DraftRejectedEvent;
 import com.training.cvmanagementbe.dto.request.approvals.InlineCommentRequest;
 import com.training.cvmanagementbe.dto.request.approvals.RejectDraftRequest;
 import com.training.cvmanagementbe.dto.request.approvals.ReplyCommentRequest;
@@ -9,7 +19,6 @@ import com.training.cvmanagementbe.dto.response.approvals.*;
 import com.training.cvmanagementbe.dto.response.configs.PagedResponse;
 import com.training.cvmanagementbe.dto.response.cvs.CvDraftResponse;
 import com.training.cvmanagementbe.entity.models.*;
-import com.training.cvmanagementbe.enums.*;
 import com.training.cvmanagementbe.exception.ApiException;
 import com.training.cvmanagementbe.record.*;
 import com.training.cvmanagementbe.repository.*;

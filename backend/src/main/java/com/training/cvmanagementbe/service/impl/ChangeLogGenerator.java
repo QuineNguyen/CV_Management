@@ -1,8 +1,8 @@
 package com.training.cvmanagementbe.service.impl;
 
 import com.training.cvmanagementbe.entity.models.ChangeLogEntry;
-import com.training.cvmanagementbe.enums.ChangeType;
-import com.training.cvmanagementbe.enums.CvSectionKey;
+import com.training.cvmanagementbe.enums.cvs.ChangeType;
+import com.training.cvmanagementbe.enums.cvs.CvSectionKey;
 import com.training.cvmanagementbe.record.CvContent;
 import com.training.cvmanagementbe.record.RepeatedEntry;
 import lombok.RequiredArgsConstructor;

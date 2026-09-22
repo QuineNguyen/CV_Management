@@ -1,7 +1,7 @@
 package com.training.cvmanagementbe.repository;
 
 import com.training.cvmanagementbe.entity.models.InlineComment;
-import com.training.cvmanagementbe.enums.InlineCommentStatus;
+import com.training.cvmanagementbe.enums.approvals.InlineCommentStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;

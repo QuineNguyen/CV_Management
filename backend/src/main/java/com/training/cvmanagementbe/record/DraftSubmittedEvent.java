@@ -1,6 +1,6 @@
 package com.training.cvmanagementbe.record;
 
-import com.training.cvmanagementbe.enums.ApprovalLevel;
+import com.training.cvmanagementbe.enums.approvals.ApprovalLevel;
 
 import java.util.UUID;
 

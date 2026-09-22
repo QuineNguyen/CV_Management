@@ -1,7 +1,7 @@
 package com.training.cvmanagementbe.dto.response.approvals;
 
 import com.training.cvmanagementbe.dto.response.cvs.CvDraftResponse;
-import com.training.cvmanagementbe.enums.Language;
+import com.training.cvmanagementbe.enums.cvs.Language;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.util.List;

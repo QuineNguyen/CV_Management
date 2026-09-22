@@ -1,7 +1,7 @@
 package com.training.cvmanagementbe.dto.response.auth;
 
 import com.training.cvmanagementbe.entity.models.User;
-import com.training.cvmanagementbe.enums.Role;
+import com.training.cvmanagementbe.enums.users.Role;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.util.UUID;

@@ -1,6 +1,6 @@
 package com.training.cvmanagementbe.entity.models;
 
-import com.training.cvmanagementbe.enums.ProfileUpdateStatus;
+import com.training.cvmanagementbe.enums.profile_updates.ProfileUpdateStatus;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;

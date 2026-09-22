@@ -1,7 +1,7 @@
 package com.training.cvmanagementbe.repository;
 
 import com.training.cvmanagementbe.entity.models.ApprovalDecision;
-import com.training.cvmanagementbe.enums.DecisionResult;
+import com.training.cvmanagementbe.enums.approvals.DecisionResult;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;

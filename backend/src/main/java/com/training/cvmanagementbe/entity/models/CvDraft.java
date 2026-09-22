@@ -1,6 +1,6 @@
 package com.training.cvmanagementbe.entity.models;
 
-import com.training.cvmanagementbe.enums.DraftStatus;
+import com.training.cvmanagementbe.enums.cvs.DraftStatus;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;

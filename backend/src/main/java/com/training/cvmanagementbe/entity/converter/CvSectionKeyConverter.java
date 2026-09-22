@@ -1,6 +1,6 @@
 package com.training.cvmanagementbe.entity.converter;
 
-import com.training.cvmanagementbe.enums.CvSectionKey;
+import com.training.cvmanagementbe.enums.cvs.CvSectionKey;
 import jakarta.persistence.AttributeConverter;
 import jakarta.persistence.Converter;
 

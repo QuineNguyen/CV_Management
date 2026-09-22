@@ -1,6 +1,6 @@
 package com.training.cvmanagementbe.record;
 
-import com.training.cvmanagementbe.enums.VersionSource;
+import com.training.cvmanagementbe.enums.cvs.VersionSource;
 
 import java.util.UUID;
 

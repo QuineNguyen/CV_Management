@@ -1,7 +1,7 @@
 package com.training.cvmanagementbe.entity.models;
 
-import com.training.cvmanagementbe.enums.Language;
-import com.training.cvmanagementbe.enums.LifecycleStatus;
+import com.training.cvmanagementbe.enums.cvs.Language;
+import com.training.cvmanagementbe.enums.cvs.LifecycleStatus;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;

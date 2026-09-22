@@ -1,6 +1,6 @@
 package com.training.cvmanagementbe.dto.response.configs;
 
-import com.training.cvmanagementbe.enums.ResponseCode;
+import com.training.cvmanagementbe.enums.configs.ResponseCode;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 /*

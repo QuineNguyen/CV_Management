@@ -8,7 +8,7 @@ import com.training.cvmanagementbe.dto.response.configs.ApiResponse;
 import com.training.cvmanagementbe.dto.response.departments.DepartmentResponse;
 import com.training.cvmanagementbe.dto.request.departments.MoveDepartmentRequest;
 import com.training.cvmanagementbe.dto.response.configs.PagedResponse;
-import com.training.cvmanagementbe.enums.DepartmentSortField;
+import com.training.cvmanagementbe.enums.departments.DepartmentSortField;
 import com.training.cvmanagementbe.service.DepartmentService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;

@@ -1,7 +1,7 @@
 package com.training.cvmanagementbe.repository;
 
 import com.training.cvmanagementbe.entity.models.ApprovalAssignment;
-import com.training.cvmanagementbe.enums.AssignmentStatus;
+import com.training.cvmanagementbe.enums.approvals.AssignmentStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;

@@ -1,7 +1,7 @@
 package com.training.cvmanagementbe.entity.models;
 
-import com.training.cvmanagementbe.enums.ApprovalLevel;
-import com.training.cvmanagementbe.enums.DecisionResult;
+import com.training.cvmanagementbe.enums.approvals.ApprovalLevel;
+import com.training.cvmanagementbe.enums.approvals.DecisionResult;
 import jakarta.persistence.*;
 import lombok.*;
 

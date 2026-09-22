@@ -1,7 +1,7 @@
 package com.training.cvmanagementbe.dto.response.approvals;
 
-import com.training.cvmanagementbe.enums.CvSectionKey;
-import com.training.cvmanagementbe.enums.InlineCommentStatus;
+import com.training.cvmanagementbe.enums.cvs.CvSectionKey;
+import com.training.cvmanagementbe.enums.approvals.InlineCommentStatus;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.time.LocalDateTime;

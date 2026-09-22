@@ -7,8 +7,8 @@ import com.training.cvmanagementbe.dto.request.profile_updates.RejectProfileUpda
 import com.training.cvmanagementbe.dto.response.configs.PagedResponse;
 import com.training.cvmanagementbe.dto.response.profile_updates.PendingCountResponse;
 import com.training.cvmanagementbe.dto.response.profile_updates.ProfileUpdateRequestResponse;
-import com.training.cvmanagementbe.enums.ProfileUpdateSortField;
-import com.training.cvmanagementbe.enums.ProfileUpdateStatus;
+import com.training.cvmanagementbe.enums.profile_updates.ProfileUpdateSortField;
+import com.training.cvmanagementbe.enums.profile_updates.ProfileUpdateStatus;
 import com.training.cvmanagementbe.service.ProfileUpdateRequestService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;

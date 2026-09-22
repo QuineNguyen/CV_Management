@@ -1,8 +1,8 @@
 package com.training.cvmanagementbe.dto.response.users;
 
 import com.training.cvmanagementbe.dto.response.teams.TeamResponse;
-import com.training.cvmanagementbe.enums.AccountStatus;
-import com.training.cvmanagementbe.enums.Role;
+import com.training.cvmanagementbe.enums.users.AccountStatus;
+import com.training.cvmanagementbe.enums.users.Role;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.time.LocalDate;

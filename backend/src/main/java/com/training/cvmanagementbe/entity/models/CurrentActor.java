@@ -1,6 +1,6 @@
 package com.training.cvmanagementbe.entity.models;
 
-import com.training.cvmanagementbe.enums.Role;
+import com.training.cvmanagementbe.enums.users.Role;
 
 import java.util.Optional;
 import java.util.UUID;

@@ -1,7 +1,7 @@
 package com.training.cvmanagementbe.entity.models;
 
-import com.training.cvmanagementbe.enums.AccountStatus;
-import com.training.cvmanagementbe.enums.Role;
+import com.training.cvmanagementbe.enums.users.AccountStatus;
+import com.training.cvmanagementbe.enums.users.Role;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;

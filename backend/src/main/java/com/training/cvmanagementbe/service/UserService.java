@@ -7,8 +7,8 @@ import com.training.cvmanagementbe.dto.response.users.CreatedUserResponse;
 import com.training.cvmanagementbe.dto.response.configs.PagedResponse;
 import com.training.cvmanagementbe.dto.response.users.TechLeadOption;
 import com.training.cvmanagementbe.dto.response.users.UserResponse;
-import com.training.cvmanagementbe.enums.AccountStatus;
-import com.training.cvmanagementbe.enums.Role;
+import com.training.cvmanagementbe.enums.users.AccountStatus;
+import com.training.cvmanagementbe.enums.users.Role;
 import org.springframework.data.domain.Pageable;
 
 import java.util.List;

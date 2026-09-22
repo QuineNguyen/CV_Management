@@ -1,7 +1,7 @@
 package com.training.cvmanagementbe.config.auth;
 
 import com.training.cvmanagementbe.entity.models.User;
-import com.training.cvmanagementbe.enums.Role;
+import com.training.cvmanagementbe.enums.users.Role;
 
 import java.util.UUID;
 

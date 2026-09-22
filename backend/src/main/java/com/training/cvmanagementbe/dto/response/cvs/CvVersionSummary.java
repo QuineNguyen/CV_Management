@@ -1,6 +1,6 @@
 package com.training.cvmanagementbe.dto.response.cvs;
 
-import com.training.cvmanagementbe.enums.VersionSource;
+import com.training.cvmanagementbe.enums.cvs.VersionSource;
 
 import java.time.LocalDateTime;
 import java.util.UUID;

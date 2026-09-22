@@ -1,7 +1,7 @@
 package com.training.cvmanagementbe.record;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.training.cvmanagementbe.enums.LanguageProficiency;
+import com.training.cvmanagementbe.enums.cvs.LanguageProficiency;
 
 // Section 8 - REPEATED. Languages the employee speaks, not the language the CV is written in.
 public record LanguageEntry(

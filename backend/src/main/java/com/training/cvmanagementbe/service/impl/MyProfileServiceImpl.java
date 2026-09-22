@@ -6,9 +6,9 @@ import com.training.cvmanagementbe.dto.response.profile_updates.MyProfileRespons
 import com.training.cvmanagementbe.dto.response.users.UserResponse;
 import com.training.cvmanagementbe.entity.models.Department;
 import com.training.cvmanagementbe.entity.models.User;
-import com.training.cvmanagementbe.enums.Action;
-import com.training.cvmanagementbe.enums.ErrorCode;
-import com.training.cvmanagementbe.enums.TargetType;
+import com.training.cvmanagementbe.enums.configs.Action;
+import com.training.cvmanagementbe.enums.configs.ErrorCode;
+import com.training.cvmanagementbe.enums.configs.TargetType;
 import com.training.cvmanagementbe.exception.ApiException;
 import com.training.cvmanagementbe.repository.DepartmentRepository;
 import com.training.cvmanagementbe.repository.ImageFileRepository;

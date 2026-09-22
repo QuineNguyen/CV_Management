@@ -3,7 +3,7 @@ package com.training.cvmanagementbe.config;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.training.cvmanagementbe.dto.response.configs.ApiResponse;
 import com.training.cvmanagementbe.dto.response.configs.ErrorDetail;
-import com.training.cvmanagementbe.enums.ErrorCode;
+import com.training.cvmanagementbe.enums.configs.ErrorCode;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;

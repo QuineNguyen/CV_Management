@@ -1,7 +1,7 @@
 package com.training.cvmanagementbe.repository;
 
 import com.training.cvmanagementbe.entity.models.CvProfile;
-import com.training.cvmanagementbe.enums.LifecycleStatus;
+import com.training.cvmanagementbe.enums.cvs.LifecycleStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;

@@ -4,7 +4,7 @@ import com.training.cvmanagementbe.common.AuditLogger;
 import com.training.cvmanagementbe.dto.response.profile_updates.ImageUploadResponse;
 import com.training.cvmanagementbe.entity.models.CurrentActor;
 import com.training.cvmanagementbe.entity.models.ImageFile;
-import com.training.cvmanagementbe.enums.*;
+import com.training.cvmanagementbe.enums.configs.*;
 import com.training.cvmanagementbe.exception.ApiException;
 import com.training.cvmanagementbe.repository.ImageFileRepository;
 import com.training.cvmanagementbe.service.ImageService;

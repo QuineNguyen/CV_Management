@@ -1,6 +1,6 @@
 package com.training.cvmanagementbe.record;
 
-import com.training.cvmanagementbe.enums.ErrorCode;
+import com.training.cvmanagementbe.enums.configs.ErrorCode;
 import com.training.cvmanagementbe.exception.ApiException;
 import io.swagger.v3.oas.annotations.media.Schema;
 

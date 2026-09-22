@@ -1,6 +1,6 @@
 package com.training.cvmanagementbe.config.auth;
 
-import com.training.cvmanagementbe.enums.PasswordCharset;
+import com.training.cvmanagementbe.enums.auth.PasswordCharset;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 

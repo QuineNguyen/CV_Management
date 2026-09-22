@@ -1,7 +1,7 @@
 package com.training.cvmanagementbe.config;
 
 import com.training.cvmanagementbe.config.auth.JwtAuthFilter;
-import com.training.cvmanagementbe.enums.PublicEndpoint;
+import com.training.cvmanagementbe.enums.configs.PublicEndpoint;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;

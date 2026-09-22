@@ -1,6 +1,6 @@
 package com.training.cvmanagementbe.dto.request.approvals;
 
-import com.training.cvmanagementbe.enums.CvSectionKey;
+import com.training.cvmanagementbe.enums.cvs.CvSectionKey;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;

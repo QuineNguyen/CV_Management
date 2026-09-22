@@ -2,7 +2,11 @@ package com.training.cvmanagementbe.service.impl;
 
 import com.training.cvmanagementbe.common.AuditLogger;
 import com.training.cvmanagementbe.entity.models.*;
-import com.training.cvmanagementbe.enums.*;
+import com.training.cvmanagementbe.enums.configs.Action;
+import com.training.cvmanagementbe.enums.configs.TargetType;
+import com.training.cvmanagementbe.enums.cvs.ChangeType;
+import com.training.cvmanagementbe.enums.cvs.DraftStatus;
+import com.training.cvmanagementbe.enums.cvs.LifecycleStatus;
 import com.training.cvmanagementbe.exception.ApiException;
 import com.training.cvmanagementbe.record.CvContent;
 import com.training.cvmanagementbe.record.PublishCommand;

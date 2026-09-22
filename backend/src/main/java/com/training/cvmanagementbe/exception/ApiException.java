@@ -1,6 +1,6 @@
 package com.training.cvmanagementbe.exception;
 
-import com.training.cvmanagementbe.enums.ErrorCode;
+import com.training.cvmanagementbe.enums.configs.ErrorCode;
 import org.springframework.http.HttpStatus;
 
 public abstract class ApiException extends RuntimeException {

@@ -1,7 +1,7 @@
 package com.training.cvmanagementbe.config.auth;
 
-import com.training.cvmanagementbe.enums.ErrorCode;
-import com.training.cvmanagementbe.enums.PasswordCharset;
+import com.training.cvmanagementbe.enums.configs.ErrorCode;
+import com.training.cvmanagementbe.enums.auth.PasswordCharset;
 import com.training.cvmanagementbe.exception.ApiException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;

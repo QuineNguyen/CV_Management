@@ -1,7 +1,7 @@
 package com.training.cvmanagementbe.service.impl;
 
 import com.training.cvmanagementbe.config.MinioConfig;
-import com.training.cvmanagementbe.enums.ErrorCode;
+import com.training.cvmanagementbe.enums.configs.ErrorCode;
 import com.training.cvmanagementbe.exception.ApiException;
 import io.minio.*;
 import io.minio.errors.ErrorResponseException;

@@ -1,6 +1,6 @@
 package com.training.cvmanagementbe.dto.response.approvals;
 
-import com.training.cvmanagementbe.enums.DraftStatus;
+import com.training.cvmanagementbe.enums.cvs.DraftStatus;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.util.UUID;

@@ -1,7 +1,7 @@
 package com.training.cvmanagementbe.service.impl;
 
 import com.training.cvmanagementbe.entity.models.User;
-import com.training.cvmanagementbe.enums.LockStatus;
+import com.training.cvmanagementbe.enums.auth.LockStatus;
 import com.training.cvmanagementbe.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 

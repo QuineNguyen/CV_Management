@@ -4,7 +4,7 @@ import com.training.cvmanagementbe.dto.request.profile_updates.ProfileUpdateSubm
 import com.training.cvmanagementbe.dto.request.profile_updates.RejectProfileUpdateRequest;
 import com.training.cvmanagementbe.dto.response.configs.PagedResponse;
 import com.training.cvmanagementbe.dto.response.profile_updates.ProfileUpdateRequestResponse;
-import com.training.cvmanagementbe.enums.ProfileUpdateStatus;
+import com.training.cvmanagementbe.enums.profile_updates.ProfileUpdateStatus;
 import org.springframework.data.domain.Pageable;
 
 import java.util.UUID;

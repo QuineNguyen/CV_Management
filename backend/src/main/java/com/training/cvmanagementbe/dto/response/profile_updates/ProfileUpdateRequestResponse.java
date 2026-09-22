@@ -1,6 +1,6 @@
 package com.training.cvmanagementbe.dto.response.profile_updates;
 
-import com.training.cvmanagementbe.enums.ProfileUpdateStatus;
+import com.training.cvmanagementbe.enums.profile_updates.ProfileUpdateStatus;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;

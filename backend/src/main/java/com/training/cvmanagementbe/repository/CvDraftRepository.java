@@ -1,7 +1,7 @@
 package com.training.cvmanagementbe.repository;
 
 import com.training.cvmanagementbe.entity.models.CvDraft;
-import com.training.cvmanagementbe.enums.DraftStatus;
+import com.training.cvmanagementbe.enums.cvs.DraftStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;

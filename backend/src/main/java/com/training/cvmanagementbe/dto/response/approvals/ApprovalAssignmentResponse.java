@@ -1,6 +1,6 @@
 package com.training.cvmanagementbe.dto.response.approvals;
 
-import com.training.cvmanagementbe.enums.ApprovalLevel;
+import com.training.cvmanagementbe.enums.approvals.ApprovalLevel;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.time.LocalDateTime;

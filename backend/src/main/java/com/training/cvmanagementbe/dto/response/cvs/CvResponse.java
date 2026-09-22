@@ -1,8 +1,8 @@
 package com.training.cvmanagementbe.dto.response.cvs;
 
-import com.training.cvmanagementbe.enums.DraftStatus;
-import com.training.cvmanagementbe.enums.Language;
-import com.training.cvmanagementbe.enums.LifecycleStatus;
+import com.training.cvmanagementbe.enums.cvs.DraftStatus;
+import com.training.cvmanagementbe.enums.cvs.Language;
+import com.training.cvmanagementbe.enums.cvs.LifecycleStatus;
 
 import java.time.LocalDateTime;
 import java.util.UUID;

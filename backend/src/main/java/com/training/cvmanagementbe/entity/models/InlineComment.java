@@ -1,8 +1,8 @@
 package com.training.cvmanagementbe.entity.models;
 
 import com.training.cvmanagementbe.entity.converter.CvSectionKeyConverter;
-import com.training.cvmanagementbe.enums.CvSectionKey;
-import com.training.cvmanagementbe.enums.InlineCommentStatus;
+import com.training.cvmanagementbe.enums.cvs.CvSectionKey;
+import com.training.cvmanagementbe.enums.approvals.InlineCommentStatus;
 import jakarta.persistence.*;
 import lombok.*;
 

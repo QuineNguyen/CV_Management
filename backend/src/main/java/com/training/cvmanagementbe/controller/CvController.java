@@ -11,7 +11,7 @@ import com.training.cvmanagementbe.dto.response.cvs.CvDetailResponse;
 import com.training.cvmanagementbe.dto.response.cvs.CvEditResponse;
 import com.training.cvmanagementbe.dto.response.cvs.CvResponse;
 import com.training.cvmanagementbe.dto.response.cvs.CvVersionSummary;
-import com.training.cvmanagementbe.enums.CvSortField;
+import com.training.cvmanagementbe.enums.cvs.CvSortField;
 import com.training.cvmanagementbe.service.CvService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;

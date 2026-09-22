@@ -1,7 +1,7 @@
 package com.training.cvmanagementbe.dto.response.cvs;
 
 import com.training.cvmanagementbe.dto.response.approvals.InlineCommentResponse;
-import com.training.cvmanagementbe.enums.DraftStatus;
+import com.training.cvmanagementbe.enums.cvs.DraftStatus;
 import com.training.cvmanagementbe.record.CvContent;
 import io.swagger.v3.oas.annotations.media.Schema;
 

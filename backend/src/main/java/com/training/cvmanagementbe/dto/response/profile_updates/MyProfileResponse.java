@@ -1,6 +1,6 @@
 package com.training.cvmanagementbe.dto.response.profile_updates;
 
-import com.training.cvmanagementbe.enums.Role;
+import com.training.cvmanagementbe.enums.users.Role;
 
 import java.time.LocalDate;
 import java.util.UUID;
