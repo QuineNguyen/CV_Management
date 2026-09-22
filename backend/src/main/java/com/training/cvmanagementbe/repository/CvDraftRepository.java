@@ -56,4 +56,14 @@ public interface CvDraftRepository extends JpaRepository<CvDraft, UUID> {
                          @Param("nextStatus") DraftStatus nextStatus,
                          @Param("actorId") UUID actorId,
                          @Param("now") LocalDateTime now);
+
+    // Guarded on the expected status so the reason never lands on a draft that moved on.
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query("""
+        UPDATE CvDraft d SET d.lastRejectionReason = :reason
+        WHERE d.id = :draftId AND d.status = :expectedStatus
+        """)
+    int updateLastRejectionReason(@Param("draftId") UUID draftId,
+                                  @Param("reason") String reason,
+                                  @Param("expectedStatus") DraftStatus expectedStatus);
 }

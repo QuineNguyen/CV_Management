@@ -75,8 +75,38 @@ export class UserDeactivateDialogComponent implements OnInit {
         this.confirmed.emit({ replacements: payload });
     }
 
+    readonly openSelectTeamId = signal<string | null>(null);
+
+    toggleSelect(teamId: string, event: MouseEvent): void {
+        event.stopPropagation();
+        this.openSelectTeamId.update(current => (current === teamId ? null : teamId));
+    }
+
+    selectReplacement(teamId: string, replacementId: string): void {
+        this.onReplacementChange(teamId, replacementId);
+        this.openSelectTeamId.set(null);
+    }
+
+    selectedReplacementLabel(teamId: string): string {
+        const replacementId = this.replacementFor(teamId);
+        if (!replacementId) {
+            return 'Select a replacement';
+        }
+        const lead = this.candidates().find(candidate => candidate.id === replacementId);
+        return lead ? `${lead.fullName} (${lead.username})` : 'Select a replacement';
+    }
+
+    @HostListener('document:click')
+    closeSelect(): void {
+        this.openSelectTeamId.set(null);
+    }
+
     @HostListener('document:keydown.escape')
     onEscape(): void {
+        if (this.openSelectTeamId()) {
+            this.openSelectTeamId.set(null);
+            return;
+        }
         this.onCancel();
     }
 

@@ -5,6 +5,7 @@ import { ApprovalQueueItem, ApprovalQueueQuery, DraftApproveResponse, DraftRevie
 import { Observable } from "rxjs";
 import { PagedResponse } from "../dtos/page.dto";
 import { ApiEndpoint } from "../enums/api-endpoint.enum";
+import { DraftRejectResponse, InlineCommentResponse, RejectDraftRequest, ReplyCommentRequest } from "../dtos/inline-comment.dto";
 
 /*
  * The approval flow's client.
@@ -45,6 +46,12 @@ export class ApprovalService {
         );
     }
 
+    resubmit(draftId: string): Observable<DraftSubmitResponse> {
+        return this.http.post<DraftSubmitResponse>(
+            this.url(`${ApiEndpoint.Approvals}/drafts/${draftId}/resubmit`), null
+        );
+    }
+
     openForReview(draftId: string): Observable<DraftReviewResponse> {
         return this.http.get<DraftReviewResponse>(
             this.url(`${ApiEndpoint.Approvals}/drafts/${draftId}/review`)
@@ -54,6 +61,18 @@ export class ApprovalService {
     approve(draftId: string): Observable<DraftApproveResponse> {
         return this.http.post<DraftApproveResponse>(
             this.url(`${ApiEndpoint.Approvals}/drafts/${draftId}/approve`), null
+        );
+    }
+
+    reject(draftId: string, body: RejectDraftRequest): Observable<DraftRejectResponse> {
+        return this.http.post<DraftRejectResponse>(
+            this.url(`${ApiEndpoint.Approvals}/drafts/${draftId}/reject`), body
+        );
+    }
+
+    replyToComment(commentId: string, body: ReplyCommentRequest): Observable<InlineCommentResponse> {
+        return this.http.post<InlineCommentResponse>(
+            this.url(`${ApiEndpoint.Approvals}/comments/${commentId}/reply`), body
         );
     }
 }

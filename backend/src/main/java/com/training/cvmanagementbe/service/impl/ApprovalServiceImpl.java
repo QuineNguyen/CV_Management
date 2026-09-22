@@ -1,6 +1,9 @@
 package com.training.cvmanagementbe.service.impl;
 
 import com.training.cvmanagementbe.common.AuditLogger;
+import com.training.cvmanagementbe.dto.request.InlineCommentRequest;
+import com.training.cvmanagementbe.dto.request.RejectDraftRequest;
+import com.training.cvmanagementbe.dto.request.ReplyCommentRequest;
 import com.training.cvmanagementbe.dto.response.*;
 import com.training.cvmanagementbe.entity.models.*;
 import com.training.cvmanagementbe.enums.*;
@@ -42,6 +45,14 @@ public class ApprovalServiceImpl implements ApprovalService {
     private static final Set<DraftStatus> SUBMITTABLE_STATUSES =
             EnumSet.of(DraftStatus.DRAFT, DraftStatus.REJECTED);
 
+    // The dedicated resubmit endpoint accepts a rejected draft only.
+    private static final Set<DraftStatus> RESUBMITTABLE_STATUSES =
+            EnumSet.of(DraftStatus.REJECTED);
+
+    // Threads stay open for replies while a round is running and while the owner revises.
+    private static final Set<DraftStatus> REPLYABLE_STATUSES =
+            EnumSet.of(DraftStatus.PENDING_TECH_LEAD, DraftStatus.PENDING_HR, DraftStatus.REJECTED);
+
     /*
      * Sections that must carry content before a draft can be submitted.
      * Listed as enum constants rather than strings so a renamed section key breaks the build
@@ -61,6 +72,7 @@ public class ApprovalServiceImpl implements ApprovalService {
     private final UserRepository userRepository;
     private final ApprovalAssignmentRepository assignmentRepository;
     private final ApprovalDecisionRepository decisionRepository;
+    private final InlineCommentRepository inlineCommentRepository;
     private final ApproverResolver approverResolver;
     private final VersionPublisher versionPublisher;
     private final CvContentCodec codec;
@@ -70,9 +82,30 @@ public class ApprovalServiceImpl implements ApprovalService {
 
     // ---------- Submit ----------
 
+    /*
+     * Kept accepting REJECTED for API compatibility. Both entry points run the same pipeline, so
+     * a rejected draft gets the sticky reviewer whichever endpoint the client calls.
+     */
     @Override
     @Transactional
     public DraftSubmitResponse submit(UUID draftId) {
+        return enterApproval(draftId, SUBMITTABLE_STATUSES);
+    }
+
+    // ---------- Resubmit ----------
+    @Override
+    @Transactional
+    public DraftSubmitResponse resubmit(UUID draftId) {
+        return enterApproval(draftId, RESUBMITTABLE_STATUSES);
+    }
+
+    /*
+     * Shared by submit and resubmit.
+     * - A resubmit always restarts at level 1 - even after an HR rejection the tech lead reviews
+     * again - unless the level-1 skip rule applies.
+     * - Each level prefers the reviewer of the previous round.
+     */
+    private DraftSubmitResponse enterApproval(UUID draftId, Set<DraftStatus> acceptedStatuses) {
         UUID submitterId = CurrentActor.requireUserId();
 
         CvDraft draft = cvDraftRepository.findById(draftId)
@@ -84,12 +117,17 @@ public class ApprovalServiceImpl implements ApprovalService {
         }
 
         /*
-         * Checked here for a clear message and again in the CAS below for correctness. This read
+         * Checked Here for a clear message and again in the CAS below for correctness. This read
          * cannot be the guard on its own: between it and to write, an Admin could cancel the draft.
          */
-        if (!SUBMITTABLE_STATUSES.contains(draft.getStatus())) {
-            throw new ApiException.ConflictException(ErrorCode.STALE_STATE);
+        if (!acceptedStatuses.contains(draft.getStatus())) {
+            throw new ApiException.ConflictException(acceptedStatuses == RESUBMITTABLE_STATUSES
+                    ? ErrorCode.DRAFT_NOT_REJECTED
+                    : ErrorCode.STALE_STATE);
         }
+
+        boolean resubmission = draft.getStatus() == DraftStatus.REJECTED;
+        int previousRound = draft.getReviewRound();
 
         CvContent content = codec.read(draft.getContentJson());
         requireRequiredSections(content);
@@ -102,25 +140,36 @@ public class ApprovalServiceImpl implements ApprovalService {
         /*
          * Resolved before any write. Both calls can throw 422 and a submit rejected for having no
          * reviewer must leave the draft exactly as it was rather than half-transitioned.
-         * The submitter is passed explicitly rather than read from CurrentActor inside the
-         * resolver
+         * The submitter is passed explicitly rather than read from CurrentActor inside the resolver
          */
-        ResolverResult level1 = approverResolver.resolveLevel1(profile, submitterId);
-        ResolverResult level2 = level1.skipped() ? approverResolver.resolveLevel2(submitterId) : null;
+        // A first submit has no previous round, so both lookups stay null and nothing sticks.
+        UUID previousLead = resubmission
+                ? previousAssigneeOf(draftId, ApprovalLevel.LEVEL_1, previousRound)
+                : null;
+        ResolverResult level1 = approverResolver.resolveLevel1(profile, submitterId, previousLead);
+
+        ResolverResult level2 = null;
+        if (level1.skipped()) {
+            UUID previousHr = resubmission
+                    ? previousAssigneeOf(draftId, ApprovalLevel.LEVEL_2, previousRound)
+                    : null;
+            level2 = approverResolver.resolveLevel2(submitterId, previousHr);
+        }
 
         DraftStatus nextStatus = level1.skipped() ? DraftStatus.PENDING_HR : DraftStatus.PENDING_TECH_LEAD;
-        int nextRound = draft.getReviewRound() + 1;
+        int nextRound = previousRound + 1;
         LocalDateTime now = LocalDateTime.now();
 
         // The gate. Everything below only runs because this matched exactly one row.
-        int updated = cvDraftRepository.markSubmitted(draftId, nextStatus, nextRound, now, SUBMITTABLE_STATUSES);
+        int updated = cvDraftRepository.markSubmitted(draftId, nextStatus, nextRound, now, acceptedStatuses);
         if (updated == 0) {
             throw new ApiException.ConflictException(ErrorCode.STALE_STATE);
         }
 
-        // TODO [Phase-3 part 3]: flip OPEN inline comments of earlier rounds to RESOLVED.
-        // The inline-comments entity arrives with the rejection loop; nothing writes OPEN
-        // comments yet, so there is nothing to resolve at this point.
+        // Earlier rounds are closed, not deleted. A no-op on a first submit.
+        inlineCommentRepository.resolveEarlierRounds(
+                draftId, nextRound, InlineCommentStatus.OPEN, InlineCommentStatus.RESOLVED
+        );
 
         if (level1.skipped()) {
             recordSkippedLevel1(draftId, nextRound, level1, now);
@@ -221,11 +270,14 @@ public class ApprovalServiceImpl implements ApprovalService {
     private DraftApproveResponse approveTechnicalReview(CvDraft draft, ApprovalAssignment assignment,
                                                         UUID approverId) {
         // Resolved before any write, like submit: no reviewer found leaves the draft untouched.
-        ResolverResult level2 = approverResolver.resolveLevel2(draft.getOwnerId());
+        // Sticky looks at round N-1 only; when that round ended at level 1,
+        // there is no HR to keep and the normal pipeline runs.
+        UUID previousHr = previousAssigneeOf(draft.getId(), ApprovalLevel.LEVEL_2, assignment.getReviewRound() - 1);
+        ResolverResult level2 = approverResolver.resolveLevel2(draft.getOwnerId(), previousHr);
         LocalDateTime now = LocalDateTime.now();
 
         transitionDraft(draft.getId(), DraftStatus.PENDING_TECH_LEAD, DraftStatus.PENDING_HR, approverId, now);
-        recordApproval(assignment, approverId, now);
+        recordDecision(assignment, approverId, DecisionResult.APPROVED, null, now);
 
         createAssignment(draft.getId(), ApprovalLevel.LEVEL_2, level2.assigneeId(),
                 assignment.getReviewRound(), level2.reason(), now);
@@ -254,7 +306,7 @@ public class ApprovalServiceImpl implements ApprovalService {
         UUID level1ApproverId = level1ApproverOf(draft.getId(), reviewRound);
 
         transitionDraft(draft.getId(), DraftStatus.PENDING_HR, DraftStatus.PUBLISHED, approverId, now);
-        recordApproval(assignment, approverId, now);
+        recordDecision(assignment, approverId, DecisionResult.APPROVED, null, now);
 
         // Creates the version and change log, completes pending update requests, links the draft.
         CvVersion version = versionPublisher.publish(PublishCommand.approval(
@@ -280,6 +332,115 @@ public class ApprovalServiceImpl implements ApprovalService {
         return new DraftApproveResponse(draft.getId(), DraftStatus.PUBLISHED, version.getId());
     }
 
+    // ---------- Reject ----------
+
+    /*
+     * PENDING_* -> REJECTED at either level.
+     * - Same CAS pair as approve: the draft status and the open assignment. The assignment closes
+     * as COMPLETED - somebody did decide - and the decision row carries the overall reason.
+     * - Every anchor is validated before the first write, so one bad anchor leaves the draft
+     * exactly as it was instead of rejected with half its comments.
+     */
+    @Override
+    @Transactional
+    public DraftRejectResponse reject(UUID draftId, RejectDraftRequest request) {
+        UUID rejecterId = CurrentActor.requireUserId();
+
+        ApprovalAssignment assignment = requireOwnAssignment(draftId, rejecterId);
+
+        CvDraft draft = cvDraftRepository.findById(draftId)
+                .orElseThrow(() -> new ApiException.NotFoundException("cv draft", draftId));
+
+        DraftStatus currentStatus = draft.getStatus();
+        ApprovalLevel level = levelOf(currentStatus);
+
+        if (level != assignment.approvalLevel()) {
+            throw new ApiException.ConflictException(ErrorCode.STALE_STATE);
+        }
+
+        // Read every thing from the draft first: the CAS clears the persistence context.
+        CvContent content = codec.read(draft.getContentJson());
+        UUID ownerId = draft.getOwnerId();
+        int reviewRound = assignment.getReviewRound();
+        String reason = request.reason().trim();
+        LocalDateTime now = LocalDateTime.now();
+
+        List<InlineComment> comments = request.commentsOrEmpty().stream()
+                .map(comment -> toRootComment(draftId, reviewRound, rejecterId, comment, content, now))
+                .toList();
+
+        transitionDraft(draftId, currentStatus, DraftStatus.REJECTED, rejecterId, now);
+        recordDecision(assignment, rejecterId, DecisionResult.REJECTED, reason, now);
+
+        // Guarded on REJECTED so the reason cannot land on a draft that has already moved on.
+        int updated = cvDraftRepository.updateLastRejectionReason(draftId, reason, DraftStatus.REJECTED);
+        if (updated == 0) {
+            throw new ApiException.ConflictException(ErrorCode.STALE_STATE);
+        }
+
+        inlineCommentRepository.saveAll(comments);
+
+        auditLogger.record(Action.REJECT_CV_DRAFT, TargetType.CV_DRAFT, draftId,
+                currentStatus, DraftStatus.REJECTED);
+
+        eventPublisher.publishEvent(new DraftRejectedEvent(draftId, ownerId, level, reviewRound));
+
+        return new DraftRejectResponse(DraftStatus.REJECTED, comments.size());
+    }
+
+    // ---------- Reply ----------
+
+    /*
+     * Adds a reply to a thread.
+     * - Who: the CV owner or the reviewer currently assigned. A reviewer whose round already ended
+     * has no open assignment and therefore no access to the draft at all.
+     * - Replies attach to the thread root, so a thread stays one level deep however it is used.
+     * - A resubmit racing this call may resolve the root first; the reply then stays in that round
+     * and is resolved by the next resubmit. Acceptable: it is still readable as history.
+     */
+    @Override
+    @Transactional
+    public InlineCommentResponse replyToComment(UUID commentId, ReplyCommentRequest request) {
+        UUID actorId = CurrentActor.requireUserId();
+
+        InlineComment target = inlineCommentRepository.findById(commentId)
+                .orElseThrow(() -> new ApiException.NotFoundException("inline comment", commentId));
+
+        InlineComment root = target.isRoot()
+                ? target
+                : inlineCommentRepository.findById(target.getParentCommentId())
+                .orElseThrow(() -> new ApiException.NotFoundException("inline comment", target.getParentCommentId()));
+
+        CvDraft draft = cvDraftRepository.findById(root.getDraftId())
+                .orElseThrow(() -> new ApiException.NotFoundException("cv draft", root.getDraftId()));
+
+        requireCanReply(draft, actorId);
+
+        if (!REPLYABLE_STATUSES.contains(draft.getStatus())) {
+            throw new ApiException.ConflictException(ErrorCode.STALE_STATE);
+        }
+
+        if (root.getStatus() == InlineCommentStatus.RESOLVED) {
+            throw new ApiException.BusinessRuleException(ErrorCode.CANNOT_REPLY_RESOLVED);
+        }
+
+        InlineComment reply = inlineCommentRepository.save(InlineComment.builder()
+                .draftId(root.getDraftId())
+                .reviewRound(root.getReviewRound())
+                .sectionKey(root.getSectionKey())
+                .itemId(root.getItemId())
+                .fieldKey(root.getFieldKey())
+                .authorId(actorId)
+                .content(request.content().trim())
+                .status(InlineCommentStatus.OPEN)
+                .parentCommentId(root.getId())
+                .createdAt(LocalDateTime.now())
+                .build());
+
+        String authorName = userRepository.findById(actorId).map(User::getFullName).orElse(null);
+        return toResponse(reply, authorName);
+    }
+
     // ---------- Validation ----------
 
     // 404 when nothing is open, 403 when the open item belongs to someone else.
@@ -292,6 +453,37 @@ public class ApprovalServiceImpl implements ApprovalService {
             throw new ApiException.ForbiddenException(ErrorCode.NOT_CURRENT_ASSIGNEE);
         }
         return assignment;
+    }
+
+    // Owner or the reviewer holding the open assignment.
+    private void requireCanReply(CvDraft draft, UUID actorId) {
+        if (actorId.equals(draft.getOwnerId())) {
+            return;
+        }
+
+        boolean isCurrentAssignee = assignmentRepository
+                .findByDraftIdAndStatus(draft.getId(), AssignmentStatus.ASSIGNED)
+                .map(assignment -> actorId.equals(assignment.getAssigneeId()))
+                .orElse(false);
+
+        if (!isCurrentAssignee) {
+            throw new ApiException.ForbiddenException(ErrorCode.CANNOT_REPLY_COMMENT);
+        }
+    }
+
+    /*
+     * Item required for REPEATED sections, and it must exist in this draft; always empty
+     * for SINGLE ones. The field stays free-form - an empty field is still worth commenting on
+     * and the frontend only offers the section's own fields.
+     */
+    private void requireValidAnchor(CvSectionKey section, String itemId, CvContent content) {
+        boolean valid = section.repeated()
+                ? itemId != null && codec.itemsById(content, section).containsKey(itemId)
+                : itemId == null;
+
+        if (!valid) {
+            throw new ApiException.BusinessRuleException(ErrorCode.INVALID_COMMENT_ANCHOR);
+        }
     }
 
     // Only the two pending statuses can be approved; anything else was decided or cancelled.
@@ -413,10 +605,12 @@ public class ApprovalServiceImpl implements ApprovalService {
      * Assignment half of the CAS, then the decision row.
      * The close only matches while the assignment is still ASSIGNED to this approver,
      * so an Admin reassign landing mid-click turns into a 409 here.
+     * @param reason    null when approving; the overall reason when rejecting
      */
-    private void recordApproval(ApprovalAssignment assignment, UUID approverId, LocalDateTime now) {
+    private void recordDecision(ApprovalAssignment assignment, UUID reviewerId,
+                                DecisionResult result, String reason, LocalDateTime now) {
         int closed = assignmentRepository.closeForAssignee(
-                assignment.getId(), approverId,
+                assignment.getId(), reviewerId,
                 AssignmentStatus.ASSIGNED, AssignmentStatus.COMPLETED, now
         );
         if (closed == 0) {
@@ -428,11 +622,48 @@ public class ApprovalServiceImpl implements ApprovalService {
                 .draftId(assignment.getDraftId())
                 .level(assignment.approvalLevel().value())
                 .reviewRound(assignment.getReviewRound())
-                .approverId(approverId)
-                .result(DecisionResult.APPROVED)
-                .reason(null)
+                .approverId(reviewerId)
+                .result(result)
+                .reason(reason)
                 .decidedAt(now)
                 .build());
+    }
+
+    // Validates the anchor and builds an unsaved root comment of this round.
+    private InlineComment toRootComment(UUID draftId, int reviewRound, UUID authorId,
+                                        InlineCommentRequest request, CvContent content, LocalDateTime now) {
+        String itemId = blankToNull(request.itemId());
+        requireValidAnchor(request.sectionKey(), itemId, content);
+
+        return InlineComment.builder()
+                .draftId(draftId)
+                .reviewRound(reviewRound)
+                .sectionKey(request.sectionKey())
+                .itemId(itemId)
+                .fieldKey(blankToNull(request.fieldKey()))
+                .authorId(authorId)
+                .content(request.content().trim())
+                .status(InlineCommentStatus.OPEN)
+                .parentCommentId(null)
+                .createdAt(now)
+                .build();
+    }
+
+    /*
+     * Reviewer who decided this level in the given round, for sticky assignment.
+     * COMPLETED covers both outcomes; a SKIPPED level or a round that never reached this level
+     * has no such row, which is exactly the "nobody to keep" case.
+     */
+    private UUID previousAssigneeOf(UUID draftId, ApprovalLevel level, int reviewRound) {
+        if (reviewRound < 1) {
+            return null;
+        }
+        return assignmentRepository
+                .findFirstByDraftIdAndLevelAndReviewRoundAndStatusOrderByClosedAtDesc(
+                        draftId, level.value(), reviewRound, AssignmentStatus.COMPLETED
+                )
+                .map(ApprovalAssignment::getAssigneeId)
+                .orElse(null);
     }
 
     // Null when level 1 was skipped in this round: nobody vouched technically at that level.
@@ -511,7 +742,8 @@ public class ApprovalServiceImpl implements ApprovalService {
                 content.submittable(),
                 content.untranslatedItemCount(),
                 draft.getSubmittedAt(),
-                draft.getUpdatedAt()
+                draft.getUpdatedAt(),
+                forDraft(draft.getId())
         );
     }
 
@@ -540,7 +772,46 @@ public class ApprovalServiceImpl implements ApprovalService {
         );
     }
 
+    // ---------- Inline comment assembler ----------
+
+    public List<InlineCommentResponse> forDraft(UUID draftId) {
+        List<InlineComment> comments = inlineCommentRepository.findByDraftIdOrderByCreatedAtAsc(draftId);
+        if (comments.isEmpty()) {
+            return List.of();
+        }
+
+        Set<UUID> authorIds = comments.stream()
+                .map(InlineComment::getAuthorId)
+                .collect(Collectors.toSet());
+
+        Map<UUID, String> names = userRepository.findAllById(authorIds).stream()
+                .collect(Collectors.toMap(User::getId, User::getFullName));
+
+        return comments.stream()
+                .map(comment -> toResponse(comment, names.get(comment.getAuthorId())))
+                .toList();
+    }
+
+    public InlineCommentResponse toResponse(InlineComment comment, String authorName) {
+        return new InlineCommentResponse(
+                comment.getId(),
+                comment.getReviewRound(),
+                comment.getSectionKey(),
+                comment.getItemId(),
+                comment.getFieldKey(),
+                authorName,
+                comment.getContent(),
+                comment.getStatus(),
+                comment.getParentCommentId(),
+                comment.getCreatedAt()
+        );
+    }
+
     // ---------- Small helpers ----------
+
+    private String blankToNull(String value) {
+        return value == null || value.isBlank() ? null : value.trim();
+    }
 
     // Negative once the deadline has passed, which is exactly how the UI decides its badge tone.
     private long minutesUntil(LocalDateTime dueAt, LocalDateTime now) {

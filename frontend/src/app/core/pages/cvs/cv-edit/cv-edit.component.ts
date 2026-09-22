@@ -16,6 +16,8 @@ import { AvatarChange } from "../../../models/avatar-change.model";
 import { ApprovalService } from "../../../services/approval.service";
 import { missingRequiredSections } from "../../../models/approval-queue.model";
 import { CV_SECTION_LABELS } from "../../../enums/cv-section-key.enum";
+import { InlineCommentStatus } from "../../../enums/inline-comment-status.enum";
+import { DraftSubmitResponse } from "../../../dtos/approval.dto";
 
 /*
  * Edit CV content. The screen branches on the owner's role, not on anything the user picks:
@@ -89,6 +91,18 @@ export class CvEditComponent implements OnInit, HasUnsavedChanges {
         const status = this.openDraft()?.status;
         return !!status && LOCKED_DRAFT_STATUSES.includes(status);
     });
+
+    readonly isRejected = computed(() => this.openDraft()?.status === DraftStatus.Rejected);
+
+    // Replies stay possible while the content is frozen: the lock covers the CV, not the conversation.
+    readonly canReplyToComments = computed(() => !this.directPublish() && (this.locked() || this.isRejected()));
+
+    readonly inlineComments = computed(() => this.openDraft()?.inlineComments ?? []);
+
+    // Root comments still waiting on the owner; replies are not counted twice.
+    readonly openCommentCount = computed(() => this.inlineComments()
+        .filter(comment => !comment.parentCommentId && comment.status === InlineCommentStatus.Open)
+        .length);
 
     // Draft first, published version second, empty skeleton last.
     readonly editorContent = computed<CvContent>(() =>
@@ -272,17 +286,26 @@ export class CvEditComponent implements OnInit, HasUnsavedChanges {
 
         this.submitting.set(true);
 
-        this.approvalService.submit(draft.id).subscribe({
-            next: result => {
-                this.toast.success(result.level1Skipped
-                    ? 'Submitted - sent straight to HR, since you are the tech lead who would review it'
-                    : 'Submitted for tech lead review'
-                );
+        // A rejected draft goes through resubmit, which keeps the previous reviewers when possible.
+        const resubmitting = this.isRejected();
+        const request$ = resubmitting
+            ? this.approvalService.resubmit(draft.id)
+            : this.approvalService.submit(draft.id);
 
+        request$.subscribe({
+            next: result => {
+                this.toast.success(this.submittedMessage(result, resubmitting));
                 void this.router.navigate(['/' + AppRoute.Cvs, this.detail()!.cv.id]);
             },
             // 422 and 409 are both rendered by the error interceptor from their code.
             error: () => this.submitting.set(false),
         });
+    }
+
+    private submittedMessage(result: DraftSubmitResponse, resubmitting: boolean): string {
+        const verb = resubmitting ? 'Resubmitted' : 'Submitted';
+        return result.level1Skipped
+            ? `${verb} - sent straight to HR, since you are the tech lead who would review it`
+            : `${verb} for tech lead review`;
     }
 }

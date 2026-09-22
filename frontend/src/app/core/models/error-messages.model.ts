@@ -43,6 +43,10 @@ export const ERROR_MESSAGES: Readonly<Record<ClientErrorCode, string>> = {
   DRAFT_MISSING_REQUIRED_SECTIONS: 'Personal info, at least one skill and at least one experience entry are required before submitting',
   APPROVER_NOT_AVAILABLE: 'No eligible approver could be resolved for this CV',
   NOT_CURRENT_ASSIGNEE: 'This CV has already been handled or reassigned to someone else',
+  DRAFT_NOT_REJECTED: 'Only a rejected draft can be resubmitted',
+  INVALID_COMMENT_ANCHOR: 'A comment points at something that no longer exists in this draft. Reload and try again',
+  CANNOT_REPLY_RESOLVED: 'This comment belongs to a finished review round',
+  CANNOT_REPLY_COMMENT: 'Only the CV owner or the current reviewer can reply here',
 
   // Update requests
   PENDING_REQUEST_EXISTS:

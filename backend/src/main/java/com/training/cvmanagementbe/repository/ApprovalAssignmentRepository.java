@@ -94,4 +94,8 @@ public interface ApprovalAssignmentRepository extends JpaRepository<ApprovalAssi
                          @Param("expectedStatus") AssignmentStatus expectedStatus,
                          @Param("nextStatus") AssignmentStatus nextStatus,
                          @Param("closedAt") LocalDateTime closedAt);
+
+    // Reviewer of one level in one round, for sticky assignment.
+    Optional<ApprovalAssignment> findFirstByDraftIdAndLevelAndReviewRoundAndStatusOrderByClosedAtDesc(
+            UUID draftId, int level, int reviewRound, AssignmentStatus status);
 }

@@ -1,0 +1,84 @@
+@if (threads().length) {
+  <div class="ic-threads">
+    @for (thread of openThreads(); track thread.root.id) {
+      <ng-container *ngTemplateOutlet="threadTpl; context: { $implicit: thread }" />
+    }
+
+    @if (resolvedThreads().length) {
+      <button type="button" class="link-btn ic-toggle"
+              [attr.aria-expanded]="showResolved()"
+              (click)="toggleResolved()">
+        {{ showResolved() ? "Hide" : "Show" }} {{ resolvedThreads().length }}
+        resolved {{ resolvedThreads().length === 1 ? "comment" : "comments" }} from earlier rounds
+      </button>
+
+      @if (showResolved()) {
+        @for (thread of resolvedThreads(); track thread.root.id) {
+          <ng-container *ngTemplateOutlet="threadTpl; context: { $implicit: thread }" />
+        }
+      }
+    }
+  </div>
+}
+
+<ng-template #threadTpl let-thread>
+  <article class="ic-thread" [class.is-resolved]="!isOpen(thread)">
+    <header class="ic-head">
+      <span class="ic-chip ic-round">Round {{ thread.root.reviewRound }}</span>
+      <span class="ic-chip ic-status" [class.is-open]="isOpen(thread)">
+        {{ statusLabel(thread) }}
+      </span>
+      @if (fieldLabel(thread); as field) {
+        <span class="ic-chip ic-field">{{ field }}</span>
+      }
+    </header>
+
+    <div class="ic-message">
+      <p class="ic-meta">
+        <strong>{{ thread.root.authorName ?? "Unknown" }}</strong> ·
+        {{ thread.root.createdAt | date:"dd/MM/yyyy HH:mm" }}
+      </p>
+      <p class="ic-text">{{ thread.root.content }}</p>
+    </div>
+
+    @if (thread.replies.length) {
+      <ol class="ic-replies">
+        @for (reply of thread.replies; track reply.id) {
+          <li class="ic-message">
+            <p class="ic-meta">
+              <strong>{{ reply.authorName ?? "Unknown" }}</strong> ·
+              {{ reply.createdAt | date:"dd/MM/yyyy HH:mm" }}
+            </p>
+            <p class="ic-text">{{ reply.content }}</p>
+          </li>
+        }
+      </ol>
+    }
+
+    @if (canReply() && isOpen(thread)) {
+      @if (replyingTo() === thread.root.id) {
+        <div class="ic-reply-form">
+          <textarea class="field-input ic-reply-input" rows="3"
+                    aria-label="Reply"
+                    placeholder="Explain what you changed or ask a question"
+                    [attr.maxlength]="maxLength"
+                    [value]="replyText()"
+                    [disabled]="sending()"
+                    (input)="onReplyInput($event)"></textarea>
+          <div class="ic-reply-actions">
+            <button type="button" class="btn btn-ghost" (click)="cancelReply()" [disabled]="sending()">
+              Cancel
+            </button>
+            <button type="button" class="btn btn-primary" (click)="sendReply(thread)" [disabled]="!canSend()">
+              {{ sending() ? "Sending..." : "Reply" }}
+            </button>
+          </div>
+        </div>
+      } @else {
+        <button type="button" class="link-btn ic-reply-link" (click)="startReply(thread.root.id)">
+          Reply
+        </button>
+      }
+    }
+  </article>
+</ng-template>

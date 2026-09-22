@@ -157,6 +157,16 @@
   grid-column: 1 / -1;
 }
 
+/* ---------- Inline comments ---------- */
+.status-badge.is-comment {
+  background: var(--vt-red-tint);
+  color: var(--vt-red-dark);
+}
+ 
+.cv-item-comments {
+  padding: clamp(0.75rem, 2vw, 1.25rem) clamp(0.75rem, 2vw, 1.25rem) 0;
+}
+
 @media (min-width: 48rem) {
   .form-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));

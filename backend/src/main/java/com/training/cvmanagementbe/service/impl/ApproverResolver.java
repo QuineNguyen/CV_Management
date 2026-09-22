@@ -133,6 +133,32 @@ public class ApproverResolver {
                 AssignmentReason.ROUND_ROBIN_LEAD);
     }
 
+    /*
+     * Resubmit path: keep the tech lead of the previous round when still available.
+     * - The normal pipeline runs first, so a skip still wins: a submitter who became the linked
+     * team's lead is not sent back to a colleague just because that colleague reviewed last time.
+     * - "Available" means the same three filters the pipeline applies: active, still leading one of
+     * the employee's current teams and not the submitter. A lead whose team the employee left
+     * is not kept - team changes apply from the next round.
+     *
+     * @param previousAssigneeId    level-1 reviewer of the previous round; null falls through
+     */
+    public ResolverResult resolveLevel1(CvProfile profile, UUID submitterId, UUID previousAssigneeId) {
+        ResolverResult fresh = resolveLevel1(profile, submitterId);
+
+        if (previousAssigneeId == null || fresh.skipped()) {
+            return fresh;
+        }
+
+        boolean stillEligible = !previousAssigneeId.equals(submitterId)
+                && activeTechLeadIdsOf(profile.getEmployeeId()).contains(previousAssigneeId);
+
+        return stillEligible
+                ? ResolverResult.assignedTo(previousAssigneeId,
+                AssignmentReason.STICKY_RESUBMIT_LEAD.format(previousAssigneeId))
+                : fresh;
+    }
+
     // ---------- Level 2: HR, falling back to Admin ----------
     /*
      * Resolves the format reviewer. Never skipped: candidates are every active HR other than the
@@ -161,6 +187,28 @@ public class ApproverResolver {
                 AssignmentReason.ADMIN_FALLBACK);
 
         return ResolverResult.assignedTo(picked.assigneeId(), picked.reason());
+    }
+
+    /*
+     * Level-2 counterpart of the sticky rule.
+     * - The previous HR is kept only while they sit in the same pool the pipeline would draw from:
+     * active HRs other than the submitter, or active Admins when no such HR exists. So an Admin
+     * who covered a round while HR was empty does not keep the draft once an HR is back.
+     *
+     * @param previousAssigneeId    level-2 reviewer of the previous round; null falls through
+     */
+    public ResolverResult resolveLevel2(UUID submitterId, UUID previousAssigneeId) {
+        if (previousAssigneeId != null) {
+            List<User> hrs = activeUsersOfRole(Role.HR, submitterId);
+            List<User> pool = hrs.isEmpty() ? activeUsersOfRole(Role.ADMIN, submitterId) : hrs;
+
+            boolean stillEligible = pool.stream().anyMatch(user -> user.getId().equals(previousAssigneeId));
+            if (stillEligible) {
+                return ResolverResult.assignedTo(previousAssigneeId,
+                        AssignmentReason.STICKY_RESUBMIT_HR.format(previousAssigneeId));
+            }
+        }
+        return resolveLevel2(submitterId);
     }
 
     // ---------- Selection helpers ----------
@@ -217,6 +265,21 @@ public class ApproverResolver {
                 .stream()
                 .filter(user -> !user.getId().equals(excludedUserId))
                 .toList();
+    }
+
+    // Active leads of every team the employee currently belongs to.
+    private Set<UUID> activeTechLeadIdsOf(UUID employeeId) {
+        List<TeamMember> memberships = teamMemberRepository.findByUserIdIn(List.of(employeeId));
+
+        Set<UUID> leadIds = loadTeams(memberships).values().stream()
+                .map(Team::getTechLeadId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+
+        return userRepository.findAllById(leadIds).stream()
+                .filter(User::isActive)
+                .map(User::getId)
+                .collect(Collectors.toSet());
     }
 
     private Map<UUID, Team> loadTeams(List<TeamMember> memberships) {

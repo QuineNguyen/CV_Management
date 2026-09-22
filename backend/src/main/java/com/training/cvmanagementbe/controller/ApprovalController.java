@@ -2,11 +2,14 @@ package com.training.cvmanagementbe.controller;
 
 import com.training.cvmanagementbe.constant.ApiPath;
 import com.training.cvmanagementbe.constant.PageDefaults;
+import com.training.cvmanagementbe.dto.request.RejectDraftRequest;
+import com.training.cvmanagementbe.dto.request.ReplyCommentRequest;
 import com.training.cvmanagementbe.dto.response.*;
 import com.training.cvmanagementbe.enums.ApprovalSortField;
 import com.training.cvmanagementbe.service.ApprovalService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -57,5 +60,21 @@ public class ApprovalController {
     @Operation(summary = "Approve the draft at its current level; level 2 also published a new version")
     public ResponseEntity<DraftApproveResponse> approve(@PathVariable UUID draftId) {
         return ResponseEntity.ok(approvalService.approve(draftId));
+    }
+
+    @PostMapping(ApiPath.DRAFT_REJECT)
+    @Operation(summary = "Reject the draft at its current level; locks its content until resubmission")
+    public ResponseEntity<DraftRejectResponse> reject(@PathVariable UUID draftId, @Valid @RequestBody RejectDraftRequest request) {
+        return ResponseEntity.ok(approvalService.reject(draftId, request));
+    }
+
+    @PostMapping(ApiPath.DRAFT_RESUBMIT)
+    public ResponseEntity<DraftSubmitResponse> resubmit(@PathVariable UUID draftId) {
+        return ResponseEntity.ok(approvalService.resubmit(draftId));
+    }
+
+    @PostMapping(ApiPath.COMMENT_REPLY)
+    public ResponseEntity<InlineCommentResponse> replyToComment(@PathVariable UUID commentId, @Valid @RequestBody ReplyCommentRequest request) {
+        return ResponseEntity.ok(approvalService.replyToComment(commentId, request));
     }
 }
