@@ -1,12 +1,10 @@
 package com.training.cvmanagementbe.service;
 
-import com.training.cvmanagementbe.dto.request.TeamRequest;
-import com.training.cvmanagementbe.dto.response.PagedResponse;
-import com.training.cvmanagementbe.dto.response.TeamMemberResponse;
-import com.training.cvmanagementbe.dto.response.TeamResponse;
-import com.training.cvmanagementbe.enums.TeamSortField;
+import com.training.cvmanagementbe.dto.request.teams.TeamRequest;
+import com.training.cvmanagementbe.dto.response.configs.PagedResponse;
+import com.training.cvmanagementbe.dto.response.teams.TeamMemberResponse;
+import com.training.cvmanagementbe.dto.response.teams.TeamResponse;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 
 import java.util.List;
 import java.util.UUID;

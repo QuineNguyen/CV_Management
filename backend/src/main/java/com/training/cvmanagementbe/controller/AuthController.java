@@ -2,12 +2,12 @@ package com.training.cvmanagementbe.controller;
 
 import com.training.cvmanagementbe.constant.AuthPath;
 import com.training.cvmanagementbe.constant.AuthorityExpression;
-import com.training.cvmanagementbe.dto.request.ChangePasswordRequest;
-import com.training.cvmanagementbe.dto.request.GoogleLoginRequest;
-import com.training.cvmanagementbe.dto.request.LoginRequest;
-import com.training.cvmanagementbe.dto.response.ApiResponse;
-import com.training.cvmanagementbe.dto.response.LoginResponse;
-import com.training.cvmanagementbe.dto.response.ResetPasswordResponse;
+import com.training.cvmanagementbe.dto.request.auth.ChangePasswordRequest;
+import com.training.cvmanagementbe.dto.request.auth.GoogleLoginRequest;
+import com.training.cvmanagementbe.dto.request.auth.LoginRequest;
+import com.training.cvmanagementbe.dto.response.configs.ApiResponse;
+import com.training.cvmanagementbe.dto.response.auth.LoginResponse;
+import com.training.cvmanagementbe.dto.response.auth.ResetPasswordResponse;
 import com.training.cvmanagementbe.entity.models.CurrentActor;
 import com.training.cvmanagementbe.service.impl.AuthService;
 import io.swagger.v3.oas.annotations.Operation;

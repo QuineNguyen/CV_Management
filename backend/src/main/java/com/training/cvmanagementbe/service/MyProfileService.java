@@ -1,7 +1,7 @@
 package com.training.cvmanagementbe.service;
 
-import com.training.cvmanagementbe.dto.request.ProfileUpdateSubmitRequest;
-import com.training.cvmanagementbe.dto.response.MyProfileResponse;
+import com.training.cvmanagementbe.dto.request.profile_updates.ProfileUpdateSubmitRequest;
+import com.training.cvmanagementbe.dto.response.profile_updates.MyProfileResponse;
 
 import java.util.UUID;
 

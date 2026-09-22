@@ -57,6 +57,10 @@ public final class ApiPath {
     public static final String DRAFT_REJECT = "/drafts/{draftId}/reject";
     public static final String DRAFT_RESUBMIT = "/drafts/{draftId}/resubmit";
     public static final String COMMENT_REPLY = "/comments/{commentId}/reply";
+    public static final String PENDING_DRAFTS = "/drafts/pending";
+    public static final String DRAFT_CANCEL = "/drafts/{draftId}/cancel";
+    public static final String DRAFT_REASSIGN = "/drafts/{draftId}/reassign";
+    public static final String DRAFT_REASSIGN_CANDIDATES = "/drafts/{draftId}/reassign-candidates";
 
     private ApiPath() {}
 }

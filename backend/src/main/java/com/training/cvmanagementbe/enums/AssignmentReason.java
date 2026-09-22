@@ -56,7 +56,10 @@ public enum AssignmentReason {
     STICKY_RESUBMIT_LEAD("Same tech lead as previous round; resubmitted after rejection"),
 
     // args: tied candidate count, open assignment count
-    STICKY_RESUBMIT_HR("Same HR as previous round; resubmitted after rejection");
+    STICKY_RESUBMIT_HR("Same HR as previous round; resubmitted after rejection"),
+
+    // args: admin full name, reason text - the only lasting record of a manual handover
+    ADMIN_REASSIGNED("Reassigned by %s. Reason: %s");
 
     private final String template;
 

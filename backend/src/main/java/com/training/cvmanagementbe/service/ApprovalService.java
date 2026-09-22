@@ -1,8 +1,9 @@
 package com.training.cvmanagementbe.service;
 
-import com.training.cvmanagementbe.dto.request.RejectDraftRequest;
-import com.training.cvmanagementbe.dto.request.ReplyCommentRequest;
-import com.training.cvmanagementbe.dto.response.*;
+import com.training.cvmanagementbe.dto.request.approvals.RejectDraftRequest;
+import com.training.cvmanagementbe.dto.request.approvals.ReplyCommentRequest;
+import com.training.cvmanagementbe.dto.response.approvals.*;
+import com.training.cvmanagementbe.dto.response.configs.PagedResponse;
 import org.springframework.data.domain.Pageable;
 
 import java.util.UUID;

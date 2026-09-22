@@ -1,6 +1,6 @@
 package com.training.cvmanagementbe.config;
 
-import com.training.cvmanagementbe.dto.response.ApiResponse;
+import com.training.cvmanagementbe.dto.response.configs.ApiResponse;
 import org.springframework.core.MethodParameter;
 import org.springframework.core.io.Resource;
 import org.springframework.http.MediaType;

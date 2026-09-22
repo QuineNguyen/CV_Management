@@ -1,10 +1,13 @@
 package com.training.cvmanagementbe.service.impl;
 
 import com.training.cvmanagementbe.common.AuditLogger;
-import com.training.cvmanagementbe.dto.request.InlineCommentRequest;
-import com.training.cvmanagementbe.dto.request.RejectDraftRequest;
-import com.training.cvmanagementbe.dto.request.ReplyCommentRequest;
-import com.training.cvmanagementbe.dto.response.*;
+import com.training.cvmanagementbe.dto.request.approvals.DraftRejectedEvent;
+import com.training.cvmanagementbe.dto.request.approvals.InlineCommentRequest;
+import com.training.cvmanagementbe.dto.request.approvals.RejectDraftRequest;
+import com.training.cvmanagementbe.dto.request.approvals.ReplyCommentRequest;
+import com.training.cvmanagementbe.dto.response.approvals.*;
+import com.training.cvmanagementbe.dto.response.configs.PagedResponse;
+import com.training.cvmanagementbe.dto.response.cvs.CvDraftResponse;
 import com.training.cvmanagementbe.entity.models.*;
 import com.training.cvmanagementbe.enums.*;
 import com.training.cvmanagementbe.exception.ApiException;

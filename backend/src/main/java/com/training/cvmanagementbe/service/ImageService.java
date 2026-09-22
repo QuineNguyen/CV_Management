@@ -1,6 +1,6 @@
 package com.training.cvmanagementbe.service;
 
-import com.training.cvmanagementbe.dto.response.ImageUploadResponse;
+import com.training.cvmanagementbe.dto.response.profile_updates.ImageUploadResponse;
 import org.springframework.web.multipart.MultipartFile;
 
 public interface ImageService {

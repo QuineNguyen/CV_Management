@@ -1,7 +1,7 @@
 package com.training.cvmanagementbe.controller;
 
 import com.training.cvmanagementbe.constant.ApiPath;
-import com.training.cvmanagementbe.dto.response.ImageUploadResponse;
+import com.training.cvmanagementbe.dto.response.profile_updates.ImageUploadResponse;
 import com.training.cvmanagementbe.service.ImageService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;

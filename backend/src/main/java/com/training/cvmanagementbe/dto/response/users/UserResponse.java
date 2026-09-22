@@ -1,0 +1,37 @@
+package com.training.cvmanagementbe.dto.response.users;
+
+import com.training.cvmanagementbe.dto.response.teams.TeamResponse;
+import com.training.cvmanagementbe.enums.AccountStatus;
+import com.training.cvmanagementbe.enums.Role;
+import io.swagger.v3.oas.annotations.media.Schema;
+
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.UUID;
+
+// Full user detail returned by the directory endpoints
+@Schema(name = "UserResponse", description = "Full user detail returned by the directory endpoints")
+public record UserResponse(
+
+        UUID id,
+        String fullName,
+        String email,
+        String username,
+        Role role,
+        AccountStatus status,
+        UUID primaryDepartmentId,
+        String departmentCode,
+        String departmentName,
+        LocalDate dateOfBirth,
+        String phoneNumber,
+        String address,
+        UUID avatarImageId,
+        String avatarUrl,
+        List<UserTeamInfo> teams,
+        // Teams this user currently leads, drives the deactivate dialog.
+        List<TeamResponse> ledTeams,
+        boolean mustChangePassword,
+        LocalDateTime createdAt
+) {
+}

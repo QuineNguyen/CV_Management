@@ -1,12 +1,11 @@
 package com.training.cvmanagementbe.service;
 
-import com.training.cvmanagementbe.dto.request.DepartmentRequest;
-import com.training.cvmanagementbe.dto.response.DepartmentResponse;
-import com.training.cvmanagementbe.dto.request.MoveDepartmentRequest;
-import com.training.cvmanagementbe.dto.response.PagedResponse;
+import com.training.cvmanagementbe.dto.request.departments.DepartmentRequest;
+import com.training.cvmanagementbe.dto.response.departments.DepartmentResponse;
+import com.training.cvmanagementbe.dto.request.departments.MoveDepartmentRequest;
+import com.training.cvmanagementbe.dto.response.configs.PagedResponse;
 import org.springframework.data.domain.Pageable;
 
-import java.util.List;
 import java.util.UUID;
 
 public interface DepartmentService {

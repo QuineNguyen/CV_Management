@@ -2,12 +2,12 @@ package com.training.cvmanagementbe.controller;
 
 import com.training.cvmanagementbe.constant.ApiPath;
 import com.training.cvmanagementbe.constant.PageDefaults;
-import com.training.cvmanagementbe.dto.request.CvProfileRequest;
-import com.training.cvmanagementbe.dto.request.CvProfileRestoreRequest;
-import com.training.cvmanagementbe.dto.response.ApiResponse;
-import com.training.cvmanagementbe.dto.response.CvProfileResponse;
-import com.training.cvmanagementbe.dto.response.EmployeeTeamResponse;
-import com.training.cvmanagementbe.dto.response.PagedResponse;
+import com.training.cvmanagementbe.dto.request.cv_profiles.CvProfileRequest;
+import com.training.cvmanagementbe.dto.request.cv_profiles.CvProfileRestoreRequest;
+import com.training.cvmanagementbe.dto.response.configs.ApiResponse;
+import com.training.cvmanagementbe.dto.response.cv_profiles.CvProfileResponse;
+import com.training.cvmanagementbe.dto.response.teams.EmployeeTeamResponse;
+import com.training.cvmanagementbe.dto.response.configs.PagedResponse;
 import com.training.cvmanagementbe.enums.CvProfileSortField;
 import com.training.cvmanagementbe.service.CvProfileService;
 import io.swagger.v3.oas.annotations.Operation;

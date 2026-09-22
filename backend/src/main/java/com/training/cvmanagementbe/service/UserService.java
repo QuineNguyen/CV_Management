@@ -1,12 +1,12 @@
 package com.training.cvmanagementbe.service;
 
-import com.training.cvmanagementbe.dto.request.CreateUserRequest;
-import com.training.cvmanagementbe.dto.request.DeactivateUserRequest;
-import com.training.cvmanagementbe.dto.request.UpdateUserRequest;
-import com.training.cvmanagementbe.dto.response.CreatedUserResponse;
-import com.training.cvmanagementbe.dto.response.PagedResponse;
-import com.training.cvmanagementbe.dto.response.TechLeadOption;
-import com.training.cvmanagementbe.dto.response.UserResponse;
+import com.training.cvmanagementbe.dto.request.users.CreateUserRequest;
+import com.training.cvmanagementbe.dto.request.users.DeactivateUserRequest;
+import com.training.cvmanagementbe.dto.request.users.UpdateUserRequest;
+import com.training.cvmanagementbe.dto.response.users.CreatedUserResponse;
+import com.training.cvmanagementbe.dto.response.configs.PagedResponse;
+import com.training.cvmanagementbe.dto.response.users.TechLeadOption;
+import com.training.cvmanagementbe.dto.response.users.UserResponse;
 import com.training.cvmanagementbe.enums.AccountStatus;
 import com.training.cvmanagementbe.enums.Role;
 import org.springframework.data.domain.Pageable;

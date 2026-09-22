@@ -1,10 +1,10 @@
 package com.training.cvmanagementbe.service.impl;
 
 import com.training.cvmanagementbe.common.AuditLogger;
-import com.training.cvmanagementbe.dto.request.DepartmentRequest;
-import com.training.cvmanagementbe.dto.response.DepartmentResponse;
-import com.training.cvmanagementbe.dto.request.MoveDepartmentRequest;
-import com.training.cvmanagementbe.dto.response.PagedResponse;
+import com.training.cvmanagementbe.dto.request.departments.DepartmentRequest;
+import com.training.cvmanagementbe.dto.response.departments.DepartmentResponse;
+import com.training.cvmanagementbe.dto.request.departments.MoveDepartmentRequest;
+import com.training.cvmanagementbe.dto.response.configs.PagedResponse;
 import com.training.cvmanagementbe.entity.models.Department;
 import com.training.cvmanagementbe.enums.Action;
 import com.training.cvmanagementbe.enums.ErrorCode;

@@ -2,9 +2,10 @@ package com.training.cvmanagementbe.controller;
 
 import com.training.cvmanagementbe.constant.ApiPath;
 import com.training.cvmanagementbe.constant.PageDefaults;
-import com.training.cvmanagementbe.dto.request.RejectDraftRequest;
-import com.training.cvmanagementbe.dto.request.ReplyCommentRequest;
-import com.training.cvmanagementbe.dto.response.*;
+import com.training.cvmanagementbe.dto.request.approvals.RejectDraftRequest;
+import com.training.cvmanagementbe.dto.request.approvals.ReplyCommentRequest;
+import com.training.cvmanagementbe.dto.response.approvals.*;
+import com.training.cvmanagementbe.dto.response.configs.PagedResponse;
 import com.training.cvmanagementbe.enums.ApprovalSortField;
 import com.training.cvmanagementbe.service.ApprovalService;
 import io.swagger.v3.oas.annotations.Operation;
