@@ -87,6 +87,10 @@ public class TeamServiceImpl implements TeamService {
                 : nextDisplayOrder());
 
         Team saved = teamRepository.save(team);
+
+        // A tech lead always belongs to the team they lead; the id only exists after save.
+        ensureTechLeadMembership(saved.getId(), saved.getTechLeadId());
+
         auditLogger.record(Action.CREATE_TEAM, TargetType.TEAM,
                 saved.getId(), null, toFlatResponse(saved));
         return toResponses(List.of(saved)).get(0);
@@ -110,6 +114,10 @@ public class TeamServiceImpl implements TeamService {
         }
 
         Team saved = teamRepository.save(team);
+
+        // Called unconditionally: the existence check is cheaper than tracking old vs new
+        ensureTechLeadMembership(saved.getId(), saved.getTechLeadId());
+
         auditLogger.record(Action.UPDATE_TEAM, TargetType.TEAM,
                 saved.getId(), before, toFlatResponse(saved));
         return toResponses(List.of(saved)).get(0);
@@ -122,6 +130,11 @@ public class TeamServiceImpl implements TeamService {
         validateDeletable(id);
 
         TeamResponse before = toFlatResponse(team);
+
+        // Deleting a team detaches its members; validateDeletable proved this is safe
+        teamMemberRepository.deleteByTeamId(id);
+        teamMemberRepository.flush();
+
         teamRepository.delete(team);
         auditLogger.record(Action.DELETE_TEAM, TargetType.TEAM, id, before, null);
     }
@@ -183,10 +196,19 @@ public class TeamServiceImpl implements TeamService {
         }
     }
 
-    // Only an empty team can be deleted: no member, no active CV profile linked
+    /*
+     * A team always has at least its tech lead as a member, so "no members" is no longer a
+     * usable condition. Deletion is blocked by what it would break instead: someone's primary
+     * team, someone's only team, or a team still referenced by an active CV profile.
+     */
     private void validateDeletable(UUID id) {
-        if (teamMemberRepository.existsByTeamId(id)) {
-            throw new ApiException.BusinessRuleException(ErrorCode.TEAM_HAS_MEMBERS);
+        if (teamMemberRepository.existsByTeamIdAndPrimaryTeamTrue(id)) {
+            throw new ApiException.BusinessRuleException(ErrorCode.CANNOT_DELETE_PRIMARY_TEAM);
+        }
+        for (TeamMember member : teamMemberRepository.findByTeamId(id)) {
+            if (teamMemberRepository.countByUserId(member.getUserId()) <= 1) {
+                throw new ApiException.BusinessRuleException(ErrorCode.CANNOT_DELETE_ONLY_TEAM);
+            }
         }
         if (teamRepository.countActiveProfilesByTeamId(id) > 0) {
             throw new ApiException.BusinessRuleException(ErrorCode.TEAM_HAS_PROFILES);
@@ -203,6 +225,11 @@ public class TeamServiceImpl implements TeamService {
     }
 
     private void validateRemovable(UUID teamId, UUID userId, TeamMember membership) {
+        // The acting tech lead cannot be removed from their own team
+        Team team = requireTeam(teamId);
+        if (team.getTechLeadId().equals(userId)) {
+            throw new ApiException.BusinessRuleException(ErrorCode.CANNOT_REMOVE_LEADING_MEMBER);
+        }
         // Removing the last membership would leave the user without any team
         if (teamMemberRepository.countByUserId(userId) <= 1) {
             throw new ApiException.BusinessRuleException(ErrorCode.CANNOT_REMOVE_ONLY_TEAM);
@@ -218,6 +245,27 @@ public class TeamServiceImpl implements TeamService {
     }
 
     // ---------- Private helpers ----------
+
+    /*
+     * Ensures the tech lead is a member of the given team.
+     * A no-op when they already belong to it, so every assignment path can call it blindly.
+     */
+    private void ensureTechLeadMembership(UUID teamId, UUID techLeadId) {
+        if (teamMemberRepository.existsByUserIdAndTeamId(techLeadId, teamId)) {
+            return;
+        }
+
+        TeamMember saved = teamMemberRepository.save(TeamMember.builder()
+                .userId(techLeadId)
+                .teamId(teamId)
+                .primaryTeam(false)
+                .build());
+
+        User lead = requireUser(techLeadId);
+        auditLogger.record(Action.UPDATE_TEAM, TargetType.TEAM,
+                teamId, null, toMemberResponse(saved, lead));
+    }
+
     // Tech lead names and member counts are resolved in bulk to avoid N + 1
     private List<TeamResponse> toResponses(List<Team> teams) {
         if (teams.isEmpty()) {

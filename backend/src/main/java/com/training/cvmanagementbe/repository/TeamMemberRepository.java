@@ -41,4 +41,10 @@ public interface TeamMemberRepository extends JpaRepository<TeamMember, UUID> {
     @Query("SELECT tm.teamId, COUNT(tm) FROM TeamMember tm "
             + "WHERE tm.teamId IN :teamIds GROUP BY tm.teamId")
     List<Object[]> countGroupedByTeamIds(@Param("teamIds") Collection<UUID> teamIds);
+
+    // True when at least one member has this team as their primary team.
+    boolean existsByTeamIdAndPrimaryTeamTrue(UUID teamId);
+
+    // Clears every membership of a team, used when the team itself is deleted.
+    void deleteByTeamId(UUID teamId);
 }

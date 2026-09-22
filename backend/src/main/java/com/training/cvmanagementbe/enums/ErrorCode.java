@@ -89,6 +89,9 @@ public enum ErrorCode {
     USER_ALREADY_IN_TEAM("User already belongs to this team"),
     CANNOT_REMOVE_ONLY_TEAM("User must belong to at least one team"),
     CANNOT_REMOVE_PRIMARY_TEAM("Cannot remove the primary team"),
+    CANNOT_REMOVE_LEADING_MEMBER("Cannot remove the tech lead from the team they manage; reassign the lead first"),
+    CANNOT_DELETE_PRIMARY_TEAM("Cannot delete a team that is someone's primary team"),
+    CANNOT_DELETE_ONLY_TEAM("Cannot delete a team that is the only team of a member"),
 
     // ---------- User ----------
     PRIMARY_TEAM_REQUIRED("Exactly one primary team is required"),

@@ -185,7 +185,8 @@
       <h2 class="modal-title">Delete team</h2>
       <p class="modal-body">
         Delete <strong>{{ target.code }} — {{ target.name }}</strong>?
-        Only teams without members and without linked CV profiles can be deleted
+        Members are detached from the team. Deletion is blocked when the team is
+        someone's primary or only team, or when an active CV profile still links to it
       </p>
       <div class="modal-footer">
         <button type="button" class="btn btn-ghost" (click)="cancelDelete()" [disabled]="deleting()">Cancel</button>
