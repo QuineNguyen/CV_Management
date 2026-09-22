@@ -19,6 +19,9 @@
       @if (deletedInMaster) {
         <span class="status-badge is-danger">Removed in master</span>
       }
+      @if (openThreadCount(); as count) {
+        <span class="status-badge is-comment">{{ count }} {{ count === 1 ? 'comment' : 'comments' }}</span>
+      }
     </div>
 
     <div class="cv-item-actions">
@@ -33,6 +36,13 @@
   <!-- Expandable body -->
   <div class="cv-item-collapse" [class.is-expanded]="expanded()">
     <div class="cv-item-collapse-inner">
+      <!-- Comments pinned to this entry; the reply box works even when the form is locked -->
+      @if (showThreads()) {
+        <div class="cv-item-comments">
+          <app-inline-comment-thread [threads]="threads()" />
+        </div>
+      }
+
       <div class="cv-item-body form-grid">
         @for (field of section().fields; track field.key) {
           <div class="field" [class.field-half]="field.half" [class.custom-select-wrap]="field.kind === FieldKind.Select">

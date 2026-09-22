@@ -50,7 +50,13 @@ public enum AssignmentReason {
     ROUND_ROBIN_HR("Round robin among %d HR tied on %d open assignments; idle the longest"),
 
     // args: open assignment count of the chosen person, candidate count
-    ADMIN_FALLBACK("Admin fallback: no active HR available; least loaded admin (%d open, %d eligible)");
+    ADMIN_FALLBACK("Admin fallback: no active HR available; least loaded admin (%d open, %d eligible)"),
+
+    // args: tied candidate count, open assignment count
+    STICKY_RESUBMIT_LEAD("Same tech lead as previous round; resubmitted after rejection"),
+
+    // args: tied candidate count, open assignment count
+    STICKY_RESUBMIT_HR("Same HR as previous round; resubmitted after rejection");
 
     private final String template;
 

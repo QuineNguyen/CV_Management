@@ -30,6 +30,7 @@ public class ApprovalAssignment {
     public static final AssignmentStatus OPEN_STATUS = AssignmentStatus.ASSIGNED;
 
     @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
     @Column(name = "id", nullable = false)
     private UUID id;
 
@@ -77,13 +78,6 @@ public class ApprovalAssignment {
     private LocalDateTime closedAt;
 
     // ---------- Derived ----------
-
-    @PrePersist
-    void assignId() {
-        if (id == null) {
-            id = UUID.randomUUID();
-        }
-    }
 
     @Transient
     public ApprovalLevel approvalLevel() {

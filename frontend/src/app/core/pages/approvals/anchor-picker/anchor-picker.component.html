@@ -1,0 +1,162 @@
+<div class="anchor-picker">
+  <div class="field custom-select-wrap">
+    <label class="field-label" id="anchor-section-label">
+      Section <span class="field-required">*</span>
+    </label>
+    <button
+      type="button"
+      id="anchor-section"
+      class="field-input custom-select-trigger"
+      [class.is-open]="openSelectKey() === 'section'"
+      (click)="toggleSelect('section', $event)"
+      aria-haspopup="listbox"
+      aria-labelledby="anchor-section-label"
+      [attr.aria-expanded]="openSelectKey() === 'section'">
+      <span class="custom-select-label">
+        {{ selectedSectionLabel() }}
+      </span>
+    </button>
+
+    @if (openSelectKey() === 'section') {
+      <div class="custom-select-panel" (click)="$event.stopPropagation()">
+        <ul class="custom-select-list" role="listbox">
+          <li role="option" [attr.aria-selected]="!sectionKey()">
+            <button
+              type="button"
+              class="custom-select-option"
+              [class.is-selected]="!sectionKey()"
+              (click)="selectSection('')">
+              Select a section
+            </button>
+          </li>
+          @for (option of sections; track option.key) {
+            <li role="option" [attr.aria-selected]="option.key === sectionKey()">
+              <button
+                type="button"
+                class="custom-select-option"
+                [class.is-selected]="option.key === sectionKey()"
+                (click)="selectSection(option.key)">
+                {{ option.label }}
+              </button>
+            </li>
+          }
+        </ul>
+      </div>
+    }
+  </div>
+
+  @if (section(); as section) {
+    @if (section.repeated) {
+      <div class="field custom-select-wrap">
+        <label class="field-label" id="anchor-item-label">
+          Entry <span class="field-required">*</span>
+        </label>
+        <button
+          type="button"
+          id="anchor-item"
+          class="field-input custom-select-trigger"
+          [class.is-open]="openSelectKey() === 'item'"
+          [disabled]="!items().length"
+          (click)="toggleSelect('item', $event)"
+          aria-haspopup="listbox"
+          aria-labelledby="anchor-item-label"
+          [attr.aria-expanded]="openSelectKey() === 'item'">
+          <span class="custom-select-label">
+            {{ selectedItemLabel() }}
+          </span>
+        </button>
+
+        @if (openSelectKey() === 'item') {
+          <div class="custom-select-panel" (click)="$event.stopPropagation()">
+            <ul class="custom-select-list" role="listbox">
+              <li role="option" [attr.aria-selected]="!itemId()">
+                <button
+                  type="button"
+                  class="custom-select-option"
+                  [class.is-selected]="!itemId()"
+                  (click)="selectItem('')">
+                  Select an entry
+                </button>
+              </li>
+              @for (item of items(); track item.id) {
+                <li role="option" [attr.aria-selected]="item.id === itemId()">
+                  <button
+                    type="button"
+                    class="custom-select-option"
+                    [class.is-selected]="item.id === itemId()"
+                    (click)="selectItem(item.id)">
+                    {{ item.label }}
+                  </button>
+                </li>
+              }
+            </ul>
+          </div>
+        }
+
+        @if (!items().length) {
+          <span class="field-hint">This section has no entries to comment on</span>
+        }
+      </div>
+    }
+
+    <div class="field custom-select-wrap">
+      <label class="field-label" id="anchor-field-label">Field</label>
+      <button
+        type="button"
+        id="anchor-field"
+        class="field-input custom-select-trigger"
+        [class.is-open]="openSelectKey() === 'field'"
+        (click)="toggleSelect('field', $event)"
+        aria-haspopup="listbox"
+        aria-labelledby="anchor-field-label"
+        [attr.aria-expanded]="openSelectKey() === 'field'">
+        <span class="custom-select-label">
+          {{ selectedFieldLabel() }}
+        </span>
+      </button>
+
+      @if (openSelectKey() === 'field') {
+        <div class="custom-select-panel" (click)="$event.stopPropagation()">
+          <ul class="custom-select-list" role="listbox">
+            <li role="option" [attr.aria-selected]="!fieldKey()">
+              <button
+                type="button"
+                class="custom-select-option"
+                [class.is-selected]="!fieldKey()"
+                (click)="selectField('')">
+                {{ section.repeated ? "Whole entry" : "Whole section" }}
+              </button>
+            </li>
+            @for (field of section.fields; track field.key) {
+              <li role="option" [attr.aria-selected]="field.key === fieldKey()">
+                <button
+                  type="button"
+                  class="custom-select-option"
+                  [class.is-selected]="field.key === fieldKey()"
+                  (click)="selectField(field.key)">
+                  {{ field.label }}
+                </button>
+              </li>
+            }
+          </ul>
+        </div>
+      }
+    </div>
+  }
+
+  <div class="field">
+    <label class="field-label" for="anchor-text">
+      Comment <span class="field-required">*</span>
+    </label>
+    <textarea id="anchor-text" class="field-input anchor-text" rows="3"
+              placeholder="What is wrong here and what should it say"
+              [attr.maxlength]="maxLength"
+              [value]="text()"
+              (input)="onTextInput($event)"></textarea>
+    <span class="field-hint">{{ text().length }}/{{ maxLength }}</span>
+  </div>
+
+  <button type="button" class="btn btn-ghost anchor-add" [disabled]="!canAdd()" (click)="add()">
+    Add comment
+  </button>
+</div>

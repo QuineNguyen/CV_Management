@@ -4,6 +4,7 @@ import { LifecycleStatus } from "../enums/lifecycle-status.enum";
 import { CvSortField, SortDirection } from "../enums/sort-field.enum";
 import { VersionSource } from "../enums/version-source.enum";
 import { CvContent } from "../models/cv-content.model";
+import { InlineCommentResponse } from "./inline-comment.dto";
 
 export interface CvCreateRequest {
     language: CvLanguage;
@@ -81,6 +82,7 @@ export interface CvDraftResponse {
     untranslatedItemCount: number;
     submittedAt: string | null;
     updatedAt: string;
+    inlineComments: InlineCommentResponse[];
 }
 
 // One shape, two outcomes; directPublish says which branch the owner's role took.

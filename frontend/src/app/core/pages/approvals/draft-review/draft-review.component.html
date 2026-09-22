@@ -46,7 +46,9 @@
         <app-cv-content-editor
           [content]="review.draft.content"
           [language]="review.cvLanguage"
-          [readOnly]="true" />
+          [readOnly]="true"
+          [inlineComments]="inlineComments()"
+          [canReplyToComments]="true" />
       </div>
 
       <!-- Right: assignment context and history -->
@@ -88,7 +90,7 @@
 
           @if (!decisions().length) {
             <p class="text-muted">
-              First time through. Nothing has been decided on this draft yet
+              Nothing has been decided on this draft yet
             </p>
           } @else {
             <ol class="decision-list">
@@ -115,65 +117,140 @@
               }
             </ol>
           }
+
+          @if (earlierThreadCount(); as count) {
+            <p class="side-note">
+              {{ count }} {{ count === 1 ? 'comment thread' : 'comment threads' }} from earlier rounds
+              {{ count === 1 ? 'is' : 'are' }} pinned next to the content
+            </p>
+          }
         </section>
 
         @if (assignment()) {
           <section class="side-card decision-card"
                    aria-label="Decision"
-                   [class.is-confirming]="confirmOpen()">
+                   [class.is-confirming]="confirmOpen()"
+                   [class.is-rejecting]="rejectFormOpen()">
             <h2 class="side-card-title">Decision</h2>
  
-            @if (!confirmOpen()) {
-              <p class="decision-hint">
-                @if (isFinalLevel()) {
-                  Check format and spelling. Approving publishes this draft as the CV's new current version
-                } @else {
-                  Check technical accuracy. Approving forwards this draft to HR for a format review
-                }
-              </p>
- 
-              <button type="button"
-                      class="btn btn-primary decision-btn"
-                      (click)="requestApprove()">
-                {{ approveLabel() }}
-              </button>
- 
-              <p class="decision-note text-muted">
-                Rejecting with inline comments arrives in the next part of this stage
-              </p>
-            } @else {
-              <div class="inline-confirm"
-                   role="alertdialog"
-                   aria-labelledby="approve-confirm-text"
-                   aria-live="polite">
-                <p id="approve-confirm-text" class="inline-confirm-text">
+            @switch (mode()) {
+              @case (Mode.Idle) {
+                <p class="decision-hint">
                   @if (isFinalLevel()) {
-                    Publish this draft as a <strong>new version</strong>? Published versions are permanent
+                    Check format and spelling. Approving publishes a new version
                   } @else {
-                    Forward this draft to <strong>HR</strong> for format review? You can't change this decision later
+                    Check technical accuracy. Approving forwards to HR
                   }
                 </p>
  
-                <div class="inline-confirm-actions">
-                  <button type="button"
-                          class="btn btn-primary"
-                          (click)="confirmApprove()"
-                          [disabled]="approving()">
-                    @if (approving()) {
-                      <span class="btn-spinner" aria-hidden="true"></span>
-                      Processing…
-                    } @else {
-                      {{ approveLabel() }}
-                    }
+                <div class="decision-actions">
+                  <button type="button" class="btn btn-primary decision-btn" (click)="requestApprove()">
+                    {{ approveLabel() }}
                   </button>
-                  <button type="button"
-                          class="btn btn-ghost"
-                          (click)="cancelApprove()"
-                          [disabled]="approving()">
-                    Cancel
+                  <button type="button" class="btn btn-ghost decision-btn decision-reject" (click)="startReject()">
+                    Reject
                   </button>
                 </div>
-              </div>
+              }
+ 
+              @case (Mode.ConfirmApprove) {
+                <div class="inline-confirm"
+                     role="alertdialog"
+                     aria-labelledby="approve-confirm-text"
+                     aria-live="polite">
+                  <p id="approve-confirm-text" class="inline-confirm-text">
+                    @if (isFinalLevel()) {
+                      Publish this draft as a <strong>new version</strong>? Published versions are permanent
+                    } @else {
+                      Forward this draft to <strong>HR</strong> for format review? You can't change this decision later
+                    }
+                  </p>
+ 
+                  <div class="inline-confirm-actions">
+                    <button type="button" class="btn btn-primary" (click)="confirmApprove()" [disabled]="approving()">
+                      @if (approving()) {
+                        <span class="btn-spinner" aria-hidden="true"></span>
+                        Processing…
+                      } @else {
+                        {{ approveLabel() }}
+                      }
+                    </button>
+                    <button type="button" class="btn btn-ghost" (click)="cancelApprove()" [disabled]="approving()">
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              }
+ 
+              @case (Mode.Rejecting) {
+                <div class="reject-form">
+                  <p class="decision-hint">
+                    The draft goes back to its owner. On resubmit it restarts at the tech lead review,
+                    and you are kept as the reviewer if you are still available
+                  </p>
+ 
+                  <div class="field">
+                    <label class="field-label" for="reject-reason">
+                      Overall reason <span class="field-required">*</span>
+                    </label>
+                    <textarea id="reject-reason" class="field-input reject-reason" rows="4"
+                              placeholder="What must change before this can be approved"
+                              [attr.maxlength]="reasonMaxLength"
+                              [value]="rejectReason()"
+                              [disabled]="rejecting()"
+                              (input)="onReasonInput($event)"></textarea>
+                    <span class="field-hint">{{ rejectReason().length }}/{{ reasonMaxLength }}</span>
+                  </div>
+ 
+                  <div class="pending-comments">
+                    <div class="pending-head">
+                      <span class="field-label">Comments ({{ pendingComments().length }})</span>
+                      <button type="button" class="link-btn" (click)="togglePicker()" [disabled]="rejecting()">
+                        {{ pickerOpen() ? 'Close' : '+ Add comment' }}
+                      </button>
+                    </div>
+ 
+                    @if (pickerOpen()) {
+                      <app-anchor-picker [content]="review.draft.content" (added)="addPendingComment($event)" />
+                    }
+ 
+                    @if (pendingComments().length) {
+                      <ul class="pending-list">
+                        @for (comment of pendingComments(); track comment.localId) {
+                          <li class="pending-item">
+                            <div class="pending-body">
+                              <span class="pending-anchor">{{ comment.anchorLabel }}</span>
+                              <p class="pending-text">{{ comment.request.content }}</p>
+                            </div>
+                            <button type="button" class="icon-btn icon-btn-danger"
+                                    aria-label="Remove comment"
+                                    [disabled]="rejecting()"
+                                    (click)="removePendingComment(comment.localId)">✕</button>
+                          </li>
+                        }
+                      </ul>
+                    } @else if (!pickerOpen()) {
+                      <p class="pending-empty text-muted">
+                        Optional. Pin comments to the sections, entries or fields that need changes
+                      </p>
+                    }
+                  </div>
+ 
+                  <div class="inline-confirm-actions">
+                    <button type="button" class="btn btn-danger" (click)="confirmReject()" [disabled]="!canSubmitReject()">
+                      @if (rejecting()) {
+                        <span class="btn-spinner" aria-hidden="true"></span>
+                        Rejecting…
+                      } @else {
+                        Submit rejection
+                      }
+                    </button>
+                    <button type="button" class="btn btn-ghost" (click)="cancelReject()" [disabled]="rejecting()">
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              }
             }
           </section>
         }

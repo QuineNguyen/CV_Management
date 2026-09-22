@@ -22,6 +22,7 @@ import java.util.UUID;
 public class CvVersion {
 
     @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
     @Column(name = "id", updatable = false, nullable = false)
     private UUID id;
 
@@ -67,11 +68,4 @@ public class CvVersion {
 
     @Column(name = "change_summary", updatable = false, columnDefinition = "TEXT")
     private String changeSummary;
-
-    @PrePersist
-    void assignId() {
-        if (id == null) {
-            id = UUID.randomUUID();
-        }
-    }
 }

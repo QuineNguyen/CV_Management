@@ -13,6 +13,11 @@
     }
   </header>
 
+  <!-- Comments pinned to the section itself (SINGLE sections only) -->
+  @if (sectionThreads().length) {
+    <app-inline-comment-thread [threads]="sectionThreads()" />
+  }
+
   <!-- SINGLE: fields inline -->
   @if (!section().repeated) {
     <div class="form-grid" [formGroup]="singleGroup">
@@ -114,6 +119,12 @@
 
   <!-- REPEATED: reorderable list -->
   @else {
+    @if (orphanThreads(); as orphans) {
+      @if (orphans.length) {
+        <p class="cv-section-orphan-note">Comments on entries that have since been removed</p>
+        <app-inline-comment-thread [threads]="orphans" />
+      }
+    }
     @if (!itemGroups.length) {
       <p class="cv-section-empty">
         No {{ section().itemNoun }} added yet

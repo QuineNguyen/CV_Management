@@ -1,6 +1,6 @@
 :host {
   color: var(--vt-ink);
-  --vt-modal-w: min(36rem, 100%);
+  --vt-modal-w: min(40rem, 100%);
   --vt-modal-h: min(90vh, 46rem);
   --vt-modal-z: 60;
 }
@@ -76,6 +76,19 @@
   color: var(--vt-red);
   font-size: var(--vt-fs-sm);
   font-weight: 700;
+}
+
+.handover-select-wrap {
+  position: relative;
+  flex: 1 1 min(14rem, 100%);
+}
+
+.handover-select-wrap:has(.is-open) {
+  z-index: 30;
+}
+
+.handover-select-wrap .field-input {
+  width: 100%;
 }
 
 .field-input {

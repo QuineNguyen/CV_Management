@@ -74,6 +74,21 @@
   z-index: 30;
 }
 
+/* ---------- Inline comments ---------- */
+.cv-section-orphan-note {
+  margin: 0 0 calc(var(--vt-gap) * 0.5);
+  font-size: var(--vt-fs-sm);
+  font-weight: 600;
+  color: var(--vt-ink-muted);
+}
+
+.cv-section-comment-anchor {
+  margin: 0 0 calc(var(--vt-gap) * 0.4);
+  font-size: var(--vt-fs-sm);
+  font-weight: 700;
+  color: var(--vt-ink);
+}
+
 @media (min-width: 48rem) {
   .form-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));

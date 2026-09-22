@@ -55,6 +55,10 @@ public enum ErrorCode {
     DRAFT_MISSING_REQUIRED_SECTIONS("Personal info, at least one skill and at least one experience entry are required before submitting"),
     APPROVER_NOT_AVAILABLE("No eligible approver could be resolved for this CV"),
     NOT_CURRENT_ASSIGNEE("This CV has already been handled or reassigned to someone else"),
+    DRAFT_NOT_REJECTED("Only a rejected draft can be resubmitted"),
+    INVALID_COMMENT_ANCHOR("A comment points at a section, entry or field that does not exist in this draft"),
+    CANNOT_REPLY_RESOLVED("This comment belongs to a finished review round and can no longer be replied to"),
+    CANNOT_REPLY_COMMENT("Only the CV owner or the current reviewer can reply to this comment"),
 
     // ---------- Update requests ----------
     PENDING_REQUEST_EXISTS("A pending update request already exists for this employee, profile and language"),
@@ -117,7 +121,6 @@ public enum ErrorCode {
     MUST_DESIGNATE_NEW_MASTER("This CV is the master; designate a replacement before deleting"),
     INVALID_NEW_MASTER("The designated master must be another active CV of the same profile"),
     CV_HAS_PENDING_DRAFTS("Cannot delete a CV that has drafts awaiting approval"),
-    CV_HAS_NO_VERSION("This CV has no published version yet"),
 
     // ---------- CV Profile restore ----------
     PROFILE_NAME_CONFLICT_ON_RESTORE("Another active profile of this employee already uses that name; provide a new name"),

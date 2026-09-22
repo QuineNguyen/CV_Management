@@ -1,5 +1,7 @@
 package com.training.cvmanagementbe.service;
 
+import com.training.cvmanagementbe.dto.request.RejectDraftRequest;
+import com.training.cvmanagementbe.dto.request.ReplyCommentRequest;
 import com.training.cvmanagementbe.dto.response.*;
 import org.springframework.data.domain.Pageable;
 
@@ -30,4 +32,13 @@ public interface ApprovalService {
 
     // Approves at the current level; level 2 also publishes. CAS on (status, assignee)
     DraftApproveResponse approve(UUID draftId);
+
+    // Rejects at the current level.
+    DraftRejectResponse reject(UUID draftId, RejectDraftRequest request);
+
+    // Re-submits a rejected draft for approval.
+    DraftSubmitResponse resubmit(UUID draftId);
+
+    // Replies to an inline comment.
+    InlineCommentResponse replyToComment(UUID commentId, ReplyCommentRequest request);
 }

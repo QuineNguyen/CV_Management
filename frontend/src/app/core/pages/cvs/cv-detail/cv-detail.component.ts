@@ -6,7 +6,7 @@ import { CvService } from "../../../services/cv.service";
 import { AuthService } from "../../../services/auth.service";
 import { ToastService } from "../../../services/toast.service";
 import { CV_LANGUAGE_LABELS } from "../../../enums/cv-language.enum";
-import { DRAFT_STATUS_LABELS } from "../../../enums/draft-status.enum";
+import { DRAFT_STATUS_LABELS, DraftStatus } from "../../../enums/draft-status.enum";
 import { VERSION_SOURCE_LABELS } from "../../../enums/version-source.enum";
 import { CvDetailResponse, CvResponse } from "../../../dtos/cv.dto";
 import { UserRole } from "../../../enums/user-role.enum";
@@ -14,6 +14,7 @@ import { LifecycleStatus } from "../../../enums/lifecycle-status.enum";
 import { AppRoute } from "../../../enums/app-route.enum";
 import { QueryParam } from "../../../enums/query-param.enum";
 import { MatTooltipModule } from "@angular/material/tooltip";
+import { InlineCommentStatus } from "../../../enums/inline-comment-status.enum";
 
 /*
  * Read-only view of a CV's current version, plus the actions available on it.
@@ -55,6 +56,23 @@ export class CvDetailComponent implements OnInit {
     readonly canEdit = computed(() => this.auth.user()?.id === this.detail()?.cv.employeeId);
 
     readonly canDelete = computed(() => this.auth.hasRole(UserRole.Admin, UserRole.HR));
+
+    /*
+     * Review feedback is addressed to the author. HR, Admin and tech leads open this screen to read
+     * the official CV, so the rejection banner and the comments stay hidden from them.
+     */
+    readonly rejectedForOwner = computed(() => this.canEdit() && this.detail()?.openDraft?.status === DraftStatus.Rejected);
+
+    readonly openCommentCount = computed(() => (this.detail()?.openDraft?.inlineComments ?? [])
+        .filter(comment => !comment.parentCommentId && comment.status === InlineCommentStatus.Open)
+        .length);
+
+    /*
+     * Comments anchor to the item ids of the draft, so they are only handed to the editor that
+     * renders the draft. Pinning them next to published content would point at the wrong entries.
+     * No canReplyToComments: replying belongs in the edit screen, where the fixes are made.
+     */
+    readonly draftComments = computed(() => this.canEdit() ? this.detail()?.openDraft?.inlineComments ?? [] : []);
 
     // Other active CVs of the same profile - the candidates for a new master.
     readonly masterCandidates = computed(() => this.siblings()

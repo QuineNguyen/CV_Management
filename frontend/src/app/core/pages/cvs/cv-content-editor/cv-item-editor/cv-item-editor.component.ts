@@ -1,5 +1,5 @@
 import { CdkDrag, CdkDragHandle } from "@angular/cdk/drag-drop";
-import { ChangeDetectionStrategy, Component, HostListener, input, output, signal } from "@angular/core";
+import { ChangeDetectionStrategy, Component, computed, HostListener, inject, input, output, signal } from "@angular/core";
 import { FormGroup, ReactiveFormsModule } from "@angular/forms";
 import { MatToolbarModule } from "@angular/material/toolbar";
 import { MatDatepickerModule } from "@angular/material/datepicker";
@@ -8,6 +8,9 @@ import { FieldDescriptor, FieldKind, notSpecifiedLabel, optionsFor, SectionDescr
 import { CvLanguage } from "../../../../enums/cv-language.enum";
 import { CvDatePipe } from "../../../../utils/cv-date.util";
 import { CustomDateAdapter, DD_MM_YYYY_FORMATS } from "../../../../utils/app-date-adapter.util";
+import { InlineCommentThreadComponent } from "../../../approvals/inline-comment-thread/inline-comment-thread.component";
+import { InlineCommentStore } from "../../../../services/inline-comment-store.service";
+import { isOpenThread } from "../../../../models/inline-comment.model";
 
 /*
  * One entry of a REPEATED section, rendered from its section descriptor rather than a bespoke
@@ -19,7 +22,7 @@ import { CustomDateAdapter, DD_MM_YYYY_FORMATS } from "../../../../utils/app-dat
 @Component({
     selector: 'app-cv-item-editor',
     standalone: true,
-    imports: [ReactiveFormsModule, CdkDrag, CdkDragHandle, MatToolbarModule, MatDatepickerModule, MatNativeDateModule, CvDatePipe],
+    imports: [ReactiveFormsModule, CdkDrag, CdkDragHandle, MatToolbarModule, MatDatepickerModule, MatNativeDateModule, CvDatePipe, InlineCommentThreadComponent],
     providers: [
         { provide: DateAdapter, useClass: CustomDateAdapter },
         { provide: MAT_DATE_FORMATS, useValue: DD_MM_YYYY_FORMATS },
@@ -29,6 +32,8 @@ import { CustomDateAdapter, DD_MM_YYYY_FORMATS } from "../../../../utils/app-dat
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class CvItemEditorComponent {
+
+    private readonly commentStore = inject(InlineCommentStore);
 
     readonly FieldKind = FieldKind;
 
@@ -43,6 +48,17 @@ export class CvItemEditorComponent {
     readonly removed = output<number>();
 
     readonly openSelectKey = signal<string | null>(null);
+
+    // item_id never changes for a given group, so reading it inside computed is stable.
+    readonly threads = computed(() =>
+        this.commentStore.threadsFor(this.section().key, this.group().get('item_id')?.value ?? null)
+    );
+
+    // Shown on the collapsed header, so an entry with feedback is visible without opening it.
+    readonly openThreadCount = computed(() => this.threads().filter(isOpenThread).length);
+
+    // Shown inside the entry body whenever there are comments pinned to it.
+    readonly showThreads = computed(() => this.threads().length > 0);
 
     // Falls back to a positional label so a brand-new entry is still identifiable.
     title(): string {

@@ -22,6 +22,7 @@ import java.util.UUID;
 public class ChangeLogEntry {
 
     @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
     @Column(name = "id", updatable = false, nullable = false)
     private UUID id;
 
@@ -50,11 +51,4 @@ public class ChangeLogEntry {
 
     @Column(name = "new_value", updatable = false, columnDefinition = "TEXT")
     private String newValue;
-
-    @PrePersist
-    void assignId() {
-        if (id == null) {
-            id = UUID.randomUUID();
-        }
-    }
 }

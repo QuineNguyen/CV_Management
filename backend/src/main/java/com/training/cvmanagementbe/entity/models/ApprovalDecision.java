@@ -24,6 +24,7 @@ import java.util.UUID;
 public class ApprovalDecision {
 
     @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
     @Column(name = "id", nullable = false)
     private UUID id;
 
@@ -51,14 +52,6 @@ public class ApprovalDecision {
 
     @Column(name = "decided_at", nullable = false)
     private LocalDateTime decidedAt;
-
-    // Generated here rather than by the DB, so the row can be referenced before it is flushed.
-    @PrePersist
-    void assignId() {
-        if (id == null) {
-            id = UUID.randomUUID();
-        }
-    }
 
     @Transient
     public ApprovalLevel approvalLevel() {

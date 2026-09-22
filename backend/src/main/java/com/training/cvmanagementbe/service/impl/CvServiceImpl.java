@@ -33,6 +33,7 @@ public class CvServiceImpl implements CvService {
     private final CvDraftRepository cvDraftRepository;
     private final CvProfileRepository cvProfileRepository;
     private final UserRepository userRepository;
+    private final InlineCommentRepository inlineCommentRepository;
     private final VersionPublisher versionPublisher;
     private final CvContentCodec codec;
     private final CvItemIdGuard itemIdGuard;
@@ -446,6 +447,41 @@ public class CvServiceImpl implements CvService {
         return role == Role.ADMIN || role == Role.HR;
     }
 
+    // ---------- Inline comment assembler ----------
+
+    public List<InlineCommentResponse> forDraft(UUID draftId) {
+        List<InlineComment> comments = inlineCommentRepository.findByDraftIdOrderByCreatedAtAsc(draftId);
+        if (comments.isEmpty()) {
+            return List.of();
+        }
+
+        Set<UUID> authorIds = comments.stream()
+                .map(InlineComment::getAuthorId)
+                .collect(Collectors.toSet());
+
+        Map<UUID, String> names = userRepository.findAllById(authorIds).stream()
+                .collect(Collectors.toMap(User::getId, User::getFullName));
+
+        return comments.stream()
+                .map(comment -> toResponse(comment, names.get(comment.getAuthorId())))
+                .toList();
+    }
+
+    public InlineCommentResponse toResponse(InlineComment comment, String authorName) {
+        return new InlineCommentResponse(
+                comment.getId(),
+                comment.getReviewRound(),
+                comment.getSectionKey(),
+                comment.getItemId(),
+                comment.getFieldKey(),
+                authorName,
+                comment.getContent(),
+                comment.getStatus(),
+                comment.getParentCommentId(),
+                comment.getCreatedAt()
+        );
+    }
+
     // ---------- Private helpers ----------
 
     private Cv requireCv(UUID cvId) {
@@ -548,7 +584,8 @@ public class CvServiceImpl implements CvService {
                 content.submittable(),
                 content.untranslatedItemCount(),
                 draft.getSubmittedAt(),
-                draft.getUpdatedAt()
+                draft.getUpdatedAt(),
+                forDraft(draft.getId())
         );
     }
 }

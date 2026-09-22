@@ -1,6 +1,7 @@
 package com.training.cvmanagementbe.dto.response;
 
 import com.training.cvmanagementbe.enums.Language;
+import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.util.List;
 
@@ -10,6 +11,7 @@ import java.util.List;
  * - The draft content arrives already decoded, exactly as the edit screen receives it, so the
  * reviewer's read-only view and the employee's editor render from the same shape.
  */
+@Schema(name = "DraftReviewResponse", description = "Everything the review screen needs in one round trip")
 public record DraftReviewResponse(
         CvDraftResponse draft,
         Language cvLanguage,

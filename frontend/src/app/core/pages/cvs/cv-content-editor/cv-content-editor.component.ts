@@ -5,6 +5,8 @@ import { CV_SECTIONS, FieldKind, SectionDescriptor } from "../../../models/cv-se
 import { CvContent, emptyCvContent } from "../../../models/cv-content.model";
 import { CdkDragDrop, moveItemInArray } from "@angular/cdk/drag-drop";
 import { CvLanguage } from "../../../enums/cv-language.enum";
+import { InlineCommentStore } from "../../../services/inline-comment-store.service";
+import { InlineCommentResponse } from "../../../dtos/inline-comment.dto";
 
 /*
  * The full CV content form: two SINGLE sections as FormGroups, seven REPEATED ones as FormArrays.
@@ -17,11 +19,15 @@ import { CvLanguage } from "../../../enums/cv-language.enum";
  * 
  * - item_id is generated on the client when an entry is added, but the server fills in anything
  * missing and rejects duplicates - this is a convenience, not the guarantee.
+ * 
+ * - Inline comments go into a store provided here, so section and item editors read them by
+ * anchor without inputs threaded through every level.
  */
 @Component({
     selector: 'app-cv-content-editor',
     standalone: true,
     imports: [ReactiveFormsModule, CvSectionEditorComponent],
+    providers: [InlineCommentStore],
     templateUrl: './cv-content-editor.component.html',
     styleUrl: './cv-content-editor.component.css',
     changeDetection: ChangeDetectionStrategy.OnPush,
@@ -29,6 +35,7 @@ import { CvLanguage } from "../../../enums/cv-language.enum";
 export class CvContentEditorComponent {
 
     private readonly fb = inject(FormBuilder);
+    private readonly commentStore = inject(InlineCommentStore);
 
     readonly sections = CV_SECTIONS;
 
@@ -37,6 +44,11 @@ export class CvContentEditorComponent {
     readonly readOnly = input(false);
 
     readonly language = input.required<CvLanguage>();
+
+    // Every round of the draft; the editor places each thread at its anchor.
+    readonly inlineComments = input<InlineCommentResponse[]>([]);
+    // Opens reply boxes even when readOnly: the lock covers the CV, not the conversation.
+    readonly canReplyToComments = input(false);
 
     readonly dirtyChanged = output<boolean>();
 
@@ -50,6 +62,12 @@ export class CvContentEditorComponent {
             } else {
                 this.form.enable({ emitEvent: false });
             }
+        });
+
+        // Kept apart from the form effect: a new reply must not re-patch the form.
+        effect(() => {
+            this.commentStore.comments.set(this.inlineComments());
+            this.commentStore.canReply.set(this.canReplyToComments());
         });
 
         this.form.valueChanges.subscribe(() => this.dirtyChanged.emit(this.form.dirty));

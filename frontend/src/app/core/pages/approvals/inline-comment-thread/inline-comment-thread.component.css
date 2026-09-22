@@ -1,0 +1,133 @@
+:host {
+  display: block;
+}
+
+.ic-threads {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--vt-gap) * 0.75);
+  margin-block-end: var(--vt-gap);
+}
+
+/* ---------- Thread card ---------- */
+.ic-thread {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--vt-gap) * 0.5);
+  padding: calc(var(--vt-gap) * 0.8);
+  background: var(--vt-red-surface);
+  border: 0.0625rem solid var(--vt-line);
+  border-inline-start: 0.25rem solid var(--vt-red);
+  border-radius: var(--vt-radius-sm);
+}
+
+/* Earlier rounds read as history, not as work to do */
+.ic-thread.is-resolved {
+  background: var(--vt-canvas);
+  border-inline-start-color: var(--vt-line);
+  opacity: 0.75;
+}
+
+.ic-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: calc(var(--vt-gap) * 0.4);
+}
+
+.ic-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.0625rem 0.5rem;
+  border-radius: 999px;
+  font-size: var(--vt-fs-sm);
+  font-weight: 700;
+}
+
+.ic-round {
+  background: var(--vt-surface);
+  border: 0.0625rem solid var(--vt-line);
+  color: var(--vt-ink-muted);
+}
+
+.ic-status {
+  background: rgba(90, 90, 90, 0.12);
+  color: var(--vt-ink-muted);
+}
+
+.ic-status.is-open {
+  background: var(--vt-red-tint);
+  color: var(--vt-red-dark);
+}
+
+.ic-field {
+  background: var(--vt-surface);
+  color: var(--vt-ink);
+  font-weight: 600;
+}
+
+/* ---------- Messages ---------- */
+.ic-meta {
+  margin: 0;
+  font-size: var(--vt-fs-sm);
+  color: var(--vt-ink-muted);
+}
+
+.ic-text {
+  margin: 0.25rem 0 0;
+  font-size: var(--vt-fs-md);
+  line-height: 1.55;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.ic-replies {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--vt-gap) * 0.5);
+  margin: 0;
+  padding: 0 0 0 var(--vt-indent);
+  border-inline-start: 0.125rem solid var(--vt-line);
+}
+
+/* ---------- Reply ---------- */
+.ic-reply-form {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--vt-gap) * 0.5);
+}
+
+.ic-reply-input {
+  resize: vertical;
+  min-height: clamp(4.5rem, 12vh, 6rem);
+}
+
+.ic-reply-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: calc(var(--vt-gap) * 0.5);
+}
+
+.ic-reply-actions .btn {
+  flex: 0 1 min(8rem, 100%);
+  min-height: max(var(--vt-tap), var(--vt-touch-target));
+}
+
+.ic-reply-link,
+.ic-toggle {
+  align-self: flex-start;
+  min-height: var(--vt-touch-target);
+}
+
+/* ---------- Phone ---------- */
+@media (max-width: 40rem) {
+  .ic-replies {
+    padding-inline-start: calc(var(--vt-indent) * 0.6);
+  }
+
+  .ic-reply-actions .btn {
+    flex: 1 1 100%;
+  }
+}

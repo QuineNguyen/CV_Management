@@ -1,0 +1,42 @@
+:host {
+  display: block;
+}
+
+.anchor-picker {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--vt-gap) * 0.75);
+  padding: calc(var(--vt-gap) * 0.9);
+  background: var(--vt-canvas);
+  border: 0.0625rem dashed var(--vt-line);
+  border-radius: var(--vt-radius-sm);
+}
+
+/* .field has a row flex-basis; inside a column it would become a fixed height */
+.anchor-picker .field {
+  flex: 0 0 auto;
+}
+
+.field.custom-select-wrap {
+  position: relative;
+}
+
+.field.custom-select-wrap:has(.is-open) {
+  z-index: 30;
+}
+
+.anchor-text {
+  resize: vertical;
+  min-height: clamp(4.5rem, 12vh, 7rem);
+}
+
+.anchor-add {
+  align-self: flex-end;
+  min-height: max(var(--vt-tap), var(--vt-touch-target));
+}
+
+@media (max-width: 40rem) {
+  .anchor-add {
+    align-self: stretch;
+  }
+}

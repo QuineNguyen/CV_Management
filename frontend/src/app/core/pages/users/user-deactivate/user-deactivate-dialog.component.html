@@ -30,15 +30,46 @@
                 <span class="handover-name">{{ team.name }}</span>
               </span>
 
-              <select
-                class="field-input"
-                [value]="replacementFor(team.id)"
-                (change)="onReplacementChange(team.id, $any($event.target).value)">
-                <option value="">Select a replacement</option>
-                @for (lead of candidates(); track lead.id) {
-                  <option [value]="lead.id">{{ lead.fullName }} ({{ lead.username }})</option>
+              <div class="custom-select-wrap handover-select-wrap">
+                <button
+                  type="button"
+                  class="field-input custom-select-trigger"
+                  [class.is-open]="openSelectTeamId() === team.id"
+                  (click)="toggleSelect(team.id, $event)"
+                  aria-haspopup="listbox"
+                  [attr.aria-expanded]="openSelectTeamId() === team.id">
+                  <span class="custom-select-label">
+                    {{ selectedReplacementLabel(team.id) }}
+                  </span>
+                </button>
+
+                @if (openSelectTeamId() === team.id) {
+                  <div class="custom-select-panel" (click)="$event.stopPropagation()">
+                    <ul class="custom-select-list" role="listbox">
+                      <li role="option" [attr.aria-selected]="!replacementFor(team.id)">
+                        <button
+                          type="button"
+                          class="custom-select-option"
+                          [class.is-selected]="!replacementFor(team.id)"
+                          (click)="selectReplacement(team.id, '')">
+                          Select a replacement
+                        </button>
+                      </li>
+                      @for (lead of candidates(); track lead.id) {
+                        <li role="option" [attr.aria-selected]="replacementFor(team.id) === lead.id">
+                          <button
+                            type="button"
+                            class="custom-select-option"
+                            [class.is-selected]="replacementFor(team.id) === lead.id"
+                            (click)="selectReplacement(team.id, lead.id)">
+                            {{ lead.fullName }} ({{ lead.username }})
+                          </button>
+                        </li>
+                      }
+                    </ul>
+                  </div>
                 }
-              </select>
+              </div>
             </li>
           }
         </ul>

@@ -90,12 +90,35 @@
       </div>
     }
 
+    <!-- Rejected draft: the owner needs to know why before opening the editor -->
+    @if (rejectedForOwner() && detail.openDraft; as draft) {
+      <div class="notice notice-warning" role="status">
+        <strong>Your draft was returned for changes.</strong>
+        Round {{ draft.reviewRound }} was rejected. Editing it and resubmitting restarts the review
+        at your tech lead
+        @if (draft.lastRejectionReason; as reason) {
+          <p class="notice-detail"><strong>Reason:</strong> {{ reason }}</p>
+        }
+        @if (openCommentCount(); as count) {
+          <p class="notice-detail">
+            {{ count }} open {{ count === 1 ? 'comment is' : 'comments are' }} pinned to the sections
+            of the draft.
+            <button type="button" class="link-btn" (click)="edit()">Open the editor</button>
+            to read them in place and reply
+          </p>
+        }
+      </div>
+    }
+
     <!-- Content, read-only -->
-    @if (detail.content) {
+    @if (rejectedForOwner() && detail.openDraft; as draft) {
+      <p class="text-muted">Showing the rejected draft content</p>
+      <app-cv-content-editor [content]="draft.content" [language]="detail.cv.language" [readOnly]="true" [inlineComments]="draftComments()" />
+    } @else if (detail.content) {
       <app-cv-content-editor [content]="detail.content" [language]="detail.cv.language" [readOnly]="true" />
     } @else if (detail.openDraft; as draft) {
       <p class="text-muted">Showing the unpublished draft content</p>
-      <app-cv-content-editor [content]="draft.content" [language]="detail.cv.language" [readOnly]="true" />
+      <app-cv-content-editor [content]="draft.content" [language]="detail.cv.language" [readOnly]="true" [inlineComments]="draftComments()" />
     }
   </section>
 }

@@ -33,6 +33,21 @@
         Content is frozen for everyone, including you, so the reviewer decides on exactly what they
         read. Only an administrator can cancel an approval already in progress
       </div>
+    } @else if (isRejected() && !directPublish()) {
+      <div class="notice notice-warning" role="status">
+        <strong>Returned for changes.</strong>
+        Round {{ openDraft()!.reviewRound }} was rejected. Fix what the reviewer asked for, save the
+        draft, then resubmit. The review restarts at your tech lead
+        @if (openDraft()!.lastRejectionReason; as reason) {
+          <p class="notice-detail"><strong>Reason:</strong> {{ reason }}</p>
+        }
+        @if (openCommentCount(); as count) {
+          <p class="notice-detail">
+            {{ count }} open {{ count === 1 ? 'comment is' : 'comments are' }} pinned to the sections
+            below. Open an entry to read it, and reply if you want to explain a change
+          </p>
+        }
+      </div>
     } @else if (directPublish()) {
       <div class="notice notice-danger" role="status">
         <strong>Saving publishes immediately.</strong>
@@ -106,6 +121,8 @@
       [content]="editorContent()"
       [language]="detail.cv.language"
       [readOnly]="locked()"
+      [inlineComments]="inlineComments()"
+      [canReplyToComments]="canReplyToComments()"
       (dirtyChanged)="onDirtyChanged($event)" />
 
     <div class="edit-footer">
@@ -125,7 +142,11 @@
         @if (canSubmitForApproval()) {
           <button type="button" class="btn btn-primary" (click)="onSubmitForApproval()"
                   [disabled]="saving() || submitting()">
-            {{ submitting() ? 'Submitting...' : 'Submit for approval' }}
+            @if (isRejected()) {
+              {{ submitting() ? 'Resubmitting...' : 'Resubmit for approval' }}
+            } @else {
+              {{ submitting() ? 'Submitting...' : 'Submit for approval' }}
+            }
           </button>
         }
       }
