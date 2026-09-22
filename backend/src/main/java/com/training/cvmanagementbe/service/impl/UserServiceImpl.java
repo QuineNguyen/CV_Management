@@ -245,6 +245,9 @@ public class UserServiceImpl implements UserService {
             if (keptTeamIds.contains(currentTeamId)) {
                 continue;
             }
+            if (teamRepository.existsByIdAndTechLeadId(currentTeamId, userId)) {
+                throw new ApiException.BusinessRuleException(ErrorCode.CANNOT_REMOVE_LEADING_MEMBER);
+            }
             if (teamRepository.countActiveProfilesByTeamIdAndUserId(currentTeamId, userId) > 0) {
                 throw new ApiException.BusinessRuleException(ErrorCode.TEAM_HAS_PROFILES);
             }
@@ -393,6 +396,7 @@ public class UserServiceImpl implements UserService {
             }
             requireValidReplacement(userId, replacementId);
             team.setTechLeadId(replacementId);
+            ensureTechLeadMembership(team.getId(), replacementId);
         }
 
         teamRepository.saveAll(ledTeams);
@@ -422,6 +426,23 @@ public class UserServiceImpl implements UserService {
                 .toList();
 
         teamMemberRepository.saveAll(memberships);
+    }
+
+    /*
+     * Ensures the replacement tech lead is a member of the team handed over to them.
+     */
+    private void ensureTechLeadMembership(UUID teamId, UUID techLeadId) {
+        if (teamMemberRepository.existsByUserIdAndTeamId(techLeadId, teamId)) {
+            return;
+        }
+
+        teamMemberRepository.save(TeamMember.builder()
+                .userId(techLeadId)
+                .teamId(teamId)
+                .primaryTeam(false)
+                .build());
+
+        auditLogger.record(Action.UPDATE_TEAM, TargetType.TEAM, teamId, null, techLeadId);
     }
 
     // Department names and team memberships are resolved in bulk to avoid N+1

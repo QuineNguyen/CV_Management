@@ -49,7 +49,10 @@ public interface TeamRepository extends JpaRepository<Team, UUID> {
                                               @Param("userId") UUID userId);
 
     // Highest display order across the whole catalogue, used to append new teams (step 10).
-    // The scope is the whole table, not a department: teams do not belong to one [QD-66].
+    // The scope is the whole table, not a department: teams do not belong to one.
     @Query("SELECT COALESCE(MAX(t.displayOrder), 0) FROM Team t")
     int findMaxDisplayOrder();
+
+    // True when this user is the acting tech lead of this team.
+    boolean existsByIdAndTechLeadId(UUID id, UUID techLeadId);
 }

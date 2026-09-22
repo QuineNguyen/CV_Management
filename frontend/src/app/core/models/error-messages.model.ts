@@ -101,6 +101,9 @@ export const ERROR_MESSAGES: Readonly<Record<ClientErrorCode, string>> = {
   USER_ALREADY_IN_TEAM: 'This user already belongs to the team',
   CANNOT_REMOVE_ONLY_TEAM: 'A user must belong to at least one team',
   CANNOT_REMOVE_PRIMARY_TEAM: 'Change the primary team first, then remove this membership',
+  CANNOT_REMOVE_LEADING_MEMBER: 'This person is the tech lead of this team. Assign a different lead before removing them',
+  CANNOT_DELETE_PRIMARY_TEAM: 'This team is the primary team of at least one person. Reassign their primary team first',
+  CANNOT_DELETE_ONLY_TEAM: 'At least one member has no other team. Add them to another team first',
 
   // User
   PRIMARY_TEAM_REQUIRED: 'Select exactly one primary team',
