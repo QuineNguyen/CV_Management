@@ -25,7 +25,7 @@ import java.nio.charset.StandardCharsets;
  * silently reintroduce an empty 403 cody outside the response contract.
  *
  * - Uses OUT_OF_SCOPE, the same code GlobalExceptionHandler returns for 403. so the frontend
- * renders one message for one situation regardless of which layer cought it.
+ * renders one message for one situation regardless of which layer caught it.
  */
 @Component
 @RequiredArgsConstructor
