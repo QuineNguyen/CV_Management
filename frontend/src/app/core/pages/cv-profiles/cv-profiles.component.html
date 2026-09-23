@@ -113,7 +113,7 @@
                 </div>
               </td>
             </tr>
-            @if (expandedProfileId() === profile.id) {
+            @if (expandedProfileId() === profile.id && !isMobile()) {
               <tr class="slots-row">
                 <td colspan="5">
                   <app-cv-language-slots
@@ -186,7 +186,7 @@
             </div>
           </dl>
 
-          @if (expandedProfileId() === profile.id) {
+          @if (expandedProfileId() === profile.id && isMobile()) {
             <app-cv-language-slots
               [profileId]="profile.id"
               [canCreate]="canEdit()" />

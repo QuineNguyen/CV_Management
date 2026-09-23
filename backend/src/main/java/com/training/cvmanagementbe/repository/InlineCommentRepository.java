@@ -28,4 +28,17 @@ public interface InlineCommentRepository extends JpaRepository<InlineComment, UU
                              @Param("round") int currentRound,
                              @Param("current") InlineCommentStatus current,
                              @Param("next") InlineCommentStatus next);
+
+    /*
+     * Resolves every open comment of a draft regardless of round. Cancelling ends the whole
+     * conversation, so the per-round variant used on resubmit is too narrow here.
+     */
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query("""
+            UPDATE InlineComment c SET c.status = :next
+             WHERE c.draftId = :draftId AND c.status = :current
+            """)
+    int resolveAll(@Param("draftId") UUID draftId,
+                   @Param("current") InlineCommentStatus current,
+                   @Param("next") InlineCommentStatus next);
 }

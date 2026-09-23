@@ -101,6 +101,43 @@
   margin-block-start: var(--vt-gap);
 }
 
+/* ---------- Tabs ---------- */
+.queue-tabs {
+  display: flex;
+  gap: calc(var(--vt-gap) * 0.5);
+  margin-block-end: var(--vt-pad);
+  border-block-end: 0.0625rem solid var(--vt-line);
+  overflow-x: auto;
+}
+
+.queue-tab {
+  min-height: var(--vt-touch-target);
+  padding-inline: clamp(0.75rem, 2.5vw, 1.25rem);
+  border: 0;
+  border-block-end: 0.1875rem solid transparent;
+  background: transparent;
+  color: var(--vt-ink-muted);
+  font-family: inherit;
+  font-size: var(--vt-fs-md);
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.queue-tab:hover {
+  color: var(--vt-ink);
+}
+
+.queue-tab.is-active {
+  color: var(--vt-red);
+  border-block-end-color: var(--vt-red);
+}
+
+.queue-tab:focus-visible {
+  outline: 0.125rem solid var(--vt-red);
+  outline-offset: -0.125rem;
+}
+
 /* ---------- iPad ---------- */
 @media (max-width: 64rem) {
   .data-card-head {
@@ -121,5 +158,9 @@
 
   .data-card-head .sla-badge {
     align-self: flex-start;
+  }
+
+  .queue-tab {
+    flex: 1 1 0;
   }
 }

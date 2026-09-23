@@ -8,7 +8,7 @@ import { CV_LANGUAGE_LABELS } from "../../../enums/cv-language.enum";
 import { DRAFT_STATUS_LABELS, DraftStatus, LOCKED_DRAFT_STATUSES } from "../../../enums/draft-status.enum";
 import { CvDetailResponse } from "../../../dtos/cv.dto";
 import { UserRole } from "../../../enums/user-role.enum";
-import { CvContent, emptyCvContent } from "../../../models/cv-content.model";
+import { CvContent, emptyCvContent, seededCvContent } from "../../../models/cv-content.model";
 import { AppRoute } from "../../../enums/app-route.enum";
 import { HasUnsavedChanges } from "../../../services/unsaved-changes.guard";
 import { AvatarUploadComponent } from "../../avatar-upload/avatar-upload.component";
@@ -18,6 +18,7 @@ import { missingRequiredSections } from "../../../models/approval-queue.model";
 import { CV_SECTION_LABELS } from "../../../enums/cv-section-key.enum";
 import { InlineCommentStatus } from "../../../enums/inline-comment-status.enum";
 import { DraftSubmitResponse } from "../../../dtos/approval.dto";
+import { DatePipe } from "@angular/common";
 
 /*
  * Edit CV content. The screen branches on the owner's role, not on anything the user picks:
@@ -30,7 +31,7 @@ import { DraftSubmitResponse } from "../../../dtos/approval.dto";
 @Component({
     selector: 'app-cv-edit',
     standalone: true,
-    imports: [CvContentEditorComponent, AvatarUploadComponent],
+    imports: [CvContentEditorComponent, AvatarUploadComponent, DatePipe],
     templateUrl: './cv-edit.component.html',
     styleUrl: './cv-edit.component.css',
     changeDetection: ChangeDetectionStrategy.OnPush,
@@ -106,7 +107,9 @@ export class CvEditComponent implements OnInit, HasUnsavedChanges {
 
     // Draft first, published version second, empty skeleton last.
     readonly editorContent = computed<CvContent>(() =>
-        this.openDraft()?.content ?? this.detail()?.content ?? emptyCvContent());
+        this.openDraft()?.content 
+        ?? this.detail()?.content 
+        ?? seededCvContent(this.auth.user()?.fullName ?? null, this.auth.user()?.email ?? null));
     
     ngOnInit(): void {
         const id = this.route.snapshot.paramMap.get('id');
@@ -130,8 +133,15 @@ export class CvEditComponent implements OnInit, HasUnsavedChanges {
     // photo and the text on screen always come from the same place.
     private seedAvatar(detail: CvDetailResponse): void {
         const draft = detail.openDraft;
-        this.avatarImageId.set(draft?.avatarImageId ?? detail.avatarImageId ?? null);
-        this.avatarUrl.set(draft?.avatarUrl ?? detail.avatarUrl ?? null);
+        if (draft || detail.currentVersion) {
+            this.avatarImageId.set(draft?.avatarImageId ?? detail.avatarImageId ?? null);
+            this.avatarUrl.set(draft?.avatarUrl ?? detail.avatarUrl ?? null);
+            return;
+        }
+        // Nothing to copy from: start from the account photo, as cv-create does.
+        const user = this.auth.user();
+        this.avatarImageId.set(user?.avatarImageId ?? null);
+        this.avatarUrl.set(user?.avatarUrl ?? null);
     }
 
     onAvatarChanged(change: AvatarChange): void {

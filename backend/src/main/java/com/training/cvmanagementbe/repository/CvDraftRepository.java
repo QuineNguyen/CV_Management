@@ -2,6 +2,8 @@ package com.training.cvmanagementbe.repository;
 
 import com.training.cvmanagementbe.entity.models.CvDraft;
 import com.training.cvmanagementbe.enums.cvs.DraftStatus;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -66,4 +68,33 @@ public interface CvDraftRepository extends JpaRepository<CvDraft, UUID> {
     int updateLastRejectionReason(@Param("draftId") UUID draftId,
                                   @Param("reason") String reason,
                                   @Param("expectedStatus") DraftStatus expectedStatus);
+
+    /*
+     * CAS for cancellation: status and reason are written together, so a draft can never end up
+     * CANCELLED without the sentence that explains it.
+     * expectedStatuses is the set the *caller* is allowed to cancel from - an owner passes
+     * {DRAFT, REJECTED}, so a draft submitted between the read and this write matches zero rows
+     * instead of being silently withdrawn.
+     */
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query("""
+            UPDATE CvDraft d
+               SET d.status = :nextStatus,
+                   d.cancellationReason = :reason,
+                   d.updatedBy = :actorId,
+                   d.updatedAt = :now
+             WHERE d.id = :draftId AND d.status IN :expectedStatuses
+            """)
+    int cancelDraft(@Param("draftId") UUID draftId,
+                    @Param("nextStatus") DraftStatus nextStatus,
+                    @Param("reason") String reason,
+                    @Param("actorId") UUID actorId,
+                    @Param("now") LocalDateTime now,
+                    @Param("expectedStatuses") Collection<DraftStatus> expectedStatuses);
+
+    // Admin oversight list: every draft under review, not scoped to an assignee.
+    Page<CvDraft> findByStatusIn(Collection<DraftStatus> statuses, Pageable pageable);
+
+    // The CV's most recent draft, whatever its status - used to tell whether the last one was cancelled.
+    Optional<CvDraft> findTopByCvIdOrderByCreatedAtDesc(UUID cvId);
 }

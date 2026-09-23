@@ -1,12 +1,16 @@
 package com.training.cvmanagementbe.controller;
 
 import com.training.cvmanagementbe.constant.ApiPath;
+import com.training.cvmanagementbe.constant.AuthorityExpression;
 import com.training.cvmanagementbe.constant.PageDefaults;
+import com.training.cvmanagementbe.dto.request.approvals.CancelDraftRequest;
+import com.training.cvmanagementbe.dto.request.approvals.ReassignRequest;
 import com.training.cvmanagementbe.dto.request.approvals.RejectDraftRequest;
 import com.training.cvmanagementbe.dto.request.approvals.ReplyCommentRequest;
 import com.training.cvmanagementbe.dto.response.approvals.*;
 import com.training.cvmanagementbe.dto.response.configs.PagedResponse;
 import com.training.cvmanagementbe.enums.approvals.ApprovalSortField;
+import com.training.cvmanagementbe.enums.approvals.PendingDraftSortField;
 import com.training.cvmanagementbe.service.ApprovalService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -16,8 +20,10 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -43,6 +49,18 @@ public class ApprovalController {
         );
 
         return ResponseEntity.ok(approvalService.getQueue(pageable));
+    }
+
+    @GetMapping(ApiPath.CANCELLED_QUEUE)
+    @Operation(summary = "List reviews cancelled while assigned to you")
+    public ResponseEntity<PagedResponse<CancelledReviewResponse>> getCancelledReviews(
+            @RequestParam(defaultValue = PageDefaults.PAGE) int page,
+            @RequestParam(defaultValue = PageDefaults.SIZE) int size
+    ) {
+        Pageable pageable = PageRequest.of(PageDefaults.clampPage(page), PageDefaults.clampSize(size),
+                Sort.by(Sort.Direction.DESC, ApprovalSortField.CLOSED_AT.getProperty()));
+
+        return ResponseEntity.ok(approvalService.getCancelledReviews(pageable));
     }
 
     @PostMapping(ApiPath.DRAFT_SUBMIT)
@@ -77,5 +95,47 @@ public class ApprovalController {
     @PostMapping(ApiPath.COMMENT_REPLY)
     public ResponseEntity<InlineCommentResponse> replyToComment(@PathVariable UUID commentId, @Valid @RequestBody ReplyCommentRequest request) {
         return ResponseEntity.ok(approvalService.replyToComment(commentId, request));
+    }
+
+    @GetMapping(ApiPath.PENDING_DRAFTS)
+    @PreAuthorize(AuthorityExpression.ADMIN)
+    @Operation(summary = "List every draft under review, for supervision")
+    public ResponseEntity<PagedResponse<PendingDraftResponse>> getPendingDrafts(
+            @RequestParam(defaultValue = PageDefaults.PAGE) int page,
+            @RequestParam(defaultValue = PageDefaults.SIZE) int size,
+            @RequestParam(defaultValue = "SUBMITTED_AT") PendingDraftSortField sortBy,
+            @RequestParam(defaultValue = "ASC") Sort.Direction direction
+    ) {
+        // Oldest submission first: supervision starts with whoever has waited long waited longest.
+        Sort sort = PageDefaults.sortBy(direction, sortBy.getProperty(),
+                PendingDraftSortField.SUBMITTED_AT.getProperty());
+        Pageable pageable = PageRequest.of(PageDefaults.clampPage(page), PageDefaults.clampSize(size), sort);
+
+        return ResponseEntity.ok(approvalService.getPendingDrafts(pageable));
+    }
+
+    // No @PreAuthorize: owner and admin both reach this and only the service can tell them apart.
+    @PostMapping(ApiPath.DRAFT_CANCEL)
+    @Operation(summary = "Cancel a draft (owner before review, admin at any point)")
+    public ResponseEntity<DraftCancelResponse> cancel(
+            @PathVariable UUID draftId,
+            @Valid @RequestBody(required = false)CancelDraftRequest request
+    ) {
+        return ResponseEntity.ok(approvalService.cancel(draftId, request));
+    }
+
+    @GetMapping(ApiPath.DRAFT_REASSIGN_CANDIDATES)
+    @PreAuthorize(AuthorityExpression.ADMIN)
+    @Operation(summary = "List the people who may take over this draft")
+    public ResponseEntity<List<ReassignCandidateResponse>> getReassignCandidates(@PathVariable UUID draftId) {
+        return ResponseEntity.ok(approvalService.getReassignCandidates(draftId));
+    }
+
+    @PostMapping(ApiPath.DRAFT_REASSIGN)
+    @PreAuthorize(AuthorityExpression.ADMIN)
+    @Operation(summary = "Transfer the open assignment to another reviewer")
+    public ResponseEntity<ReassignResponse> reassign(@PathVariable UUID draftId,
+                                                     @Valid @RequestBody ReassignRequest request) {
+        return ResponseEntity.ok(approvalService.reassign(draftId, request));
     }
 }

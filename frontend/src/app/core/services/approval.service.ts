@@ -1,7 +1,7 @@
 import { HttpClient, HttpParams } from "@angular/common/http";
 import { inject, Injectable } from "@angular/core";
 import { environment } from "../../../environments/environment";
-import { ApprovalQueueItem, ApprovalQueueQuery, DraftApproveResponse, DraftReviewResponse, DraftSubmitResponse } from "../dtos/approval.dto";
+import { ApprovalQueueItem, ApprovalQueueQuery, CancelDraftRequest, CancelledReviewItem, CancelledReviewQuery, DraftApproveResponse, DraftCancelResponse, DraftReviewResponse, DraftSubmitResponse, PendingDraftItem, PendingDraftQuery, ReassignCandidate, ReassignRequest, ReassignResponse } from "../dtos/approval.dto";
 import { Observable } from "rxjs";
 import { PagedResponse } from "../dtos/page.dto";
 import { ApiEndpoint } from "../enums/api-endpoint.enum";
@@ -39,6 +39,16 @@ export class ApprovalService {
         );
     }
 
+    getCancelledReviews(query: CancelledReviewQuery): Observable<PagedResponse<CancelledReviewItem>> {
+        const params = new HttpParams()
+            .set('page', query.page)
+            .set('size', query.size);
+
+        return this.http.get<PagedResponse<CancelledReviewItem>>(
+            this.url(`${ApiEndpoint.ApprovalQueue}/cancelled`), { params }
+        );
+    }
+
     // Locks the draft's content on success; the caller should navigate away rather than re-edit.
     submit(draftId: string): Observable<DraftSubmitResponse> {
         return this.http.post<DraftSubmitResponse>(
@@ -73,6 +83,44 @@ export class ApprovalService {
     replyToComment(commentId: string, body: ReplyCommentRequest): Observable<InlineCommentResponse> {
         return this.http.post<InlineCommentResponse>(
             this.url(`${ApiEndpoint.Approvals}/comments/${commentId}/reply`), body
+        );
+    }
+
+    // ---------- Admin oversight ----------
+
+    // Not scoped to an assignee, unlike getQueue: supervision means seeing other people's work.
+    getPendingDrafts(query: PendingDraftQuery): Observable<PagedResponse<PendingDraftItem>> {
+        let params = new HttpParams()
+            .set('page', query.page)
+            .set('size', query.size);
+
+        if (query.sortBy) {
+            params = params.set('sortBy', query.sortBy);
+        }
+        if (query.direction) {
+            params = params.set('direction', query.direction);
+        }
+        return this.http.get<PagedResponse<PendingDraftItem>>(
+            this.url(`${ApiEndpoint.Approvals}/drafts/pending`), { params}
+        );
+    }
+
+    // The body is omitted by the owner; the server refuses an admin cancel without a reason.
+    cancelDraft(draftId: string, body?: CancelDraftRequest): Observable<DraftCancelResponse> {
+        return this.http.post<DraftCancelResponse>(
+            this.url(`${ApiEndpoint.Approvals}/drafts/${draftId}/cancel`), body ?? {}
+        );
+    }
+
+    getReassignCandidates(draftId: string): Observable<ReassignCandidate[]> {
+        return this.http.get<ReassignCandidate[]>(
+            this.url(`${ApiEndpoint.Approvals}/drafts/${draftId}/reassign-candidates`)
+        );
+    }
+
+    reassign(draftId: string, body: ReassignRequest): Observable<ReassignResponse> {
+        return this.http.post<ReassignResponse>(
+            this.url(`${ApiEndpoint.Approvals}/drafts/${draftId}/reassign`), body
         );
     }
 }

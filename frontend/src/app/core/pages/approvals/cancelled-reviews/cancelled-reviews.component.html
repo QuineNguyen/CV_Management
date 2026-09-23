@@ -1,0 +1,117 @@
+@if (loading()) {
+  <div class="skeleton-stack" aria-busy="true">
+    @for (row of [1, 2, 3]; track row) {
+      <div class="skeleton-row"></div>
+    }
+  </div>
+} @else if (isEmpty()) {
+  <div class="empty-state">
+    <p class="empty-state-title">No cancelled reviews</p>
+    <p class="empty-state-hint">
+      When an administrator stops a review that was assigned to you, it leaves your queue and
+      appears here with the reason
+    </p>
+  </div>
+} @else {
+
+  <!-- Table: desktop -->
+  <div class="data-table-wrap">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th scope="col" class="col-employee">Employee</th>
+          <th scope="col" class="col-language">Language</th>
+          <th scope="col" class="col-level">Level</th>
+          <th scope="col" class="col-cancelled">Cancelled</th>
+          <th scope="col" class="col-reason">Reason</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (item of items(); track item.assignmentId) {
+          <tr>
+            <td class="col-employee">
+              <span class="cell-strong">{{ item.employeeName ?? '—' }}</span>
+              <span class="cell-muted">{{ item.profileName ?? '—' }}</span>
+            </td>
+            <td class="col-language">
+              <div class="language-cell">
+                <span class="code-chip is-primary">{{ item.cvLanguage }}</span>
+                <span class="language-name">{{ languageLabel(item.cvLanguage) }}</span>
+              </div>
+            </td>
+            <td class="col-level">
+              <span class="status-badge" [matTooltip]="levelDescriptions[item.level]">
+                {{ levelLabels[item.level] }}
+              </span>
+              <span class="cell-muted">round {{ item.reviewRound }}</span>
+            </td>
+            <td class="col-cancelled">
+              <span class="cell-date">{{ item.cancelledAt | date:'dd/MM/yyyy HH:mm' }}</span>
+              <span class="cell-muted">by {{ item.cancelledByName ?? 'an administrator' }}</span>
+            </td>
+            <td class="col-reason">
+              <p class="reason-text">{{ item.reason ?? '—' }}</p>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Cards: iPad and phone -->
+  <ul class="data-cards">
+    @for (item of items(); track item.assignmentId) {
+      <li class="data-card">
+        <div class="data-card-head">
+          <div class="data-card-text">
+            <span class="data-card-title">{{ item.employeeName ?? '—' }}</span>
+            <p class="data-card-line">{{ item.profileName ?? '—' }}</p>
+          </div>
+          <span class="status-badge">{{ levelLabels[item.level] }}</span>
+        </div>
+
+        <dl class="data-card-facts">
+          <div>
+            <dt>Language</dt>
+            <dd>
+              <div class="language-cell">
+                <span class="code-chip is-primary">{{ item.cvLanguage }}</span>
+                <span class="language-name">{{ languageLabel(item.cvLanguage) }}</span>
+              </div>
+            </dd>
+          </div>
+          <div>
+            <dt>Round</dt>
+            <dd>{{ item.reviewRound }}</dd>
+          </div>
+          <div>
+            <dt>Cancelled</dt>
+            <dd>
+              {{ item.cancelledAt | date:'dd/MM/yyyy HH:mm' }} ·
+              {{ item.cancelledByName ?? 'an administrator' }}
+            </dd>
+          </div>
+        </dl>
+
+        <div class="card-reason">
+          <span class="card-reason-label">Reason</span>
+          <p class="reason-text">{{ item.reason ?? '—' }}</p>
+        </div>
+      </li>
+    }
+  </ul>
+
+  <mat-paginator
+    class="page-paginator"
+    [length]="pageState().total"
+    [pageIndex]="pageState().index"
+    [pageSize]="pageState().size"
+    [pageSizeOptions]="pageSizeOptions"
+    showFirstLastButtons
+    (page)="onPageChange($event)" />
+
+  <p class="text-muted">
+    Nothing is expected from you on these drafts. If the employee submits again, the new review is
+    assigned from scratch and may reach you or a colleague
+  </p>
+}

@@ -4,6 +4,14 @@ export enum CvLanguage {
     Ja = 'JA',
 }
 
+// What a filled language slot holds, derived from its version and open draft.
+export enum CvSlotState {
+    Published = 'PUBLISHED',
+    Drafting = 'DRAFTING',
+    // Never published and nothing open: only reachable once the first draft is cancelled.
+    Empty = 'EMPTY',
+}
+
 export const CV_LANGUAGE_LABELS: Record<CvLanguage, string> = {
     [CvLanguage.Vi]: 'Vietnamese',
     [CvLanguage.En]: 'English',

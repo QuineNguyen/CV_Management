@@ -10,6 +10,8 @@ import { ApprovalQueueItem } from "../../../dtos/approval.dto";
 import { ApprovalQueuePageState, slaLabelOf, slaToneOf } from "../../../models/approval-queue.model";
 import { ApprovalSortField, SortDirection } from "../../../enums/sort-field.enum";
 import { AppRoute } from "../../../enums/app-route.enum";
+import { CancelledReviewsComponent } from "../cancelled-reviews/cancelled-reviews.component";
+import { ApprovalQueueTab } from "../../../enums/approve-queue-tab.enum";
 
 /*
  * The reviewer's inbox.
@@ -23,7 +25,7 @@ import { AppRoute } from "../../../enums/app-route.enum";
 @Component({
     selector: 'app-approval-queue',
     standalone: true,
-    imports: [MatPaginatorModule, MatTooltipModule, DatePipe],
+    imports: [MatPaginatorModule, MatTooltipModule, DatePipe, CancelledReviewsComponent],
     templateUrl: './approval-queue.component.html',
     styleUrl: './approval-queue.component.css',
     changeDetection: ChangeDetectionStrategy.OnPush,
@@ -39,6 +41,9 @@ export class ApprovalQueueComponent implements OnInit {
     readonly languageLabels = CV_LANGUAGE_LABELS;
     readonly levelLabels = APPROVAL_LEVEL_LABELS;
     readonly levelDescriptions = APPROVAL_LEVEL_DESCRIPTIONS;
+
+    readonly QueueTab = ApprovalQueueTab;
+    readonly tab = signal(ApprovalQueueTab.Waiting);
 
     readonly items = signal<ApprovalQueueItem[]>([]);
     readonly loading = signal(false);
@@ -108,5 +113,10 @@ export class ApprovalQueueComponent implements OnInit {
 
     slaLabel(item: ApprovalQueueItem): string {
         return slaLabelOf(item.slaRemainingMinutes);
+    }
+
+    // The cancelled list mounts on demand, so it is fetched only when someone looks at it.
+    selectTab(tab: ApprovalQueueTab): void {
+        this.tab.set(tab);
     }
 }

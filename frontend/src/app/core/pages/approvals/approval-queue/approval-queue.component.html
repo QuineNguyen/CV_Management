@@ -13,21 +13,25 @@
     </div>
   </header>
 
+  <!-- Tabs -->
+  <div class="queue-tabs" role="tablist">
+    <button type="button" role="tab" class="queue-tab"
+            [class.is-active]="tab() === QueueTab.Waiting"
+            [attr.aria-selected]="tab() === QueueTab.Waiting"
+            (click)="selectTab(QueueTab.Waiting)">
+      Waiting for me
+    </button>
+    <button type="button" role="tab" class="queue-tab"
+            [class.is-active]="tab() === QueueTab.Cancelled"
+            [attr.aria-selected]="tab() === QueueTab.Cancelled"
+            (click)="selectTab(QueueTab.Cancelled)">
+      Cancelled
+    </button>
+  </div>
+
   <!-- Body -->
-  @if (loading()) {
-    <div class="skeleton-stack" aria-busy="true">
-      @for (row of [1, 2, 3]; track row) {
-        <div class="skeleton-row"></div>
-      }
-    </div>
-  } @else if (isEmpty()) {
-    <div class="empty-state">
-      <p class="empty-state-title">Nothing waiting on you</p>
-      <p class="empty-state-hint">
-        A CV appears here only once it is assigned to you. Each draft goes to exactly one reviewer
-        per level, so nobody else's work shows up in this list
-      </p>
-    </div>
+  @if (tab() === QueueTab.Cancelled) {
+    <app-cancelled-reviews />
   } @else {
 
     <!-- Table: desktop -->

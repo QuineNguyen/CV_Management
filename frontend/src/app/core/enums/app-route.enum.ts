@@ -17,4 +17,5 @@ export enum AppRoute {
     ProfileUpdateRequests = 'profile-update-requests',
     Approvals = 'approvals',
     ApprovalQueue = 'approvals/queue',
+    PendingDrafts = 'approvals/pending',
 }

@@ -65,3 +65,7 @@
 .slot .link-btn {
   font-size: var(--vt-fs-sm);
 }
+
+.slot-action {
+  margin-inline-start: auto;
+}

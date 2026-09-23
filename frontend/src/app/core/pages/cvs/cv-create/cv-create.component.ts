@@ -11,7 +11,7 @@ import { CvProfileResponse } from "../../../dtos/cv-profile.dto";
 import { CvResponse } from "../../../dtos/cv.dto";
 import { LifecycleStatus } from "../../../enums/lifecycle-status.enum";
 import { UserRole } from "../../../enums/user-role.enum";
-import { CvContent, emptyCvContent } from "../../../models/cv-content.model";
+import { CvContent, emptyCvContent, seededCvContent } from "../../../models/cv-content.model";
 import { QueryParam } from "../../../enums/query-param.enum";
 import { AppRoute } from "../../../enums/app-route.enum";
 import { HasUnsavedChanges } from "../../../services/unsaved-changes.guard";
@@ -265,17 +265,7 @@ export class CvCreateComponent implements OnInit, HasUnsavedChanges {
         if (!user) {
             return;
         }
-        this.seedContent.set({
-            ...emptyCvContent(),
-            personal_info: {
-                full_name: user.fullName,
-                date_of_birth: null,
-                email: user.email,
-                phone: null,
-                address: null,
-                position: null,
-            },
-        });
+        this.seedContent.set(seededCvContent(user.fullName, user.email));
 
         // The URL is the session's own signed copy and may already have expired; a broken image
         // falls back to the placeholder and the id is what actually gets saved.

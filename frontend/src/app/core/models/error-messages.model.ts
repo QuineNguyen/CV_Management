@@ -47,6 +47,12 @@ export const ERROR_MESSAGES: Readonly<Record<ClientErrorCode, string>> = {
   INVALID_COMMENT_ANCHOR: 'A comment points at something that no longer exists in this draft. Reload and try again',
   CANNOT_REPLY_RESOLVED: 'This comment belongs to a finished review round',
   CANNOT_REPLY_COMMENT: 'Only the CV owner or the current reviewer can reply here',
+  DRAFT_CANCEL_FORBIDDEN: 'Only the CV owner or an administrator can cancel this draft',
+  DRAFT_NOT_CANCELLABLE: 'This draft can no longer be cancelled - reload to see its current status',
+  DRAFT_CANCEL_REASON_REQUIRED: 'Enter a reason: it is what the owner and the reviewer are told',
+  REASSIGN_SAME_PERSON: 'That person already holds this draft',
+  REASSIGN_INVALID_CANDIDATE: 'That person is not eligible to review this draft at this level',
+  REASSIGN_NO_OPEN_ASSIGNMENT: 'This draft has no open assignment left to transfer',
 
   // Update requests
   PENDING_REQUEST_EXISTS:

@@ -40,6 +40,12 @@ export enum ApprovalSortField {
     ReviewRound = 'REVIEW_ROUND',
 }
 
+export enum PendingDraftSortField {
+    SubmittedAt = 'SUBMITTED_AT',
+    UpdateAt = 'UPDATED_AT',
+    Status = 'STATUS',
+}
+
 export enum SortDirection {
     Asc = 'ASC',
     Desc = 'DESC',

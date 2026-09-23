@@ -15,6 +15,7 @@ import { AppRoute } from "../../../enums/app-route.enum";
 import { QueryParam } from "../../../enums/query-param.enum";
 import { MatTooltipModule } from "@angular/material/tooltip";
 import { InlineCommentStatus } from "../../../enums/inline-comment-status.enum";
+import { ApprovalService } from "../../../services/approval.service";
 
 /*
  * Read-only view of a CV's current version, plus the actions available on it.
@@ -37,6 +38,7 @@ export class CvDetailComponent implements OnInit {
     private readonly route = inject(ActivatedRoute);
     private readonly router = inject(Router);
     private readonly toast = inject(ToastService);
+    private readonly approvalService = inject(ApprovalService);
 
     readonly languageLabels = CV_LANGUAGE_LABELS;
     readonly draftStatusLabels = DRAFT_STATUS_LABELS;
@@ -51,6 +53,11 @@ export class CvDetailComponent implements OnInit {
     readonly isDeleteClosing = signal(false);
     readonly newMasterCvId = signal<string | null>(null);
     private deleteBackdropMouseDownTarget: EventTarget | null = null;
+    
+    readonly cancelDraftOpen = signal(false);
+    readonly cancellingDraft = signal(false);
+    readonly isCancelClosing = signal(false);
+    private cancelBackdropMouseDownTarget: EventTarget | null = null;
 
     // Only the owner writes CV content; there is no path for anyone else.
     readonly canEdit = computed(() => this.auth.user()?.id === this.detail()?.cv.employeeId);
@@ -80,6 +87,16 @@ export class CvDetailComponent implements OnInit {
 
     readonly needsNewMaster = computed(() =>
         !!this.detail()?.cv.master && this.masterCandidates().length > 0);
+
+    /*
+     * An owner drops their own draft only before it enters a review. Once submitted it sits in a
+     * named reviewer's queue and withdrawing it there would be an exit from the approval flow that
+     * nobody signed off - ask the reviewer to reject it, or an admin to cancel it.
+     */
+    readonly canCancelDraft = computed(() => {
+        const status = this.detail()?.openDraft?.status;
+        return this.canEdit() && (status === DraftStatus.Draft || status === DraftStatus.Rejected);
+    })
 
     ngOnInit(): void {
         const id = this.route.snapshot.paramMap.get('id');
@@ -118,6 +135,8 @@ export class CvDetailComponent implements OnInit {
     onEscape(): void {
         if (this.deleteOpen()) {
             this.cancelDelete();
+        } else if (this.cancelDraftOpen()) {
+            this.dismissCancelDraft();
         }
     }
 
@@ -183,5 +202,65 @@ export class CvDetailComponent implements OnInit {
         this.deleteOpen.set(false);
         this.deleting.set(false);
         this.isDeleteClosing.set(false);
+    }
+
+    // ---------- Cancel draft ----------
+
+    askCancelDraft(): void {
+        this.isCancelClosing.set(false);
+        this.cancelDraftOpen.set(true);
+    }
+
+    onCancelBackdropMouseDown(event: MouseEvent): void {
+        this.cancelBackdropMouseDownTarget = event.target;
+    }
+
+    onCancelBackdropClick(event: MouseEvent): void {
+        if (event.target === event.currentTarget && this.cancelBackdropMouseDownTarget == event.currentTarget) {
+            this.dismissCancelDraft();
+        }
+        this.cancelBackdropMouseDownTarget = null;
+    }
+
+    dismissCancelDraft(): void {
+        if (this.isCancelClosing() || this.cancellingDraft()) {
+            return;
+        }
+        this.isCancelClosing.set(true);
+        setTimeout(() => this.closeCancelDraft(), 500);
+    }
+
+    /*
+     * No reason is asked for: nobody has seen this draft, so there is nobody to explain it to.
+     * The page reloads rather than navigating away - the published CV is still here and unchanged,
+     * which is exactly the reassurance the confirmation just promised.
+     */
+    confirmCancelDraft(): void {
+        const detail = this.detail();
+        const draftId = detail?.openDraft?.id;
+        if (!draftId || !detail || this.cancellingDraft()) {
+            return;
+        }
+        // Capture before the reload: the message must describe the CV as it was discarded.
+        const hasPublishedVersion = !!detail.currentVersion;
+        this.cancellingDraft.set(true);
+
+        this.approvalService.cancelDraft(draftId).subscribe({
+            next: () => {
+                this.closeCancelDraft();
+                this.toast.success(hasPublishedVersion
+                    ? 'Draft discarded — the published version is unchanged'
+                    : 'Draft discarded — this CV stays empty until you start a new draft'
+                );
+                this.load(detail.cv.id);
+            },
+            error: () => this.closeCancelDraft(),
+        });
+    }
+
+    private closeCancelDraft(): void {
+        this.cancelDraftOpen.set(false);
+        this.cancellingDraft.set(false);
+        this.isCancelClosing.set(false);
     }
 }

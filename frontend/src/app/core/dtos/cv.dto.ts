@@ -67,6 +67,7 @@ export interface CvDetailResponse {
     avatarImageId: string | null;
     avatarUrl: string | null;
     openDraft: CvDraftResponse | null;
+    lastCancellation: DraftCancellation | null;
 }
 
 export interface CvDraftResponse {
@@ -90,4 +91,11 @@ export interface CvEditResponse {
     directPublish: boolean;
     draft: CvDraftResponse | null;
     publishedVersion: CvVersionSummary | null;
+}
+
+// Who cancelled the owner's last draft; reason is null when the draft was not under review.
+export interface DraftCancellation {
+    reason: string | null;
+    cancelledByName: string | null;
+    cancelledAt: string;
 }

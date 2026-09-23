@@ -65,7 +65,7 @@ public interface ProfileUpdateRequestRepository extends JpaRepository<ProfileUpd
                    r.updatedBy = :actorId,
                    r.updatedAt = :now
              WHERE r.id = :id
-               AND r.status = com.training.cvmanagementbe.enums.ProfileUpdateStatus.PENDING
+               AND r.status = ProfileUpdateStatus.PENDING
             """)
     int closeIfPending(@Param("id") UUID id,
                        @Param("outcome") ProfileUpdateStatus outcome,

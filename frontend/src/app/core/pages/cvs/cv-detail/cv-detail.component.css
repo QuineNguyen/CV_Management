@@ -68,6 +68,12 @@
   background: #fdf7ef;
 }
 
+.notice-detail {
+  margin: 0.5rem 0 0;
+  color: var(--vt-ink-muted);
+  white-space: pre-line;
+}
+
 /* ---------- Master picker inside the delete dialog ---------- */
 .choice-list {
   list-style: none;
