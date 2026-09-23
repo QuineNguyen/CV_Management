@@ -1,0 +1,282 @@
+<section class="page">
+
+  <!-- Toolbar -->
+  <header class="page-toolbar">
+    <div>
+      <h1 class="page-title">Drafts Under Review</h1>
+      <p class="page-subtitle">
+        {{ pageState().total }} waiting
+        @if (overdueCount(); as overdue) {
+          · <span class="text-overdue">{{ overdue }} past the deadline</span>
+        }
+      </p>
+    </div>
+  </header>
+
+  <!-- Body -->
+  @if (loading()) {
+    <div class="skeleton-stack" aria-busy="true">
+      @for (row of [1, 2, 3]; track row) {
+        <div class="skeleton-row"></div>
+      }
+    </div>
+  } @else if (isEmpty()) {
+    <div class="empty-state">
+      <p class="empty-state-title">Nothing is waiting for approval</p>
+      <p class="empty-state-hint">
+        Drafts appear here the moment they are submitted and leave once they are approved,
+        rejected or cancelled
+      </p>
+    </div>
+  } @else {
+
+    <!-- Table: desktop -->
+    <div class="data-table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th scope="col" class="col-employee">Employee</th>
+            <th scope="col" class="col-profile">Profile</th>
+            <th scope="col" class="col-language">Language</th>
+            <th scope="col" class="col-stage">Waiting at</th>
+            <th scope="col" class="col-assignee">Reviewer</th>
+            <th scope="col" class="col-deadline">Deadline</th>
+            <th scope="col" class="col-actions">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (item of items(); track item.draftId) {
+            <tr>
+              <td class="col-employee">
+                <span class="cell-strong">{{ item.employeeName ?? '—' }}</span>
+              </td>
+              <td class="col-profile">
+                <span class="cell-muted">{{ item.profileName ?? '—' }}</span>
+              </td>
+              <td class="col-language">
+                <div class="language-cell">
+                  <span class="code-chip is-primary">{{ item.language }}</span>
+                  <span class="language-name">{{ languageLabel(item.language) }}</span>
+                </div>
+              </td>
+              <td class="col-stage">
+                <span class="cell-strong">{{ statusLabels[item.status] }}</span>
+                <span class="cell-muted">
+                  @if (item.level) {
+                    {{ levelLabels[item.level] }} ·
+                  }
+                  round {{ item.reviewRound }}
+                </span>
+              </td>
+              <td class="col-assignee">{{ item.assigneeName ?? '—' }}</td>
+              <td class="col-deadline">
+                <span class="sla-badge" [class]="slaTone(item)">{{ slaLabel(item) }}</span>
+                <span class="cell-muted">{{ item.dueAt | date:'dd/MM/yyyy HH:mm' }}</span>
+              </td>
+              <td class="col-actions">
+                <div class="row-actions">
+                  <button type="button" class="btn btn-danger btn-compact"
+                          matTooltip="Hand this draft to another reviewer"
+                          (click)="askReassign(item)">Transfer</button>
+                  <button type="button" class="btn btn-ghost btn-compact"
+                          matTooltip="Stop this review for good"
+                          (click)="askCancel(item)">Cancel</button>
+                </div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Cards: iPad and phone -->
+    <ul class="data-cards">
+      @for (item of items(); track item.draftId) {
+        <li class="data-card">
+          <div class="data-card-head">
+            <div class="data-card-text">
+              <span class="data-card-title">{{ item.employeeName ?? '—' }}</span>
+              <p class="data-card-line">{{ item.profileName ?? '—' }}</p>
+            </div>
+            <span class="sla-badge" [class]="slaTone(item)">{{ slaLabel(item) }}</span>
+          </div>
+
+          <dl class="data-card-facts">
+            <div>
+              <dt>Language</dt>
+              <dd>
+                <div class="language-cell">
+                  <span class="code-chip is-primary">{{ item.language }}</span>
+                  <span class="language-name">{{ languageLabel(item.language) }}</span>
+                </div>
+              </dd>
+            </div>
+            <div>
+              <dt>Waiting at</dt>
+              <dd>
+                {{ statusLabels[item.status] }}
+                @if (item.level) {
+                  · {{ levelLabels[item.level] }}
+                }
+                · round {{ item.reviewRound }}
+              </dd>
+            </div>
+            <div>
+              <dt>Reviewer</dt>
+              <dd>{{ item.assigneeName ?? '—' }}</dd>
+            </div>
+            <div>
+              <dt>Deadline</dt>
+              <dd>{{ item.dueAt | date:'dd/MM/yyyy HH:mm' }}</dd>
+            </div>
+          </dl>
+
+          <div class="row-actions card-actions">
+            <button type="button" class="btn btn-ghost" (click)="askReassign(item)">Transfer</button>
+            <button type="button" class="btn btn-danger" (click)="askCancel(item)">Cancel</button>
+          </div>
+        </li>
+      }
+    </ul>
+
+    <mat-paginator
+      class="page-paginator"
+      [length]="pageState().total"
+      [pageIndex]="pageState().index"
+      [pageSize]="pageState().size"
+      [pageSizeOptions]="pageSizeOptions"
+      showFirstLastButtons
+      (page)="onPageChange($event)" />
+
+    <p class="text-muted">
+      Cancelling is final — the published version is untouched, but the draft cannot come back.
+      Transferring keeps every comment in place and restarts the three-day deadline
+    </p>
+  }
+</section>
+
+<!-- Cancel dialog: the reason is mandatory, it is what the owner and reviewer are told -->
+@if (action() === Action.Cancel && target(); as target) {
+  <div class="modal-backdrop" [class.is-closing]="isClosing()"
+       (mousedown)="onBackdropMouseDown($event)" (click)="onBackdropClick($event)">
+    <div class="modal" role="alertdialog" aria-modal="true" (click)="$event.stopPropagation()">
+      <header class="modal-head">
+        <h2 class="modal-title">Cancel draft</h2>
+      </header>
+      <p class="modal-body">
+        Stop the review of the <strong>{{ languageLabel(target.language) }}</strong> CV of
+        <strong>{{ target.employeeName }}</strong>?
+        The draft cannot be restored. The current published version stays in use, and every
+        comment and decision on this draft is kept for reference
+      </p>
+
+      <div class="field">
+        <label class="field-label" for="cancel-reason">
+          Reason <span class="field-required">*</span>
+        </label>
+        <p class="field-hint">
+          Sent to {{ target.employeeName }} and to {{ target.assigneeName ?? 'the reviewer' }} —
+          without it, neither knows why the work stopped
+        </p>
+        <textarea id="cancel-reason" class="field-input dialog-reason" rows="4"
+                  placeholder="Why this review is being stopped"
+                  [attr.maxlength]="reasonMaxLength"
+                  [value]="reason()"
+                  [disabled]="submitting()"
+                  (input)="onReasonInput($event)"></textarea>
+        <span class="field-hint dialog-counter">{{ reason().length }}/{{ reasonMaxLength }}</span>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-ghost" (click)="dismissDialog()" [disabled]="submitting()">
+          Close
+        </button>
+        <button type="button" class="btn btn-danger" (click)="confirmCancel()" [disabled]="!canCancel()">
+          {{ submitting() ? 'Cancelling...' : 'Cancel draft' }}
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- Transfer dialog -->
+@if (action() === Action.Reassign && target(); as target) {
+  <div class="modal-backdrop" [class.is-closing]="isClosing()"
+       (mousedown)="onBackdropMouseDown($event)" (click)="onBackdropClick($event)">
+    <div class="modal" role="dialog" aria-modal="true" (click)="$event.stopPropagation()">
+      <header class="modal-head">
+        <h2 class="modal-title">Transfer review</h2>
+        <p class="modal-subtitle">
+          {{ target.employeeName }} · {{ languageLabel(target.language) }} ·
+          currently with {{ target.assigneeName ?? '—' }}
+        </p>
+      </header>
+
+      @if (candidatesLoading()) {
+        <div class="skeleton-stack" aria-busy="true">
+          @for (row of [1, 2]; track row) {
+            <div class="skeleton-row"></div>
+          }
+        </div>
+      } @else if (!candidates().length) {
+        <div class="notice notice-warning" role="status">
+          <strong>Nobody else can take this draft.</strong>
+          At this level the eligible reviewers are the current holder alone. Cancel the review
+          instead, or add an eligible reviewer first
+        </div>
+      } @else {
+        <div class="field">
+          <label class="field-label">
+            New reviewer <span class="field-required">*</span>
+          </label>
+          <p class="field-hint">Ordered by how much each of them is already carrying</p>
+
+          <ul class="candidate-list">
+            @for (candidate of candidates(); track candidate.userId) {
+              <li>
+                <button type="button" class="candidate-option"
+                        [class.is-selected]="selectedCandidateId() === candidate.userId"
+                        [disabled]="submitting()"
+                        (click)="selectCandidate(candidate.userId)">
+                  <span class="candidate-main">
+                    <span class="candidate-name">{{ candidate.fullName }}</span>
+                    <span class="candidate-sub">{{ candidate.username }} · {{ roleLabels[candidate.role] }}</span>
+                  </span>
+                  <span class="candidate-load">
+                    {{ candidate.openAssignmentCount }}
+                    <span class="candidate-load-label">open</span>
+                  </span>
+                </button>
+              </li>
+            }
+          </ul>
+        </div>
+
+        <div class="field">
+          <label class="field-label" for="reassign-reason">
+            Reason <span class="field-required">*</span>
+          </label>
+          <p class="field-hint">Both reviewers are told why the draft moved</p>
+          <textarea id="reassign-reason" class="field-input dialog-reason" rows="3"
+                    placeholder="On leave, overdue, out of the office…"
+                    [attr.maxlength]="reasonMaxLength"
+                    [value]="reason()"
+                    [disabled]="submitting()"
+                    (input)="onReasonInput($event)"></textarea>
+          <span class="field-hint dialog-counter">{{ reason().length }}/{{ reasonMaxLength }}</span>
+        </div>
+      }
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-ghost" (click)="dismissDialog()" [disabled]="submitting()">
+          Close
+        </button>
+        @if (candidates().length) {
+          <button type="button" class="btn btn-primary" (click)="confirmReassign()" [disabled]="!canReassign()">
+            {{ submitting() ? 'Transferring...' : 'Transfer' }}
+          </button>
+        }
+      </div>
+    </div>
+  </div>
+}

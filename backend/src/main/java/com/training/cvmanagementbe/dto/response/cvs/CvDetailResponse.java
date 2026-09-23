@@ -18,6 +18,8 @@ public record CvDetailResponse(
         CvContent content,
         UUID avatarImageId,
         String avatarUrl,
-        CvDraftResponse openDraft
+        CvDraftResponse openDraft,
+        // Null unless the latest draft was cancelled by someone else and nothing replaced it.
+        DraftCancellationResponse lastCancellation
 ) {
 }

@@ -67,13 +67,19 @@ public class CvServiceImpl implements CvService {
 
         UUID avatarImageId = current.map(CvVersion::getAvatarImageId).orElse(null);
 
+        // Only while nothing has replaced it: a new draft or a publication turns it into history.
+        DraftCancellationResponse lastCancellation = openDraft == null
+                ? lastCancellationOf(cvId, profile.getEmployeeId())
+                : null;
+
         return new CvDetailResponse(
                 toResponse(cv, profile, resolveEmployeeName(profile.getEmployeeId()), current.orElse(null)),
                 current.map(this::toSummary).orElse(null),
                 current.map(version -> codec.read(version.getContentJson())).orElse(null),
                 avatarImageId,
                 avatarUrlResolver.resolve(avatarImageId),
-                openDraft
+                openDraft,
+                lastCancellation
         );
     }
 
@@ -190,7 +196,7 @@ public class CvServiceImpl implements CvService {
 
             CvVersion version = versionPublisher.publish(PublishCommand.directEdit(
                     cv.getId(),
-                    codec.normaliseItemIds(request.content()),
+                    content,
                     request.avatarImageId(),
                     profile.getEmployeeId()
             ));
@@ -391,14 +397,24 @@ public class CvServiceImpl implements CvService {
     }
 
     private CvDraftResponse writeDraft(Cv cv, CvProfile profile, CvEditRequest request) {
-        CvDraft draft = cvDraftRepository.findByCvIdAndStatusIn(cv.getId(), CvDraft.OPEN_STATUSES)
-                .orElseGet(() -> newDraftFromCurrentVersion(cv, profile));
+        Optional<CvDraft> open = cvDraftRepository.findByCvIdAndStatusIn(cv.getId(), CvDraft.OPEN_STATUSES);
+        CvDraft draft = open.orElseGet(() -> newDraftFromCurrentVersion(cv, profile));
 
         if (draft.isContentLocked()) {
             throw new ApiException.BusinessRuleException(ErrorCode.DRAFT_CONTENT_LOCKED);
         }
 
         CvContent normalised = codec.normaliseItemIds(request.content());
+
+        /*
+         * A CV whose first draft was cancelled before anything was published has no source left for
+         * the identity fields. Take them from the account, exactly as create() does - otherwise the
+         * restarted draft carries a blank name and never passed the required-section check.
+         */
+        if (open.isEmpty() && currentVersionOf(cv) == null) {
+            normalised = codec.applyPersonalInfoSnapshot(normalised, requireUser(profile.getEmployeeId()));
+        }
+
         itemIdGuard.requireOwnedOrNew(profile.getId(), normalised);
 
         draft.setContentJson(codec.write(normalised));
@@ -519,6 +535,22 @@ public class CvServiceImpl implements CvService {
 
     private CvVersion currentVersionOf(Cv cv) {
         return cvVersionRepository.findTopByCvIdOrderByVersionNumberDesc(cv.getId()).orElse(null);
+    }
+
+    /*
+     * CANCELLED is terminal, so updated_by / updated_at of that row are the canceller and the moment
+     * for good - no separate columns needed. A draft the owner discarded themselves yields nothing.
+     */
+    private DraftCancellationResponse lastCancellationOf(UUID cvId, UUID ownerId) {
+        return cvDraftRepository.findTopByCvIdOrderByCreatedAtDesc(cvId)
+                .filter(draft -> draft.getStatus() == DraftStatus.CANCELLED)
+                .filter(draft -> !ownerId.equals(draft.getUpdatedBy()))
+                .map(draft -> new DraftCancellationResponse(
+                        draft.getCancellationReason(),
+                        resolveEmployeeName(draft.getUpdatedBy()),
+                        draft.getUpdatedAt()
+                ))
+                .orElse(null);
     }
 
     private String resolveEmployeeName(UUID employeeId) {

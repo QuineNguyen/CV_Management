@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, DestroyRef, HostListener, inject, OnInit, signal } from "@angular/core";
+import { ChangeDetectionStrategy, Component, computed, DestroyRef, HostListener, inject, OnDestroy, OnInit, signal } from "@angular/core";
 import { DatePipe } from "@angular/common";
 import { MatPaginatorModule, PageEvent } from "@angular/material/paginator";
 import { MatTooltipModule } from "@angular/material/tooltip";
@@ -25,7 +25,14 @@ import { AppRoute } from "../../enums/app-route.enum";
     styleUrl: './cv-profiles.component.css',
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class CVProfilesComponent implements OnInit {
+export class CVProfilesComponent implements OnInit, OnDestroy {
+
+    // Tracks whether the viewport is at or below the mobile breakpoint (64rem = 1024px).
+    // Only one of the two layouts (table / cards) should instantiate <app-cv-language-slots>
+    // to prevent duplicate HTTP requests.
+    private readonly mobileQuery = window.matchMedia('(max-width: 64rem)');
+    readonly isMobile = signal(this.mobileQuery.matches);
+    private readonly onMediaChange = (e: MediaQueryListEvent) => this.isMobile.set(e.matches);
 
     private static readonly DEFAULT_PAGE_SIZE = 10;
 
@@ -75,6 +82,8 @@ export class CVProfilesComponent implements OnInit {
     readonly expandedProfileId = signal<string | null>(null);
 
     ngOnInit(): void {
+        this.mobileQuery.addEventListener('change', this.onMediaChange);
+
         this.route.queryParamMap
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe(params => {
@@ -84,6 +93,10 @@ export class CVProfilesComponent implements OnInit {
                 this.pageState.update(state => ({ ...state, index: 0 }));
                 this.load(true);
             });
+    }
+
+    ngOnDestroy(): void {
+        this.mobileQuery.removeEventListener('change', this.onMediaChange);
     }
 
     // ---------- Loading ----------
@@ -155,7 +168,7 @@ export class CVProfilesComponent implements OnInit {
                 this.closeDialog();
                 this.toast.success(isEdit
                     ? `Profile "${saved.name}" updated`
-                    : `Profile "${saved.name} created`
+                    : `Profile "${saved.name}" created`
                 );
                 this.load(false);
             },

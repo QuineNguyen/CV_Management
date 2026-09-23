@@ -32,6 +32,9 @@
         @if (canEdit()) {
           <button type="button" class="btn btn-primary" (click)="edit()">Edit</button>
         }
+        @if (canCancelDraft()) {
+          <button type="button" class="btn btn-ghost" (click)="askCancelDraft()">Discard draft</button>
+        }
         @if (canDelete()) {
           <button type="button" class="btn btn-danger" (click)="askDelete()">Delete</button>
         }
@@ -86,6 +89,23 @@
         Nothing has been published for this CV, so there is nothing to export or send out.
         @if (detail.openDraft) {
           A draft exists and is {{ draftStatusLabels[detail.openDraft.status] }}
+        }
+      </div>
+    }
+
+    <!-- Cancelled by someone else: the owner must learn why the draft vanished -->
+    @if (canEdit() && detail.lastCancellation; as cancellation) {
+      <div class="notice notice-warning" role="status">
+        <strong>Your draft was cancelled.</strong>
+        {{ cancellation.cancelledByName ?? 'An administrator' }} stopped it on
+        {{ cancellation.cancelledAt | date:'dd/MM/yyyy HH:mm' }}.
+        @if (detail.currentVersion) {
+          The published version is unchanged, and Edit starts a new draft from it
+        } @else {
+          Nothing had been published yet — Edit starts a new draft
+        }
+        @if (cancellation.reason; as reason) {
+          <p class="notice-detail"><strong>Reason:</strong> {{ reason }}</p>
         }
       </div>
     }
@@ -165,6 +185,35 @@
         <button type="button" class="btn btn-danger" (click)="confirmDelete()"
                 [disabled]="deleting() || (needsNewMaster() && !newMasterCvId())">
           {{ deleting() ? 'Deleting...' : 'Delete' }}
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- Discard draft: owner only, and only before it has been submitted -->
+@if (cancelDraftOpen() && detail(); as detail) {
+  <div class="modal-backdrop" [class.is-closing]="isCancelClosing()"
+       (mousedown)="onCancelBackdropMouseDown($event)" (click)="onCancelBackdropClick($event)">
+    <div class="modal modal-sm" role="alertdialog" aria-modal="true" (click)="$event.stopPropagation()">
+      <h2 class="modal-title">Discard draft</h2>
+      <p class="modal-body">
+        Discard your unsent changes to the
+        <strong>{{ languageLabels[detail.cv.language] }}</strong> CV? This cannot be undone.
+        @if (detail.currentVersion) {
+          The published version stays exactly as it is, and you can start a new draft at any
+          time with <strong>Edit</strong>
+        } @else {
+          This CV has never been published, so it will be left empty.
+          <strong>Edit</strong> starts a new draft from a blank template
+        }
+      </p>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-ghost" (click)="dismissCancelDraft()"
+                [disabled]="cancellingDraft()">Keep it</button>
+        <button type="button" class="btn btn-danger" (click)="confirmCancelDraft()"
+                [disabled]="cancellingDraft()">
+          {{ cancellingDraft() ? 'Discarding...' : 'Discard' }}
         </button>
       </div>
     </div>

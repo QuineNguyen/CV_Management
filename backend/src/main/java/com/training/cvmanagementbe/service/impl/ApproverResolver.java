@@ -215,6 +215,48 @@ public class ApproverResolver {
         return resolveLevel2(submitterId);
     }
 
+    // ---------- Candidate lists for a manual handover ----------
+    /*
+     * The same population resolveLevel1 picks from, returned whole instead of narrowed to one.
+     * The preference order (linked team, primary team, load) is deliberately not applied: the admin
+     * is the one choosing and ranking the list would only disguise that choice as a recommendation.
+     */
+    public List<User> candidatesForLevel1(CvProfile profile, Collection<UUID> excludedUserIds) {
+        List<TeamMember> memberships = teamMemberRepository.findByUserIdIn(List.of(profile.getEmployeeId()));
+
+        Set<UUID> techLeadIds = loadTeams(memberships).values().stream()
+                .map(Team::getTechLeadId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+
+        return userRepository.findAllById(techLeadIds).stream()
+                .filter(User::isActive)
+                .filter(user -> !excludedUserIds.contains(user.getId()))
+                .sorted(Comparator.comparing(User::getFullName))
+                .toList();
+    }
+
+    // Every active HR, falling back to Admins only when no HR is left - same rule as resolveLevel2.
+    public List<User> candidatesForLevel2(Collection<UUID> excludedUserIds) {
+        List<User> hrs = eligible(Role.HR, excludedUserIds);
+        return hrs.isEmpty() ? eligible(Role.ADMIN, excludedUserIds) : hrs;
+    }
+
+    // Exposed so the caller can show workload next to each name without duplicating the query.
+    public Map<UUID, Long> openAssignmentCounts(Collection<UUID> userIds) {
+        return userIds.isEmpty()
+                ? Map.of()
+                : toCountMap(approvalAssignmentRepository.countByAssigneeIn(
+                        List.copyOf(userIds), AssignmentStatus.ASSIGNED
+        ));
+    }
+
+    private List<User> eligible(Role role, Collection<UUID> excludedUserIds) {
+        return userRepository.findByRoleAndStatusOrderByFullNameAsc(role, AccountStatus.ACTIVE).stream()
+                .filter(user -> !excludedUserIds.contains(user.getId()))
+                .toList();
+    }
+
     // ---------- Selection helpers ----------
     /*
      * Picks the least loaded candidate; among those tied on load, the one who has gone longest

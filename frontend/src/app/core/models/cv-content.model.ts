@@ -110,3 +110,12 @@ export function emptyCvContent(): CvContent {
         additional_info: [],
     }
 }
+
+// Starting content when there is nothing to copy from: identity fields come from the account.
+export function seededCvContent(fullName: string | null, email: string | null): CvContent {
+    const content = emptyCvContent();
+    return {
+        ...content,
+        personal_info: { ...content.personal_info, full_name: fullName, email },
+    };
+}

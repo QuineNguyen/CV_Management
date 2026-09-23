@@ -61,6 +61,7 @@ export const routes: Routes = [
       },
       {
         path: AppRoute.Profiles,
+        title: 'CV Profiles',
         loadComponent: () =>
           import('./core/pages/cv-profiles/cv-profiles.component').then(m => m.CVProfilesComponent),
         canActivate: [authGuard],
@@ -68,6 +69,7 @@ export const routes: Routes = [
       {
         path: AppRoute.CvsNew,
         canDeactivate: [unsavedChangesGuard],
+        title: 'Create CV',
         loadComponent: () =>
           import('./core/pages/cvs/cv-create/cv-create.component')
             .then(m => m.CvCreateComponent),
@@ -75,12 +77,14 @@ export const routes: Routes = [
       {
         path: AppRoute.CvsDeleted,
         canActivate: [roleGuard(UserRole.Admin, UserRole.HR)],
+        title: 'Deleted CVs',
         loadComponent: () =>
           import('./core/pages/cvs/cv-deleted-list/cv-deleted-list.component')
             .then(m => m.CvDeletedListComponent),
       },
       {
         path: `${AppRoute.Cvs}/:id`,
+        title: 'CV Detail',
         loadComponent: () =>
           import('./core/pages/cvs/cv-detail/cv-detail.component')
             .then(m => m.CvDetailComponent),
@@ -88,6 +92,7 @@ export const routes: Routes = [
       {
         path: `${AppRoute.Cvs}/:id/edit`,
         canDeactivate: [unsavedChangesGuard],
+        title: 'Edit CV',
         loadComponent: () =>
           import('./core/pages/cvs/cv-edit/cv-edit.component')
             .then(m => m.CvEditComponent),
@@ -115,6 +120,14 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./core/pages/approvals/approval-queue/approval-queue.component')
             .then(m => m.ApprovalQueueComponent),
+      },
+      {
+        path: AppRoute.PendingDrafts,
+        canActivate: [roleGuard(UserRole.Admin)],
+        title: 'Draft Under Review',
+        loadComponent: () =>
+          import('./core/pages/approvals/pending-drafts/pending-drafts.component')
+            .then(m => m.PendingDraftsComponent),
       },
       {
         path: `approvals/drafts/:draftId/review`,

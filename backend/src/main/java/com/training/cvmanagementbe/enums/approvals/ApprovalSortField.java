@@ -6,6 +6,7 @@ public enum ApprovalSortField {
 
     DUE_AT("dueAt"),
     ASSIGNED_AT("assignedAt"),
+    CLOSED_AT("closedAt"),
     LEVEL("level"),
     REVIEW_ROUND("reviewRound");
 

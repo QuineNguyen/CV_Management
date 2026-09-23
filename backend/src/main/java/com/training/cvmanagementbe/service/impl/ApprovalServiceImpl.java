@@ -1,20 +1,16 @@
 package com.training.cvmanagementbe.service.impl;
 
 import com.training.cvmanagementbe.common.AuditLogger;
-import com.training.cvmanagementbe.enums.approvals.ApprovalLevel;
-import com.training.cvmanagementbe.enums.approvals.AssignmentStatus;
-import com.training.cvmanagementbe.enums.approvals.DecisionResult;
-import com.training.cvmanagementbe.enums.approvals.InlineCommentStatus;
+import com.training.cvmanagementbe.dto.request.approvals.*;
+import com.training.cvmanagementbe.enums.approvals.*;
 import com.training.cvmanagementbe.enums.configs.Action;
 import com.training.cvmanagementbe.enums.configs.ErrorCode;
 import com.training.cvmanagementbe.enums.configs.TargetType;
 import com.training.cvmanagementbe.enums.cvs.CvSectionKey;
 import com.training.cvmanagementbe.enums.cvs.DraftStatus;
 import com.training.cvmanagementbe.enums.cvs.LifecycleStatus;
+import com.training.cvmanagementbe.enums.users.Role;
 import com.training.cvmanagementbe.record.DraftRejectedEvent;
-import com.training.cvmanagementbe.dto.request.approvals.InlineCommentRequest;
-import com.training.cvmanagementbe.dto.request.approvals.RejectDraftRequest;
-import com.training.cvmanagementbe.dto.request.approvals.ReplyCommentRequest;
 import com.training.cvmanagementbe.dto.response.approvals.*;
 import com.training.cvmanagementbe.dto.response.configs.PagedResponse;
 import com.training.cvmanagementbe.dto.response.cvs.CvDraftResponse;
@@ -64,6 +60,20 @@ public class ApprovalServiceImpl implements ApprovalService {
     // Threads stay open for replies while a round is running and while the owner revises.
     private static final Set<DraftStatus> REPLYABLE_STATUSES =
             EnumSet.of(DraftStatus.PENDING_TECH_LEAD, DraftStatus.PENDING_HR, DraftStatus.REJECTED);
+
+    // Statuses an admin may end. PUBLISHED and CANCELLED are terminal and never reachable from here.
+    private static final Set<DraftStatus> CANCELLABLE_BY_ADMIN = EnumSet.of(
+            DraftStatus.DRAFT, DraftStatus.REJECTED,
+            DraftStatus.PENDING_TECH_LEAD, DraftStatus.PENDING_HR
+    );
+
+    // The owner never withdraws a submitted draft: once sent it belongs to a named reviewer.
+    private static final Set<DraftStatus> CANCELLABLE_BY_OWNER =
+            EnumSet.of(DraftStatus.DRAFT, DraftStatus.REJECTED);
+
+    // Only these two require a reason when an admin cancels: work of two other people is stopped.
+    private static final Set<DraftStatus> UNDER_REVIEW =
+            EnumSet.of(DraftStatus.PENDING_TECH_LEAD, DraftStatus.PENDING_HR);
 
     /*
      * Sections that must carry content before a draft can be submitted.
@@ -216,6 +226,17 @@ public class ApprovalServiceImpl implements ApprovalService {
          * can open it.
          */
         return PagedResponse.of(page, toQueueItems(page.getContent()));
+    }
+
+    @Override
+    public PagedResponse<CancelledReviewResponse> getCancelledReviews(Pageable pageable) {
+        UUID assigneeId = CurrentActor.requireUserId();
+
+        // Same access boundary as the queue: a reviewer sees only the work taken from them.
+        Page<ApprovalAssignment> page = assignmentRepository.findByAssigneeIdAndStatus(
+                assigneeId, AssignmentStatus.CANCELLED, pageable
+        );
+        return PagedResponse.of(page, toCancelledItems(page.getContent()));
     }
 
     // ---------- Open for review ----------
@@ -453,6 +474,206 @@ public class ApprovalServiceImpl implements ApprovalService {
         return toResponse(reply, authorName);
     }
 
+    // ---------- Admin oversight list ----------
+
+    @Override
+    public PagedResponse<PendingDraftResponse> getPendingDrafts(Pageable pageable) {
+        Page<CvDraft> page = cvDraftRepository.findByStatusIn(UNDER_REVIEW, pageable);
+        return PagedResponse.of(page, toPendingItems(page.getContent()));
+    }
+
+    // ---------- Cancel ----------
+
+    /*
+     * Two callers, one transition.
+     * - The owner ends a draft nobody has seen yet; no reason is asked for and nobody is notified.
+     * - The admin ends a review in flight; the reason is mandatory because it becomes the message
+     * both the owner and the reviewer receive.
+     * The set handed to the CAS is the caller's own permission set, so a draft that moves between
+     * the check and the write matches zero rows rather than being cancelled by someone who,
+     * at that moment, was no longer allowed to.
+     */
+    @Override
+    @Transactional
+    public DraftCancelResponse cancel(UUID draftId, CancelDraftRequest request) {
+        UUID actorId = CurrentActor.requireUserId();
+        boolean admin = CurrentActor.requireRole() == Role.ADMIN;
+
+        CvDraft draft = cvDraftRepository.findById(draftId)
+                .orElseThrow(() -> new ApiException.NotFoundException("cv draft", draftId));
+
+        boolean owner = actorId.equals(draft.getOwnerId());
+        if (!admin && !owner) {
+            throw new ApiException.ForbiddenException(ErrorCode.DRAFT_CANCEL_FORBIDDEN);
+        }
+
+        Set<DraftStatus> allowed = admin ? CANCELLABLE_BY_ADMIN : CANCELLABLE_BY_OWNER;
+        DraftStatus current = draft.getStatus();
+        if (!allowed.contains(current)) {
+            throw new ApiException.ConflictException(ErrorCode.DRAFT_NOT_CANCELLABLE);
+        }
+
+        String reason = normalise(request == null ? null : request.reason());
+        if (admin && UNDER_REVIEW.contains(current) && reason == null) {
+            throw new ApiException.BusinessRuleException(ErrorCode.DRAFT_CANCEL_REASON_REQUIRED);
+        }
+
+        // Read before the CAS: the bulk updates below cleat the persistence context.
+        UUID assigneeId = assignmentRepository.findByDraftIdAndStatus(draftId, AssignmentStatus.ASSIGNED)
+                .map(ApprovalAssignment::getAssigneeId)
+                .orElse(null);
+
+        LocalDateTime now = LocalDateTime.now();
+
+        int updated = cvDraftRepository.cancelDraft(
+                draftId, DraftStatus.CANCELLED, reason, actorId, now, allowed
+        );
+        if (updated == 0) {
+            throw new ApiException.ConflictException(ErrorCode.STALE_STATE);
+        }
+
+        /*
+         * CANCELLED, never COMPLETED: the assignee decided nothing and merging the two would
+         * inflate the "CVs reviewed" figure on the dashboard. No approval decision row is written
+         * either - cancelling is not a verdict.
+         */
+        int assignmentsCancelled = assignmentRepository.cancelAllOpen(
+                draftId, AssignmentStatus.ASSIGNED, AssignmentStatus.CANCELLED, now
+        );
+
+        // Kept, not deleted: the exchange stays readable after the draft is gone.
+        int commentsResolved = inlineCommentRepository.resolveAll(
+                draftId, InlineCommentStatus.OPEN, InlineCommentStatus.RESOLVED
+        );
+
+        auditLogger.record(Action.CANCEL_CV_DRAFT, TargetType.CV_DRAFT, draftId,
+                current, DraftStatus.CANCELLED);
+
+        eventPublisher.publishEvent(
+                new DraftCancelledEvent(draftId, draft.getOwnerId(), assigneeId, current, reason)
+        );
+
+        return new DraftCancelResponse(draftId, DraftStatus.CANCELLED, assignmentsCancelled, commentsResolved);
+    }
+
+    // ---------- Reassign ----------
+
+    @Override
+    public List<ReassignCandidateResponse> getReassignCandidates(UUID draftId) {
+        CvDraft draft = cvDraftRepository.findById(draftId)
+                .orElseThrow(() -> new ApiException.NotFoundException("cv draft", draftId));
+
+        ApprovalAssignment assignment = requireOpenAssignment(draftId);
+
+        /*
+         * Both exclusions matter: the current holder is not a "transfer" target and the CV owner
+         * may never review their own content - the same person the automatic resolver skips.
+         */
+        Set<UUID> excluded = new HashSet<>();
+        excluded.add(draft.getOwnerId());
+        excluded.add(assignment.getAssigneeId());
+        excluded.remove(null);
+
+        List<User> candidates = assignment.approvalLevel() == ApprovalLevel.LEVEL_1
+                ? approverResolver.candidatesForLevel1(profileOf(draft), excluded)
+                : approverResolver.candidatesForLevel2(excluded);
+
+        Map<UUID, Long> openCounts = approverResolver.openAssignmentCounts(
+                candidates.stream().map(User::getId).toList()
+        );
+
+        // Lightest workload first: the list answers "who can take this" in its own order.
+        return candidates.stream()
+                .map(user -> new ReassignCandidateResponse(
+                        user.getId(),
+                        user.getFullName(),
+                        user.getUsername(),
+                        user.getRole(),
+                        openCounts.getOrDefault(user.getId(), 0L).intValue()
+                ))
+                .sorted(Comparator.comparingInt(ReassignCandidateResponse::openAssignmentCount)
+                        .thenComparing(ReassignCandidateResponse::fullName))
+                .toList();
+    }
+
+    /*
+     * Closes one row and opens another; nothing is overwritten, so the history still shows who held
+     * the draft before. The deadline restarts from now - the new reviewer gets a full SLA, which is
+     * also why a handover cannot be used to quietly extend an overdue item without leaving a trace.
+     */
+    @Override
+    @Transactional
+    public ReassignResponse reassign(UUID draftId, ReassignRequest request) {
+        UUID adminId = CurrentActor.requireUserId();
+
+        CvDraft draft = cvDraftRepository.findById(draftId)
+                .orElseThrow(() -> new ApiException.NotFoundException("cv draft", draftId));
+
+        ApprovalAssignment assignment = requireOpenAssignment(draftId);
+
+        // The open assignment and the draft status must describe the same step.
+        if (levelOf(draft.getStatus()) != assignment.approvalLevel()) {
+            throw new ApiException.ConflictException(ErrorCode.STALE_STATE);
+        }
+
+        if (request.newAssigneeId().equals(assignment.getAssigneeId())) {
+            throw new ApiException.ConflictException(ErrorCode.REASSIGN_SAME_PERSON);
+        }
+
+        // Eligibility is recomputed here, never trusted from the client: the picker can be stale.
+        boolean eligible = getReassignCandidates(draftId).stream()
+                .anyMatch(candidate -> candidate.userId().equals(request.newAssigneeId()));
+        if (!eligible) {
+            throw new ApiException.BusinessRuleException(ErrorCode.REASSIGN_INVALID_CANDIDATE);
+        }
+
+        User newAssignee = userRepository.findById(request.newAssigneeId())
+                .orElseThrow(() -> new ApiException.NotFoundException("user", request.newAssigneeId()));
+        String adminName = userRepository.findById(adminId).map(User::getFullName).orElse("Administrator");
+
+        // Captured before the CAS clears the persistence context.
+        UUID oldAssignmentId = assignment.getId();
+        UUID oldAssigneeId = assignment.getAssigneeId();
+        ApprovalLevel level = assignment.approvalLevel();
+        int reviewRound = assignment.getReviewRound();
+        String reason = request.reason().trim();
+
+        LocalDateTime now = LocalDateTime.now();
+
+        /*
+         * Close first, insert second: uk_approval_assignments_assigned allows exactly one open row
+         * per draft, so the reverse order would hit the index instead of the guard.
+         */
+        int closed = assignmentRepository.closeIfOpen(
+                oldAssignmentId, AssignmentStatus.ASSIGNED, AssignmentStatus.REASSIGNED, now
+        );
+        if (closed == 0) {
+            throw new ApiException.ConflictException(ErrorCode.STALE_STATE);
+        }
+
+        ApprovalAssignment created = assignmentRepository.save(ApprovalAssignment.builder()
+                .draftId(draftId)
+                .level(level.value())
+                .assigneeId(newAssignee.getId())
+                // Set, unlike an automatic assignment: this is what tells a manual handover apart.
+                .assignedBy(adminId)
+                .reviewRound(reviewRound)
+                .status(AssignmentStatus.ASSIGNED)
+                .reason(AssignmentReason.ADMIN_REASSIGNED.format(adminName, reason))
+                .assignedAt(now)
+                .dueAt(now.plus(DEFAULT_SLA))
+                .build());
+
+        auditLogger.record(Action.REASSIGN_APPROVER, TargetType.APPROVAL_ASSIGNMENT, oldAssignmentId,
+                oldAssigneeId, newAssignee.getId());
+
+        eventPublisher.publishEvent(new AssignmentReassignedEvent(
+                draftId, oldAssigneeId, newAssignee.getId(), level, reason
+        ));
+
+        return new ReassignResponse(draftId, newAssignee.getId(), newAssignee.getFullName(), created.getDueAt());
+    }
+
     // ---------- Validation ----------
 
     // 404 when nothing is open, 403 when the open item belongs to someone else.
@@ -496,6 +717,19 @@ public class ApprovalServiceImpl implements ApprovalService {
         if (!valid) {
             throw new ApiException.BusinessRuleException(ErrorCode.INVALID_COMMENT_ANCHOR);
         }
+    }
+
+    // The open row, whoever holds it. requireOwnAssignment is the reviewer's variant of this.
+    private ApprovalAssignment requireOpenAssignment(UUID draftId) {
+        return assignmentRepository.findByDraftIdAndStatus(draftId, AssignmentStatus.ASSIGNED)
+                .orElseThrow(() -> new ApiException.ConflictException(ErrorCode.REASSIGN_NO_OPEN_ASSIGNMENT));
+    }
+
+    private CvProfile profileOf(CvDraft draft) {
+        Cv cv = cvRepository.findById(draft.getCvId())
+                .orElseThrow(() -> new ApiException.NotFoundException("cv", draft.getCvId()));
+        return cvProfileRepository.findById(cv.getProfileId())
+                .orElseThrow(() -> new ApiException.NotFoundException("cv profile", cv.getProfileId()));
     }
 
     // Only the two pending statuses can be approved; anything else was decided or cancelled.
@@ -741,6 +975,51 @@ public class ApprovalServiceImpl implements ApprovalService {
         }).toList();
     }
 
+    private List<CancelledReviewResponse> toCancelledItems(List<ApprovalAssignment> assignments) {
+        if (assignments.isEmpty()) {
+            return List.of();
+        }
+
+        Map<UUID, CvDraft> draftsById = indexById(
+                cvDraftRepository.findAllById(idsOf(assignments, ApprovalAssignment::getDraftId)),
+                CvDraft::getId
+        );
+
+        Map<UUID, Cv> cvsById = indexById(
+                cvRepository.findAllById(idsOf(draftsById.values(), CvDraft::getCvId)),
+                Cv::getId
+        );
+
+        Map<UUID, CvProfile> profilesById = indexById(
+                cvProfileRepository.findAllById(idsOf(cvsById.values(), Cv::getProfileId)),
+                CvProfile::getId
+        );
+
+        // CANCELLED is terminal, so updated_by on the draft is the canceller for good.
+        Set<UUID> userIds = new HashSet<>(idsOf(profilesById.values(), CvProfile::getEmployeeId));
+        userIds.addAll(idsOf(draftsById.values(), CvDraft::getUpdatedBy));
+        Map<UUID, String> names = loadUserNames(userIds);
+
+        return assignments.stream().map(assignment -> {
+            CvDraft draft = draftsById.get(assignment.getDraftId());
+            Cv cv = draft == null ? null : cvsById.get(draft.getCvId());
+            CvProfile profile = cv == null ? null : profilesById.get(cv.getProfileId());
+
+            return new CancelledReviewResponse(
+                    assignment.getId(),
+                    cv == null ? null : cv.getLanguage(),
+                    profile == null ? null : profile.getName(),
+                    profile == null ? null : names.get(profile.getEmployeeId()),
+                    assignment.approvalLevel(),
+                    assignment.getReviewRound(),
+                    assignment.getAssignedAt(),
+                    assignment.getClosedAt(),
+                    draft == null ? null : names.get(draft.getUpdatedBy()),
+                    draft == null ? null : draft.getCancellationReason()
+            );
+        }).toList();
+    }
+
     private CvDraftResponse toResponse(CvDraft draft, CvContent content) {
         return new CvDraftResponse(
                 draft.getId(),
@@ -782,6 +1061,52 @@ public class ApprovalServiceImpl implements ApprovalService {
                 decision.getReason(),
                 decision.getDecidedAt()
         );
+    }
+
+    private List<PendingDraftResponse> toPendingItems(List<CvDraft> drafts) {
+        if (drafts.isEmpty()) {
+            return List.of();
+        }
+
+        Map<UUID, Cv> cvsById = indexById(
+                cvRepository.findAllById(idsOf(drafts, CvDraft::getCvId)), Cv::getId
+        );
+
+        Map<UUID, CvProfile> profilesById = indexById(
+                cvProfileRepository.findAllById(idsOf(cvsById.values(), Cv::getProfileId)), CvProfile::getId
+        );
+
+        Map<UUID, ApprovalAssignment> assignmentsByDraft = assignmentRepository
+                .findByDraftIdInAndStatus(idsOf(drafts, CvDraft::getId), AssignmentStatus.ASSIGNED)
+                .stream()
+                .collect(Collectors.toMap(ApprovalAssignment::getDraftId, Function.identity()));
+
+        Set<UUID> userIds = new HashSet<>(idsOf(profilesById.values(), CvProfile::getEmployeeId));
+        userIds.addAll(idsOf(assignmentsByDraft.values(), ApprovalAssignment::getAssigneeId));
+        Map<UUID, String> names = loadUserNames(userIds);
+
+        LocalDateTime now = LocalDateTime.now();
+
+        return drafts.stream().map(draft -> {
+            Cv cv = cvsById.get(draft.getCvId());
+            CvProfile profile = cv == null ? null : profilesById.get(cv.getProfileId());
+            ApprovalAssignment assignment = assignmentsByDraft.get(draft.getId());
+
+            return new PendingDraftResponse(
+                    draft.getId(),
+                    draft.getCvId(),
+                    cv == null ? null : cv.getLanguage(),
+                    profile == null ? null : profile.getName(),
+                    profile == null ? null : names.get(profile.getEmployeeId()),
+                    draft.getStatus(),
+                    assignment == null ? null : assignment.approvalLevel(),
+                    draft.getReviewRound(),
+                    assignment == null ? null : names.get(assignment.getAssigneeId()),
+                    draft.getSubmittedAt(),
+                    assignment == null ? null : assignment.getDueAt(),
+                    assignment == null ? 0L : minutesUntil(assignment.getDueAt(), now)
+            );
+        }).toList();
     }
 
     // ---------- Inline comment assembler ----------
@@ -852,5 +1177,10 @@ public class ApprovalServiceImpl implements ApprovalService {
 
     private <T> Map<UUID, T> indexById(Collection<T> rows, Function<T, UUID> idExtractor) {
         return rows.stream().collect(Collectors.toMap(idExtractor, Function.identity()));
+    }
+
+    // Blank and null mean the same thing here: no reason was given.
+    private String normalise(String text) {
+        return text == null || text.isBlank() ? null : text.trim();
     }
 }

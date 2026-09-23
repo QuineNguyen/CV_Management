@@ -65,16 +65,15 @@ public interface ApprovalAssignmentRepository extends JpaRepository<ApprovalAssi
     List<ApprovalAssignment> findByDraftIdOrderByAssignedAtDesc(UUID draftId);
 
     /**
-     * Closes an open row without loading it. Used when a level is completed, skipped or cancelled.
-     * The status = ASSIGNED predicate in the WHERE clause makes this a compare-and-set:
-     * zero rows affected means somebody else closed it first.
+     * Closes the open assignment without naming an assignee: the admin acts on the row, not as
+     * its holder, so closeForAssignee cannot be reused here.
      */
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
     @Query("""
             UPDATE ApprovalAssignment a
             SET a.status = :nextStatus, a.closedAt = :closedAt
             WHERE a.id = :assignmentId AND a.status = :expectedStatus
             """)
-    @org.springframework.data.jpa.repository.Modifying
     int closeIfOpen(@Param("assignmentId") UUID assignmentId,
                     @Param("expectedStatus") AssignmentStatus expectedStatus,
                     @Param("nextStatus") AssignmentStatus nextStatus,
@@ -98,4 +97,20 @@ public interface ApprovalAssignmentRepository extends JpaRepository<ApprovalAssi
     // Reviewer of one level in one round, for sticky assignment.
     Optional<ApprovalAssignment> findFirstByDraftIdAndLevelAndReviewRoundAndStatusOrderByClosedAtDesc(
             UUID draftId, int level, int reviewRound, AssignmentStatus status);
+
+    // Cancel path: one statement, because a draft may carry at most one open assignment anyway
+    // and the count is what the response reports.
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query("""
+            UPDATE ApprovalAssignment a
+               SET a.status = :nextStatus, a.closedAt = :closedAt
+             WHERE a.draftId = :draftId AND a.status = :expectedStatus
+            """)
+    int cancelAllOpen(@Param("draftId") UUID draftId,
+                      @Param("expectedStatus") AssignmentStatus expectedStatus,
+                      @Param("nextStatus") AssignmentStatus nextStatus,
+                      @Param("closedAt") LocalDateTime closedAt);
+
+    // One query for a whole page of the oversight list.
+    List<ApprovalAssignment> findByDraftIdInAndStatus(Collection<UUID> draftIds, AssignmentStatus status);
 }

@@ -9,10 +9,16 @@
         @if (slot.cv; as cv) {
           <a class="slot-link" [routerLink]="[cvsRoute, cv.id]">
             {{ languageLabels[slot.language] }}
-            @if (cv.currentVersionNumber) {
-              <span class="slot-version">v{{ cv.currentVersionNumber }}</span>
-            } @else {
-              <span class="slot-version is-muted">unpublished</span>
+            @switch (slot.state) {
+              @case (SlotState.Published) {
+                <span class="slot-version">v{{ cv.currentVersionNumber }}</span>
+              }
+              @case (SlotState.Drafting) {
+                <span class="slot-version is-muted">unpublished</span>
+              }
+              @case (SlotState.Empty) {
+                <span class="slot-version is-muted">no draft</span>
+              }
             }
           </a>
           @if (cv.master) {
@@ -20,6 +26,14 @@
           }
           @if (cv.openDraftStatus) {
             <span class="status-badge is-warning">{{ draftStatusLabels[cv.openDraftStatus] }}</span>
+          }
+          <!-- Slot is taken, so "Create" cannot apply: the owner needs another way back in -->
+          @if (slot.state === SlotState.Empty && canCreate()) {
+            <button type="button" class="link-btn slot-action"
+                    matTooltip="The previous draft was cancelled — start a new one"
+                    (click)="startDraft(cv)">
+              Start draft
+            </button>
           }
         } @else {
           <span class="slot-empty-label">{{ languageLabels[slot.language] }} — none</span>

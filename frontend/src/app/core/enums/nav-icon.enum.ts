@@ -14,4 +14,5 @@ export enum NavIconEnum {
   Person = 'person',
   PendingActions = 'pending_actions',
   ApprovalQueue = 'fact_check',
+  Supervision = 'supervisor_account',
 }

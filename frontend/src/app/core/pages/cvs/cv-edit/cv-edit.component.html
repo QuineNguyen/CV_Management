@@ -25,6 +25,18 @@
       </div>
     </header>
 
+    <!-- Restarting after a cancellation: the reason is the owner's best guide to what to change -->
+    @if (!openDraft() && detail.lastCancellation; as cancellation) {
+      <div class="notice notice-warning" role="status">
+        <strong>Your previous draft was cancelled.</strong>
+        {{ cancellation.cancelledByName ?? 'An administrator' }} stopped it on
+        {{ cancellation.cancelledAt | date:'dd/MM/yyyy HH:mm' }}. Saving here starts a new draft
+        @if (cancellation.reason; as reason) {
+          <p class="notice-detail"><strong>Reason:</strong> {{ reason }}</p>
+        }
+      </div>
+    }
+
     <!-- Branch banner: what saving will actually do -->
     @if (locked()) {
       <div class="notice notice-warning" role="status">

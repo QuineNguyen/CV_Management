@@ -3,7 +3,8 @@ import { AssignmentStatus } from "../enums/assignment-status.enum";
 import { CvLanguage } from "../enums/cv-language.enum";
 import { DecisionResult } from "../enums/decision-result.enum";
 import { DraftStatus } from "../enums/draft-status.enum";
-import { ApprovalSortField, SortDirection } from "../enums/sort-field.enum";
+import { ApprovalSortField, PendingDraftSortField, SortDirection } from "../enums/sort-field.enum";
+import { UserRole } from "../enums/user-role.enum";
 import { CvDraftResponse } from "./cv.dto";
 
 export interface ApprovalQueueItem {
@@ -25,6 +26,24 @@ export interface ApprovalQueueQuery {
     size: number;
     sortBy?: ApprovalSortField;
     direction?: SortDirection;
+}
+
+export interface CancelledReviewItem {
+    assignmentId: string;
+    cvLanguage: CvLanguage | null;
+    profileName: string | null;
+    employeeName: string | null;
+    level: ApprovalLevel;
+    reviewRound: number;
+    assignedAt: string;
+    cancelledAt: string | null;
+    cancelledByName: string | null;
+    reason: string | null;
+}
+
+export interface CancelledReviewQuery {
+    page: number;
+    size: number;
 }
 
 // Result of submitting a draft.
@@ -71,4 +90,58 @@ export interface DraftApproveResponse {
     draftId: string;
     newStatus: DraftStatus;
     versionId: string | null;
+}
+
+export interface CancelDraftRequest {
+    // Omitted by the owner, required by an admin on a draft under review.
+    reason?: string;
+}
+
+export interface DraftCancelResponse {
+    draftId: string;
+    newStatus: DraftStatus;
+    assignmentsCancelled: number;
+    commentsResolved: number;
+}
+
+export interface ReassignRequest {
+    newAssigneeId: string;
+    reason: string;
+}
+
+export interface ReassignResponse {
+    draftId: string;
+    newAssigneeId: string;
+    newAssigneeName: string;
+    newDueAt: string;
+}
+
+export interface ReassignCandidate {
+    userId: string;
+    fullName: string;
+    username: string;
+    role: UserRole;
+    openAssignmentCount: number;
+}
+
+export interface PendingDraftItem {
+    draftId: string;
+    cvId: string;
+    language: CvLanguage | null;
+    profileName: string | null;
+    employeeName: string | null;
+    status: DraftStatus;
+    level: ApprovalLevel | null;
+    reviewRound: number;
+    assigneeName: string | null;
+    submittedAt: string | null;
+    dueAt: string | null;
+    slaRemainingMinutes: number;
+}
+
+export interface PendingDraftQuery {
+    page: number;
+    size: number;
+    sortBy?: PendingDraftSortField;
+    direction?: SortDirection;
 }
