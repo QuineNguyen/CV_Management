@@ -1,4 +1,4 @@
-package com.training.cvmanagementbe.record;
+package com.training.cvmanagementbe.record.cvs;
 
 import java.util.UUID;
 

@@ -1,4 +1,4 @@
-package com.training.cvmanagementbe.record;
+package com.training.cvmanagementbe.record.approvals;
 
 import java.util.UUID;
 

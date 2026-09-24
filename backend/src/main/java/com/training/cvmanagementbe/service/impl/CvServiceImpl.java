@@ -16,11 +16,14 @@ import com.training.cvmanagementbe.enums.cvs.Language;
 import com.training.cvmanagementbe.enums.cvs.LifecycleStatus;
 import com.training.cvmanagementbe.enums.users.Role;
 import com.training.cvmanagementbe.exception.ApiException;
-import com.training.cvmanagementbe.record.CvContent;
-import com.training.cvmanagementbe.record.PublishCommand;
+import com.training.cvmanagementbe.record.cvs.CvContent;
+import com.training.cvmanagementbe.record.cvs.PublishCommand;
+import com.training.cvmanagementbe.record.events.CvDeletedEvent;
+import com.training.cvmanagementbe.record.events.CvRestoredEvent;
 import com.training.cvmanagementbe.repository.*;
 import com.training.cvmanagementbe.service.CvService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -47,6 +50,7 @@ public class CvServiceImpl implements CvService {
     private final CvItemIdGuard itemIdGuard;
     private final AvatarUrlResolver avatarUrlResolver;
     private final AuditLogger auditLogger;
+    private final ApplicationEventPublisher eventPublisher;
 
     // ---------- Queries ----------
 
@@ -251,7 +255,7 @@ public class CvServiceImpl implements CvService {
         cvRepository.cancelPendingRequestsByCvId(cvId, actorId, deletedAt);
 
         auditLogger.record(Action.DELETE_CV, TargetType.CV, cvId, before, null);
-        // TODO [Phase 4]: send email and in-app notification to the owner
+        eventPublisher.publishEvent(new CvDeletedEvent(cvId, profile.getEmployeeId(), actorId));
     }
 
     @Override
@@ -287,8 +291,8 @@ public class CvServiceImpl implements CvService {
 
         CvResponse after = toResponse(saved, profile, resolveEmployeeName(profile.getEmployeeId()), currentVersionOf(saved));
         auditLogger.record(Action.RESTORE_CV, TargetType.CV, cvId, null, after);
+        eventPublisher.publishEvent(new CvRestoredEvent(cvId, profile.getEmployeeId(), CurrentActor.requireUserId()));
 
-        // TODO [Phase 4]: send email and in-app notification to the owner
         return after;
     }
 

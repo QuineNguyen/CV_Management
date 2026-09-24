@@ -1,6 +1,11 @@
 package com.training.cvmanagementbe.enums.profile_updates;
 
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+
 // Whitelist of sortable columns; the client never sends a raw property name.
+@Getter
+@RequiredArgsConstructor
 public enum ProfileUpdateSortField {
 
     CREATED_AT("createdAt"),
@@ -9,12 +14,4 @@ public enum ProfileUpdateSortField {
     ID("id");
 
     private final String property;
-
-    ProfileUpdateSortField(String property) {
-        this.property = property;
-    }
-
-    public String getProperty() {
-        return property;
-    }
 }

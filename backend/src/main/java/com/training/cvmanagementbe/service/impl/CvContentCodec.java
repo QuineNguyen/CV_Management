@@ -9,9 +9,9 @@ import com.training.cvmanagementbe.entity.models.User;
 import com.training.cvmanagementbe.enums.cvs.CvSectionKey;
 import com.training.cvmanagementbe.enums.configs.ErrorCode;
 import com.training.cvmanagementbe.exception.ApiException;
-import com.training.cvmanagementbe.record.CvContent;
-import com.training.cvmanagementbe.record.PersonalInfo;
-import com.training.cvmanagementbe.record.RepeatedEntry;
+import com.training.cvmanagementbe.record.cvs.CvContent;
+import com.training.cvmanagementbe.record.cvs.PersonalInfo;
+import com.training.cvmanagementbe.record.cvs.RepeatedEntry;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 

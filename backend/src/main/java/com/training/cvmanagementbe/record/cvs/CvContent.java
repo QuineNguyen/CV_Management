@@ -1,4 +1,4 @@
-package com.training.cvmanagementbe.record;
+package com.training.cvmanagementbe.record.cvs;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;

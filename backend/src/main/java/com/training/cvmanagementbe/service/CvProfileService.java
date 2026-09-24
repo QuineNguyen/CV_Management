@@ -1,7 +1,6 @@
 package com.training.cvmanagementbe.service;
 
 import com.training.cvmanagementbe.dto.request.cv_profiles.CvProfileRequest;
-import com.training.cvmanagementbe.dto.request.cv_profiles.CvProfileRestoreRequest;
 import com.training.cvmanagementbe.dto.response.cv_profiles.CvProfileResponse;
 import com.training.cvmanagementbe.dto.response.teams.EmployeeTeamResponse;
 import com.training.cvmanagementbe.dto.response.configs.PagedResponse;
@@ -34,18 +33,7 @@ public interface CvProfileService {
      * Guarantees the employee owns at least one profile.
      *
      * - Idempotent: with a profile already present it returns the current primary and creates
-     * nothing. Otherwise it creates the first profile from the employee's primary team.
+     * nothing. Otherwise, it creates the first profile from the employee's primary team.
      */
     CvProfileResponse ensureProfileExists(UUID employeeId);
-
-    /*
-     * Restores a soft-deleted profile.
-     *
-     * - Two conditions: the name must still be free among the employee's ACTIVE profiles
-     * (otherwise the request must carry newName) and the linked team must still be one of the
-     * employee belongs to (otherwise newTeamId). A restored profile always comes back as a
-     * secondary profile - it does not reclaim is_primary.
-     * - The CVs inside are not restored with it; each one comes back through CvService restore().
-     */
-    CvProfileResponse restore(UUID id, CvProfileRestoreRequest request);
 }

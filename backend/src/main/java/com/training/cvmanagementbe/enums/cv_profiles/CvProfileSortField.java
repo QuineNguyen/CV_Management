@@ -1,6 +1,11 @@
 package com.training.cvmanagementbe.enums.cv_profiles;
 
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+
 // Sortable columns of the profile list; maps the API value to the JPA property.
+@Getter
+@RequiredArgsConstructor
 public enum CvProfileSortField {
 
     NAME("name"),
@@ -8,12 +13,4 @@ public enum CvProfileSortField {
     UPDATED_AT("updatedAt");
 
     private final String property;
-
-    CvProfileSortField(String property) {
-        this.property = property;
-    }
-
-    public String getProperty() {
-        return property;
-    }
 }

@@ -40,7 +40,6 @@ public final class ApiPath {
     public static final String ME = "/me";
     public static final String MY_PROFILE = "/profile";
     public static final String MY_PROFILE_UPDATE_REQUEST = "/profile-update-request";
-    public static final String MY_PROFILE_UPDATE_REQUEST_LATEST = "/profile-update-request/latest";
 
     // Profile update requests
     public static final String PROFILE_UPDATE_REQUESTS = "/profile-update-requests";
@@ -62,6 +61,12 @@ public final class ApiPath {
     public static final String DRAFT_CANCEL = "/drafts/{draftId}/cancel";
     public static final String DRAFT_REASSIGN = "/drafts/{draftId}/reassign";
     public static final String DRAFT_REASSIGN_CANDIDATES = "/drafts/{draftId}/reassign-candidates";
+
+    // Notifications
+    public static final String NOTIFICATIONS = "/notifications";
+    public static final String NOTIFICATIONS_UNREAD_COUNT = "/unread-count";
+    public static final String NOTIFICATION_READ = "/{id}/read";
+    public static final String NOTIFICATIONS_READ_ALL = "/read-all";
 
     private ApiPath() {}
 }

@@ -1,4 +1,4 @@
-package com.training.cvmanagementbe.record;
+package com.training.cvmanagementbe.record.events;
 
 import com.training.cvmanagementbe.enums.approvals.ApprovalLevel;
 

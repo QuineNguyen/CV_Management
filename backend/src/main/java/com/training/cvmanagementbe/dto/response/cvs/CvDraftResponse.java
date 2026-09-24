@@ -2,7 +2,7 @@ package com.training.cvmanagementbe.dto.response.cvs;
 
 import com.training.cvmanagementbe.dto.response.approvals.InlineCommentResponse;
 import com.training.cvmanagementbe.enums.cvs.DraftStatus;
-import com.training.cvmanagementbe.record.CvContent;
+import com.training.cvmanagementbe.record.cvs.CvContent;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.time.LocalDateTime;
