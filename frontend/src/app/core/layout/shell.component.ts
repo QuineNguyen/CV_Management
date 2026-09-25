@@ -19,6 +19,12 @@ import { NavIconEnum } from '../enums/nav-icon.enum';
 import { ConfirmService } from '../services/confirm.service';
 import { ProfileUpdateRequestService } from '../services/profile-update-request.service';
 import { MyProfileService } from '../services/my-profile.service';
+import { NotificationService } from '../services/notification.service';
+import { ToastService } from '../services/toast.service';
+import { NOTIFICATION_TYPE_ICONS } from '../enums/notification-event-type.enum';
+import { badgeLabelOf } from '../models/notification.model';
+import { NotificationResponse } from '../dtos/notification.dto';
+import { relativeTimeOf } from '../utils/relative-time.util';
 
 
 /**
@@ -54,11 +60,19 @@ export class ShellComponent {
   private readonly confirm = inject(ConfirmService);
   private readonly profileUpdateRequests = inject(ProfileUpdateRequestService);
   private readonly myProfile = inject(MyProfileService);
+  private readonly notifications = inject(NotificationService);
+  private readonly toast = inject(ToastService);
 
   readonly user = this.auth.user;
   readonly navOpen = signal(true);
   readonly homeRoute = '/' + AppRoute.Home;
   readonly myProfileRoute = '/' + AppRoute.MyProfile;
+  readonly notificationsRoute = '/' + AppRoute.Notifications;
+  readonly unreadCount = this.notifications.unreadCount;
+  readonly recentNotifications = this.notifications.recent;
+  readonly recentLoading = this.notifications.recentLoading;
+  readonly notificationIcons = NOTIFICATION_TYPE_ICONS;
+  readonly unreadBadge = computed(() => badgeLabelOf(this.unreadCount()));
   private confirmBackdropMouseDownTarget: EventTarget | null = null;
 
   /**
@@ -111,6 +125,9 @@ export class ShellComponent {
         avatarImageId: profile.avatarImageId,
         avatarUrl: profile.avatarUrl,
       }));
+
+    // Polled while the shell lives; signing out destroys the shell and stops it.
+    this.notifications.poll().pipe(takeUntilDestroyed()).subscribe();
   }
 
   // Sidebar visibility is convenience only; the backend enforces scope on every query.
@@ -162,9 +179,34 @@ export class ShellComponent {
     }
   }
 
+  onNotificationMenuOpened(): void {
+    this.notifications.refreshRecent();
+  }
+
+  // Opening an item is also reading it; navigation does not wait for the write.
+  openNotification(item: NotificationResponse): void {
+    if (!item.read) {
+      this.notifications.markAsRead(item.id).subscribe();
+    }
+    void this.router.navigateByUrl('/' + item.link);
+  }
+
+  markAllNotificationsRead(event: Event): void {
+    // mat-menu closes on any click inside its panel; keep it open to show the result.
+    event.stopPropagation();
+    this.notifications.markAllAsRead().subscribe({
+      next: () => this.toast.success('All notifications marked as read'),
+    });
+  }
+
+  notificationTime(item: NotificationResponse): string {
+    return relativeTimeOf(item.createdAt);
+  }
+
   // signOut returns an Observable; the session is cleared in its finalize block either way,
   // so the redirect happens on both success and failure
   signOut(): void {
+    this.notifications.reset();
     this.auth.signOut().subscribe({
       next: () => this.redirectToLogin(),
       error: () => this.redirectToLogin(),

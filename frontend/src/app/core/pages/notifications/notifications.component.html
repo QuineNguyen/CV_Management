@@ -1,0 +1,109 @@
+<section class="page">
+
+  <!-- Toolbar -->
+  <header class="page-toolbar">
+    <div>
+      <h1 class="page-title">Notifications</h1>
+      <p class="page-subtitle">
+        @if (unreadCount() > 0) {
+          {{ unreadCount() }} unread
+        } @else {
+          You're all caught up
+        }
+      </p>
+    </div>
+
+    <div class="page-toolbar-actions">
+      <button type="button" class="btn btn-ghost" [disabled]="loading()" (click)="refresh()">
+        Refresh
+      </button>
+      <button type="button" class="btn btn-primary"
+              [disabled]="markingAll() || unreadCount() === 0"
+              (click)="markAllRead()">
+        Mark all as read
+      </button>
+    </div>
+  </header>
+
+  <!-- Tabs -->
+  <div class="notif-tabs" role="tablist">
+    <button type="button" role="tab" class="notif-tab"
+            [class.is-active]="filter() === NotificationFilter.All"
+            [attr.aria-selected]="filter() === NotificationFilter.All"
+            (click)="selectFilter(NotificationFilter.All)">
+      All
+    </button>
+    <button type="button" role="tab" class="notif-tab"
+            [class.is-active]="filter() === NotificationFilter.Unread"
+            [attr.aria-selected]="filter() === NotificationFilter.Unread"
+            (click)="selectFilter(NotificationFilter.Unread)">
+      Unread
+      @if (unreadCount() > 0) {
+        <span class="notif-tab-count">{{ unreadCount() }}</span>
+      }
+    </button>
+  </div>
+
+  <!-- Body -->
+  @if (loading()) {
+    <div class="skeleton-stack" aria-busy="true">
+      @for (row of [1, 2, 3, 4]; track row) {
+        <div class="skeleton-row"></div>
+      }
+    </div>
+  } @else if (isEmpty()) {
+    <div class="empty-state">
+      @if (filter() === NotificationFilter.Unread) {
+        <p class="empty-state-title">No unread notifications</p>
+        <p class="empty-state-hint">Everything that needs your attention has been read</p>
+      } @else {
+        <p class="empty-state-title">No notifications yet</p>
+        <p class="empty-state-hint">
+          Updates about your CVs, the reviews assigned to you and your account appear here
+        </p>
+      }
+    </div>
+  } @else {
+    <ul class="notif-list">
+      @for (item of items(); track item.id) {
+        <li class="data-card notif-item" [class.is-unread]="!item.read">
+          <button type="button" class="notif-main" (click)="open(item)">
+            <span class="notif-icon material-symbols-outlined" aria-hidden="true">
+              {{ typeIcons[item.type] }}
+            </span>
+
+            <span class="notif-body">
+              <span class="notif-meta">
+                <span class="status-badge">{{ typeLabels[item.type] }}</span>
+                <span class="notif-time" [matTooltip]="(item.createdAt | date:'dd/MM/yyyy HH:mm') ?? ''">
+                  {{ relativeTime(item) }}
+                </span>
+                @if (!item.read) {
+                  <span class="sr-only">Unread</span>
+                }
+              </span>
+              <span class="notif-content">{{ item.content }}</span>
+            </span>
+          </button>
+
+          @if (!item.read) {
+            <button type="button" class="icon-btn"
+                    matTooltip="Mark as read" aria-label="Mark as read"
+                    (click)="markRead(item, $event)">
+              <span class="material-symbols-outlined">done</span>
+            </button>
+          }
+        </li>
+      }
+    </ul>
+
+    <mat-paginator
+      class="page-paginator"
+      [length]="pageState().total"
+      [pageIndex]="pageState().index"
+      [pageSize]="pageState().size"
+      [pageSizeOptions]="pageSizeOptions"
+      showFirstLastButtons
+      (page)="onPageChange($event)" />
+  }
+</section>

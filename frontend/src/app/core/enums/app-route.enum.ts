@@ -18,4 +18,5 @@ export enum AppRoute {
     Approvals = 'approvals',
     ApprovalQueue = 'approvals/queue',
     PendingDrafts = 'approvals/pending',
+    Notifications = 'notifications',
 }

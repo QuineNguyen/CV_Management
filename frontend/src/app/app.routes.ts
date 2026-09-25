@@ -137,6 +137,13 @@ export const routes: Routes = [
           import('./core/pages/approvals/draft-review/draft-review.component')
             .then(m => m.DraftReviewComponent),
       },
+      {
+        path: AppRoute.Notifications,
+        title: 'Notifications',
+        loadComponent: () =>
+          import('./core/pages/notifications/notifications.component')
+            .then(m => m.NotificationsComponent),
+      },
     ],
   },
   { path: '**', redirectTo: '' },

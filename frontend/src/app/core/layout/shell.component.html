@@ -44,6 +44,60 @@
 
       <span class="shell-spacer"></span>
 
+      <!-- Notification bell -->
+      <button mat-icon-button class="notif-trigger"
+              [matMenuTriggerFor]="notifMenu"
+              (menuOpened)="onNotificationMenuOpened()"
+              [attr.aria-label]="unreadCount() > 0 ? unreadCount() + ' unread notifications' : 'Notifications'">
+        <span class="material-symbols-outlined">notifications</span>
+        @if (unreadCount() > 0) {
+          <span class="notif-badge" aria-hidden="true">{{ unreadBadge() }}</span>
+        }
+      </button>
+
+      <mat-menu #notifMenu="matMenu" class="notif-menu" xPosition="before">
+        <div class="notif-menu-head">
+          <strong>Notifications</strong>
+          @if (unreadCount() > 0) {
+            <button type="button" class="link-btn notif-menu-action" (click)="markAllNotificationsRead($event)">
+              Mark all as read
+            </button>
+          }
+        </div>
+        <mat-divider />
+
+        @if (recentLoading() && recentNotifications().length === 0) {
+          <p class="notif-menu-empty">Loading…</p>
+        } @else {
+          @for (item of recentNotifications(); track item.id) {
+            <button mat-menu-item class="notif-menu-item" [class.is-unread]="!item.read"
+                    (click)="openNotification(item)">
+              <span class="notif-menu-row">
+                <span class="notif-menu-icon material-symbols-outlined" aria-hidden="true">
+                  {{ notificationIcons[item.type] }}
+                </span>
+                <span class="notif-menu-text">
+                  <span class="notif-menu-content">{{ item.content }}</span>
+                  <small class="notif-menu-time">{{ notificationTime(item) }}</small>
+                </span>
+                @if (!item.read) {
+                  <span class="notif-menu-dot" aria-hidden="true"></span>
+                  <span class="sr-only">Unread</span>
+                }
+              </span>
+            </button>
+          } @empty {
+            <p class="notif-menu-empty">You're all caught up</p>
+          }
+        }
+
+        <mat-divider />
+        <a mat-menu-item class="notif-menu-footer" [routerLink]="notificationsRoute">
+          View all notifications
+        </a>
+      </mat-menu>
+
+      <!-- Account menu (unchanged) -->
       <button mat-button [matMenuTriggerFor]="accountMenu" aria-label="Account menu">
         <div class="shell-user">
           @if (user()?.avatarUrl) {
