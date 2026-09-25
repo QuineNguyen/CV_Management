@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en"
+      th:replace="~{email/base-layout :: layout(~{::content})}">
+<body>
+<div th:fragment="content">
+
+    <!-- Submitted: sent to the reviewers -->
+    <th:block th:unless="${decided}">
+        <p><strong th:text="${employeeName}">Jane Doe</strong> requested changes to their personal information.</p>
+        <p style="margin-bottom:4px;">Fields to review:</p>
+        <ul style="margin-top:0;">
+            <li th:each="field : ${changedFields}" th:text="${field}">Phone number</li>
+        </ul>
+        <p>Compare the current and requested values, then approve or reject the request.</p>
+    </th:block>
+
+    <!-- Decided: sent to the requester -->
+    <th:block th:if="${decided}">
+        <p th:if="${approved}">
+            Your personal information update was approved by <strong th:text="${reviewerName}">John Smith</strong>.
+            Your profile now shows the new details.
+        </p>
+        <p th:unless="${approved}">
+            Your personal information update was rejected by <strong th:text="${reviewerName}">John Smith</strong>.
+        </p>
+        <div class="reason" th:if="${!approved and reason != null}">
+            <span class="reason-label">Reason</span>
+            <span class="reason-text" th:text="${reason}">The phone number format is invalid.</span>
+        </div>
+        <p class="note" th:unless="${approved}">You can submit a new request once you have made the changes described above.</p>
+    </th:block>
+</div>
+</body>
+</html>

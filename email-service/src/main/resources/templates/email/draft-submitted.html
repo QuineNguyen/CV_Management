@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en"
+      th:replace="~{email/base-layout :: layout(~{::content})}">
+<body>
+<div th:fragment="content">
+    <p>A CV is waiting for your <strong th:text="${levelLabel}">technical review</strong>.</p>
+    <p class="note" th:if="${forwarded}">It has passed technical review and now needs your format review.</p>
+    <p class="note" th:if="${level1Skipped}">
+        Technical review was skipped for this round because the employee is the tech lead of the team linked to this profile.
+    </p>
+
+    <table class="facts" role="presentation">
+        <tr><td class="label">Employee</td><td class="value" th:text="${employeeName}">Jane Doe</td></tr>
+        <tr><td class="label">Profile</td><td class="value" th:text="${profileName}">Java Backend</td></tr>
+        <tr><td class="label">Language</td><td class="value" th:text="${language}">EN</td></tr>
+    </table>
+
+    <p>Please review it before the approval deadline.</p>
+</div>
+</body>
+</html>

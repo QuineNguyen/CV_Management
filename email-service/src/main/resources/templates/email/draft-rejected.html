@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en"
+      th:replace="~{email/base-layout :: layout(~{::content})}">
+<body>
+<div th:fragment="content">
+    <p>
+        <strong th:text="${reviewerName}">Your reviewer</strong> returned your CV draft at
+        <span th:text="${levelLabel}">technical review</span>.
+    </p>
+
+    <table class="facts" role="presentation">
+        <tr><td class="label">Profile</td><td class="value" th:text="${profileName}">Java Backend</td></tr>
+        <tr><td class="label">Language</td><td class="value" th:text="${language}">EN</td></tr>
+    </table>
+
+    <div class="reason" th:if="${reason}">
+        <span class="reason-label">Reason</span>
+        <span class="reason-text" th:text="${reason}">Please add more detail to your recent projects.</span>
+    </div>
+
+    <p>Open the draft to read the inline comments, update your CV and submit it again.</p>
+</div>
+</body>
+</html>

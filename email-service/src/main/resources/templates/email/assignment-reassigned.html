@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en"
+      th:replace="~{email/base-layout :: layout(~{::content})}">
+<body>
+<div th:fragment="content">
+    <p th:if="${incoming}">
+        A CV review was handed over to you from <strong th:text="${otherReviewerName}">John Smith</strong>.
+    </p>
+    <p th:unless="${incoming}">
+        A CV review assigned to you has been reassigned to <strong th:text="${otherReviewerName}">John Smith</strong>.
+        No further action is needed from you.
+    </p>
+
+    <table class="facts" role="presentation">
+        <tr><td class="label">Employee</td><td class="value" th:text="${employeeName}">Jane Doe</td></tr>
+        <tr><td class="label">Profile</td><td class="value" th:text="${profileName}">Java Backend</td></tr>
+        <tr><td class="label">Language</td><td class="value" th:text="${language}">EN</td></tr>
+        <tr><td class="label">Review step</td><td class="value" th:text="${levelLabel}">technical review</td></tr>
+    </table>
+
+    <div class="reason" th:if="${reason}">
+        <span class="reason-label">Reason</span>
+        <span class="reason-text" th:text="${reason}">The previous reviewer is on leave.</span>
+    </div>
+</div>
+</body>
+</html>
