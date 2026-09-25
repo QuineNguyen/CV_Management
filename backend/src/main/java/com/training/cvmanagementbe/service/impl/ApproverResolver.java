@@ -10,7 +10,7 @@ import com.training.cvmanagementbe.enums.configs.ErrorCode;
 import com.training.cvmanagementbe.enums.users.AccountStatus;
 import com.training.cvmanagementbe.enums.users.Role;
 import com.training.cvmanagementbe.exception.ApiException;
-import com.training.cvmanagementbe.record.ResolverResult;
+import com.training.cvmanagementbe.record.approvals.ResolverResult;
 import com.training.cvmanagementbe.repository.ApprovalAssignmentRepository;
 import com.training.cvmanagementbe.repository.TeamMemberRepository;
 import com.training.cvmanagementbe.repository.TeamRepository;

@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en"
+      th:replace="~{email/base-layout :: layout(~{::content})}">
+<body>
+<div th:fragment="content">
+    <p>Good news - your CV has passed both reviews and is now published.</p>
+
+    <table class="facts" role="presentation">
+        <tr><td class="label">Profile</td><td class="value" th:text="${profileName}">Java Backend</td></tr>
+        <tr><td class="label">Language</td><td class="value" th:text="${language}">EN</td></tr>
+        <tr><td class="label">Version</td><td class="value" th:text="${'v' + versionNumber}">v3</td></tr>
+    </table>
+
+    <p class="note">This version is what your organisation shares from now on.</p>
+</div>
+</body>
+</html>

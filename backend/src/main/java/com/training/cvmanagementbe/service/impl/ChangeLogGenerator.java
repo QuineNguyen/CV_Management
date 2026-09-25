@@ -3,8 +3,8 @@ package com.training.cvmanagementbe.service.impl;
 import com.training.cvmanagementbe.entity.models.ChangeLogEntry;
 import com.training.cvmanagementbe.enums.cvs.ChangeType;
 import com.training.cvmanagementbe.enums.cvs.CvSectionKey;
-import com.training.cvmanagementbe.record.CvContent;
-import com.training.cvmanagementbe.record.RepeatedEntry;
+import com.training.cvmanagementbe.record.cvs.CvContent;
+import com.training.cvmanagementbe.record.cvs.RepeatedEntry;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 

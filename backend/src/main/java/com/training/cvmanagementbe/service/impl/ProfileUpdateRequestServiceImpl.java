@@ -15,11 +15,14 @@ import com.training.cvmanagementbe.enums.configs.TargetType;
 import com.training.cvmanagementbe.enums.profile_updates.ProfileUpdateStatus;
 import com.training.cvmanagementbe.enums.users.Role;
 import com.training.cvmanagementbe.exception.ApiException;
+import com.training.cvmanagementbe.record.events.ProfileUpdateDecidedEvent;
+import com.training.cvmanagementbe.record.events.ProfileUpdateSubmittedEvent;
 import com.training.cvmanagementbe.repository.ImageFileRepository;
 import com.training.cvmanagementbe.repository.ProfileUpdateRequestRepository;
 import com.training.cvmanagementbe.repository.UserRepository;
 import com.training.cvmanagementbe.service.ProfileUpdateRequestService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -49,6 +52,7 @@ public class ProfileUpdateRequestServiceImpl implements ProfileUpdateRequestServ
     private final ImageFileRepository imageFileRepository;
     private final AvatarUrlResolver avatarUrlResolver;
     private final AuditLogger auditLogger;
+    private final ApplicationEventPublisher eventPublisher;
 
     // ---------- Self-service ----------
 
@@ -66,10 +70,10 @@ public class ProfileUpdateRequestServiceImpl implements ProfileUpdateRequestServ
          */
         ProfileUpdateRequest saved = requestRepository.saveAndFlush(buildRequest(user, request));
 
-        // TODO (Phase 4): notify the reviewers this request routes to, once the mail module lands.
         // Exactly that set and no wider - HR is not mailed about an HR or Admin request,
         auditLogger.record(Action.SUBMIT_PROFILE_UPDATE, TargetType.PROFILE_UPDATE_REQUEST,
                 saved.getId(), null, saved.getStatus());
+        eventPublisher.publishEvent(new ProfileUpdateSubmittedEvent(saved.getId(), user.getId()));
 
         return toResponse(saved, user, new HashMap<>());
     }
@@ -163,10 +167,9 @@ public class ProfileUpdateRequestServiceImpl implements ProfileUpdateRequestServ
                 closed.getId(), ProfileUpdateStatus.PENDING, closed.getStatus());
         auditLogger.record(Action.UPDATE_USER, TargetType.USER, user.getId(),
                 before, snapshot(saved));
-
-        // TODO [Phase 4 - notifications]: emit event #17 so the requester learns the outcome.
-        //  Must fire inside this transaction's commit, not before it - an email announcing an
-        //  approval that later rolls back is worse than a late one.
+        eventPublisher.publishEvent(new ProfileUpdateDecidedEvent(
+                closed.getId(), closed.getUserId(), CurrentActor.requireUserId(), true, null
+        ));
 
         return toResponse(closed, user, reviewerNames(List.of(closed)));
     }
@@ -182,10 +185,10 @@ public class ProfileUpdateRequestServiceImpl implements ProfileUpdateRequestServ
 
         auditLogger.record(Action.REJECT_PROFILE_UPDATE, TargetType.PROFILE_UPDATE_REQUEST,
                 closed.getId(), ProfileUpdateStatus.PENDING, closed.getStatus());
+        eventPublisher.publishEvent(new ProfileUpdateDecidedEvent(
+                closed.getId(), closed.getUserId(), CurrentActor.requireUserId(), false, closed.getRejectReason()
+        ));
 
-        // TODO [Phase 4 - notifications]: emit event #17 to the requester with the outcome.
-        //  For reject, the reason travels with it - it is the only thing that tells them what
-        //  to change before resubmitting.
         return toResponse(closed, requireUser(closed.getUserId()), reviewerNames(List.of(closed)));
     }
 

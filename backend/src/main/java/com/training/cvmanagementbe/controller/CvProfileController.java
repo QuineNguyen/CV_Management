@@ -3,7 +3,6 @@ package com.training.cvmanagementbe.controller;
 import com.training.cvmanagementbe.constant.ApiPath;
 import com.training.cvmanagementbe.constant.PageDefaults;
 import com.training.cvmanagementbe.dto.request.cv_profiles.CvProfileRequest;
-import com.training.cvmanagementbe.dto.request.cv_profiles.CvProfileRestoreRequest;
 import com.training.cvmanagementbe.dto.response.configs.ApiResponse;
 import com.training.cvmanagementbe.dto.response.cv_profiles.CvProfileResponse;
 import com.training.cvmanagementbe.dto.response.teams.EmployeeTeamResponse;
@@ -102,13 +101,5 @@ public class CvProfileController {
     @Operation(summary = "Make this the employee's primary profile")
     public ResponseEntity<CvProfileResponse> setPrimary(@PathVariable UUID id) {
         return ResponseEntity.ok(cvProfileService.setPrimary(id));
-    }
-
-    @PostMapping(ApiPath.PROFILES + ApiPath.RESTORE)
-    @Operation(summary = "Restore a soft-deleted profile (Admin/HR)")
-    public ResponseEntity<CvProfileResponse> restore(
-            @PathVariable UUID id,
-            @RequestBody(required = false) CvProfileRestoreRequest request) {
-        return ResponseEntity.ok(cvProfileService.restore(id, request));
     }
 }

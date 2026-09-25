@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en"
+      th:replace="~{email/base-layout :: layout(~{::content})}">
+<body>
+<div th:fragment="content">
+    <p th:if="${ownerView}">
+        Your CV draft was cancelled while it was under review. The review has stopped and your current
+        published version is unchanged.
+    </p>
+    <p th:unless="${ownerView}">
+        The review of <strong th:text="${employeeName}">Jane Doe</strong>'s CV assigned to you was cancelled.
+        No action is needed from you.
+    </p>
+
+    <table class="facts" role="presentation">
+        <tr th:unless="${ownerView}"><td class="label">Employee</td><td class="value" th:text="${employeeName}">Jane Doe</td></tr>
+        <tr><td class="label">Profile</td><td class="value" th:text="${profileName}">Java Backend</td></tr>
+        <tr><td class="label">Language</td><td class="value" th:text="${language}">EN</td></tr>
+    </table>
+
+    <div class="reason" th:if="${reason}">
+        <span class="reason-label">Reason</span>
+        <span class="reason-text" th:text="${reason}">The employee asked to withdraw it.</span>
+    </div>
+</div>
+</body>
+</html>

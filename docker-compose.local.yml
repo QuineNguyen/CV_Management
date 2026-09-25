@@ -77,9 +77,33 @@ services:
     logging: *default-logging
     networks: [cvproject]
 
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    container_name: rabbitmq
+    hostname: rabbitmq
+    restart: unless-stopped
+    environment:
+      TZ: Asia/Ho_Chi_Minh
+      RABBITMQ_DEFAULT_USER: cvproject
+      RABBITMQ_DEFAULT_PASS: 12345678
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+    logging: *default-logging
+    networks: [cvproject]
+
 volumes:
   mariadb_data:
   minio_data:
+  rabbitmq_data:
 
 networks:
   cvproject:

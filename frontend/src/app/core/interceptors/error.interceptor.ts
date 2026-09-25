@@ -13,26 +13,24 @@ import { QueryParam } from '../enums/query-param.enum';
 /**
  * Turns every failed request into one visible, consistent outcome.
  *
- * <p>The rule this enforces: a screen only handles a failure itself when it can do something
+ * - The rule this enforces: a screen only handles a failure itself when it can do something
  * specific about it — highlight a field, roll back an optimistic edit, offer a reload. Everything
  * else is announced here once. Without a central handler, each screen grows its own half of the
  * error matrix and the halves drift.
  *
- * <p>Per status:
- * <ul>
- *   <li><b>401</b> - the session is gone or was revoked server-side. Clear local state without
+ * - Per status:
+ *   + 401 - the session is gone or was revoked server-side. Clear local state without
  *       calling sign-out (that call would only produce a second 401) and send the user to the
- *       sign-in page, remembering where they were.</li>
- *   <li><b>403</b> - out of data scope. Nothing the user can do, so a notice is the whole
- *       response; the error is not re-thrown as something screens should handle.</li>
- *   <li><b>409</b> - someone else acted first. The user needs to reload, so say exactly that.</li>
- *   <li><b>422</b> - a business rule was broken. Shown here, and re-thrown so a form can also
- *       react (for example by keeping the submit button enabled).</li>
- *   <li><b>400</b> - re-thrown without a notice when it carries field errors, because the form
- *       renders those inline and a snackbar on top would be duplicate noise.</li>
- * </ul>
+ *       sign-in page, remembering where they were.
+ *   + 403 - out of data scope. Nothing the user can do, so a notice is the whole
+ *       response; the error is not re-thrown as something screens should handle.
+ *   + 409 - someone else acted first. The user needs to reload, so say exactly that.
+ *   + 422 - a business rule was broken. Shown here, and re-thrown so a form can also
+ *       react (for example by keeping the submit button enabled).
+ *   + 400 - re-thrown without a notice when it carries field errors, because the form
+ *       renders those inline and a snackbar on top would be duplicate noise.
  *
- * <p>The error is always re-thrown. Swallowing it would leave a caller's loading spinner running
+ * - The error is always re-thrown. Swallowing it would leave a caller's loading spinner running
  * forever, since neither `next` nor `error` would ever arrive.
  */
 export const errorInterceptor: HttpInterceptorFn = (req, next) => {

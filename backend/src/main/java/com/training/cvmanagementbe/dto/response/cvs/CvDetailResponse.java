@@ -1,6 +1,6 @@
 package com.training.cvmanagementbe.dto.response.cvs;
 
-import com.training.cvmanagementbe.record.CvContent;
+import com.training.cvmanagementbe.record.cvs.CvContent;
 
 import java.util.UUID;
 

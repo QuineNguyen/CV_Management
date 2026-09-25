@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en"
+      th:replace="~{email/base-layout :: layout(~{::content})}">
+<body>
+<div th:fragment="content">
+    <p>
+        <strong th:text="${actorName}">An administrator</strong>
+        <span th:text="${actionLabel}">deleted</span>
+        your <span th:text="${targetLabel}">CV</span>.
+    </p>
+
+    <table class="facts" role="presentation">
+        <tr><td class="label">Profile</td><td class="value" th:text="${profileName}">Java Backend</td></tr>
+        <tr th:if="${language}"><td class="label">Language</td><td class="value" th:text="${language}">EN</td></tr>
+    </table>
+
+    <p class="note">
+        You are notified because this content is published under your name. Contact HR if you have any questions.
+    </p>
+</div>
+</body>
+</html>

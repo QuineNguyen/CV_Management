@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en" th:fragment="layout(content)">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${subject}">CV Management</title>
+    <style>
+        .facts { width: 100%; margin: 16px 0; border-collapse: collapse; }
+        .facts td { padding: 6px 0; font-size: 14px; vertical-align: top; }
+        .facts .label { width: 35%; padding-right: 12px; color: #5a5a5a; }
+        .facts .value { font-weight: bold; color: #1a1a1a; }
+        .reason { margin: 16px 0; padding: 12px 16px; background-color: #fff5f7; border-left: 4px solid #ee0033; border-radius: 4px; }
+        .reason-label { display: block; margin-bottom: 4px; font-size: 12px; font-weight: bold; text-transform: uppercase; color: #5a5a5a; }
+        .reason-text { white-space: pre-line; }
+        .note { font-size: 14px; color: #5a5a5a; }
+        .secret { display: inline-block; margin: 8px 0 16px; padding: 12px 20px; background-color: #f5f6f8; border: 1px dashed #c4002a; border-radius: 6px; font-family: 'Courier New', Courier, monospace; font-size: 20px; letter-spacing: 2px; }
+        @media (max-width: 480px) { .facts .label { width: 40%; } }
+    </style>
+</head>
+<body style="margin:0;padding:0;background-color:#f5f6f8;font-family:Arial,Helvetica,sans-serif;color:#1a1a1a;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f5f6f8;">
+    <tr>
+        <td align="center" style="padding:24px 12px;">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
+                   style="max-width:600px;background-color:#ffffff;border:1px solid #e0e0e0;border-radius:8px;overflow:hidden;">
+
+                <!-- Header -->
+                <tr>
+                    <td style="background-color:#ee0033;padding:20px 24px;">
+                        <span style="color:#ffffff;font-size:20px;font-weight:bold;" th:text="${appName}">CV Management</span>
+                    </td>
+                </tr>
+
+                <!-- Body -->
+                <tr>
+                    <td style="padding:24px;font-size:15px;line-height:1.6;">
+                        <p style="margin:0 0 16px;">Hi <strong th:text="${recipientName}">there</strong>,</p>
+
+                        <div th:replace="${content}"></div>
+
+                        <table th:if="${actionUrl}" role="presentation" cellpadding="0" cellspacing="0" border="0"
+                               style="margin-top:24px;">
+                            <tr>
+                                <td style="background-color:#ee0033;border-radius:6px;">
+                                    <a th:href="${actionUrl}" th:text="|Open in ${appName}|"
+                                       style="display:inline-block;padding:12px 24px;color:#ffffff;font-weight:bold;text-decoration:none;">
+                                        Open in CV Management
+                                    </a>
+                                </td>
+                            </tr>
+                        </table>
+                    </td>
+                </tr>
+
+                <!-- Footer -->
+                <tr>
+                    <td style="padding:16px 24px;background-color:#fafafa;border-top:1px solid #e0e0e0;font-size:12px;line-height:1.5;color:#5a5a5a;">
+                        <p style="margin:0 0 4px;">
+                            This is an automated message from <span th:text="${appName}">CV Management</span>. Please do not reply.
+                        </p>
+                        <p style="margin:0 0 4px;">You receive this email because you have an account in this system.</p>
+                        <!-- Unsubscribe link placeholder: added when notification preferences exist -->
+                        <p style="margin:0;">&copy; <span th:text="${year}">2026</span> <span th:text="${appName}">CV Management</span></p>
+                    </td>
+                </tr>
+            </table>
+        </td>
+    </tr>
+</table>
+</body>
+</html>

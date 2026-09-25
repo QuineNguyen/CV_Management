@@ -87,6 +87,8 @@ services:
         condition: service_healthy
       minio-init:
         condition: service_completed_successfully
+      rabbitmq:
+        condition: service_healthy
     environment:
       TZ: ${TZ:-Asia/Ho_Chi_Minh}
       SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
@@ -117,6 +119,11 @@ services:
       MAIL_FROM: ${MAIL_FROM:-no-reply@cvproject.local}
 
       APP_PUBLIC_URL: ${APP_PUBLIC_URL:-http://localhost}
+
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USER: ${RABBITMQ_USER:-cvproject}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-12345678}
     logging: *default-logging
     networks: [cvproject]
 
@@ -140,9 +147,66 @@ services:
     logging: *default-logging
     networks: [cvproject]
 
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    container_name: rabbitmq-${STACK_SUFFIX:-dev}
+    # Fixed hostname: RabbitMQ stores data per node name, a new name would orphan the volume
+    hostname: rabbitmq
+    restart: unless-stopped
+    environment:
+      TZ: ${TZ:-Asia/Ho_Chi_Minh}
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-cvproject}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-12345678}
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+    logging: *default-logging
+    networks: [cvproject]
+
+  email-service:
+    build:
+      context: ./email-service
+      dockerfile: Dockerfile
+    image: cvproject-email-service:${IMAGE_TAG:-latest}
+    container_name: email-service-${STACK_SUFFIX:-dev}
+    restart: unless-stopped
+    depends_on:
+      mariadb:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    environment:
+      TZ: ${TZ:-Asia/Ho_Chi_Minh}
+      # Use the same variable the backend service uses to pick its profile
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-dev}
+      # Copy the query string from the backend's SPRING_DATASOURCE_URL
+      SPRING_DATASOURCE_URL: "jdbc:mariadb://mariadb:3306/${MARIADB_DATABASE:-cvproject}"
+      SPRING_DATASOURCE_USERNAME: ${MARIADB_USER:-cvproject}
+      SPRING_DATASOURCE_PASSWORD: ${MARIADB_PASSWORD}
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_USER: ${RABBITMQ_USER:-cvproject}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-cvproject}
+      MAIL_HOST: ${MAIL_HOST:-smtp.gmail.com}
+      MAIL_PORT: ${MAIL_PORT:-587}
+      MAIL_USERNAME: ${MAIL_USERNAME}
+      MAIL_PASSWORD: ${MAIL_PASSWORD}
+      MAIL_FROM: ${MAIL_FROM:-no-reply@cvproject.local}
+      MAIL_FROM_NAME: ${MAIL_FROM_NAME:-CV Management}
+      FRONTEND_BASE_URL: ${FRONTEND_BASE_URL:-http://localhost:8000}
+      EMAIL_RETRY_DELAY_MS: ${EMAIL_RETRY_DELAY_MS:-300000}
+      EMAIL_MAX_RETRIES: ${EMAIL_MAX_RETRIES:-3}
+    logging: *default-logging
+    networks: [cvproject]
+
 volumes:
   mariadb_data:
   minio_data:
+  rabbitmq_data:
 
 networks:
   cvproject:

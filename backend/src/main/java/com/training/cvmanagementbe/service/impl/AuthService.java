@@ -20,9 +20,11 @@ import com.training.cvmanagementbe.enums.configs.ErrorCode;
 import com.training.cvmanagementbe.enums.configs.TargetType;
 import com.training.cvmanagementbe.enums.users.Role;
 import com.training.cvmanagementbe.exception.ApiException;
+import com.training.cvmanagementbe.record.events.PasswordResetEvent;
 import com.training.cvmanagementbe.repository.ExternalAccountLinkRepository;
 import com.training.cvmanagementbe.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -48,6 +50,7 @@ public class AuthService {
     private final AuditLogger auditLogger;
     private final PasswordGenerator passwordGenerator;
     private final GoogleTokenVerifier googleTokenVerifier;
+    private final ApplicationEventPublisher eventPublisher;
 
     private final int maxFailedAttempts;
     private final long lockDurationMinutes;
@@ -60,6 +63,7 @@ public class AuthService {
                        AuditLogger auditLogger,
                        PasswordGenerator passwordGenerator,
                        GoogleTokenVerifier googleTokenVerifier,
+                       ApplicationEventPublisher eventPublisher,
                        @Value("${security.login.max-failed-attempts:5}") int maxFailedAttempts,
                        @Value("${security.login.lock-duration-minutes:5}") long lockDurationMinutes,
                        @Value("${security.password.min-length:8}") int minPasswordLength) {
@@ -70,6 +74,7 @@ public class AuthService {
         this.auditLogger = auditLogger;
         this.passwordGenerator = passwordGenerator;
         this.googleTokenVerifier = googleTokenVerifier;
+        this.eventPublisher = eventPublisher;
         this.maxFailedAttempts = maxFailedAttempts;
         this.lockDurationMinutes = lockDurationMinutes;
         this.minPasswordLength = minPasswordLength;
@@ -206,8 +211,10 @@ public class AuthService {
 
         auditLogger.record(Action.RESET_PASSWORD,
                 TargetType.USER, target.getId(), null, target.getUsername());
+        eventPublisher.publishEvent(new PasswordResetEvent(
+                target.getId(), CurrentActor.requireUserId(), temporaryPassword
+        ));
 
-        // TODO Next stage: publish notification event (email + in-app) to `target`.
         return new ResetPasswordResponse(temporaryPassword);
     }
 

@@ -10,6 +10,7 @@ backend/target/
 *.jar
 *.class
 backend/src/main/resources/*.properties
+email-service/src/main/resources/*.properties
 
 frontend/node_modules/
 frontend/dist/

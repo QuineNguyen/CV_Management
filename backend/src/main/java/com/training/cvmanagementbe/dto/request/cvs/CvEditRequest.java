@@ -1,6 +1,6 @@
 package com.training.cvmanagementbe.dto.request.cvs;
 
-import com.training.cvmanagementbe.record.CvContent;
+import com.training.cvmanagementbe.record.cvs.CvContent;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
