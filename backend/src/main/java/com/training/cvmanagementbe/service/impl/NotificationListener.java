@@ -40,7 +40,7 @@ public class NotificationListener {
     private static final String UNKNOWN_PERSON = "Someone";
     private static final String UNKNOWN_VALUE = "-";
     private static final String TARGET_CV = "CV";
-    private static final String TARGET_PROFILE = "competency profile";
+    private static final String TARGET_PROFILE = "competency profile and all the CVs in it";
 
     private final NotificationDispatcher dispatcher;
     private final CvDraftRepository cvDraftRepository;
@@ -208,8 +208,23 @@ public class NotificationListener {
     @Async
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void onCvProfileDeleted(CvProfileDeletedEvent event) {
-        notifyProfileLifecycle(NotificationEventType.CV_PROFILE_DELETED,
-                event.profileId(), event.ownerId(), event.actorId());
+        String profileName = profileNameOf(event.profileId());
+        String actor = nameOf(event.actorId());
+        String action = actionLabel(NotificationEventType.CV_PROFILE_DELETED);
+
+        dispatcher.dispatch(new NotificationCommand(
+                event.ownerId(), event.actorId(), NotificationEventType.CV_PROFILE_DELETED,
+                "%s deleted your competency profile %s and all the CVs in it".formatted(actor, profileName),
+                NotificationLink.CV_PROFILES.path(),
+                "Your competency profile was deleted - %s".formatted(profileName),
+                vars()
+                        .with(ACTOR_NAME, actor)
+                        .with(ACTION_LABEL, action)
+                        .with(TARGET_LABEL, TARGET_PROFILE)
+                        .with(PROFILE_NAME, profileName)
+                        .with(LANGUAGE, null)
+                        .build()
+        ));
     }
 
     // ---------- Personal information updates ----------
@@ -342,26 +357,6 @@ public class NotificationListener {
                         .with(TARGET_LABEL, TARGET_CV)
                         .with(PROFILE_NAME, profileName)
                         .with(LANGUAGE, language)
-                        .build()
-        ));
-    }
-
-    private void notifyProfileLifecycle(NotificationEventType type, UUID profileId, UUID ownerId, UUID actorId) {
-        String profileName = profileNameOf(profileId);
-        String actor = nameOf(actorId);
-        String action = actionLabel(type);
-
-        dispatcher.dispatch(new NotificationCommand(
-                ownerId, actorId, type,
-                "%s %s your competency profile %s".formatted(actor, action, profileName),
-                NotificationLink.CV_PROFILES.path(),
-                "Your competency profile was %s - %s".formatted(action, profileName),
-                vars()
-                        .with(ACTOR_NAME, actor)
-                        .with(ACTION_LABEL, action)
-                        .with(TARGET_LABEL, TARGET_PROFILE)
-                        .with(PROFILE_NAME, profileName)
-                        .with(LANGUAGE, null)
                         .build()
         ));
     }

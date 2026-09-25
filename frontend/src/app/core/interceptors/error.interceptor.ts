@@ -9,6 +9,7 @@ import { ToastService } from '../services/toast.service';
 import { ApiEndpoint } from '../enums/api-endpoint.enum';
 import { AppRoute } from '../enums/app-route.enum';
 import { QueryParam } from '../enums/query-param.enum';
+import { SKIP_ERROR_TOAST } from './skip-error-toast.token';
 
 /**
  * Turns every failed request into one visible, consistent outcome.
@@ -30,6 +31,10 @@ import { QueryParam } from '../enums/query-param.enum';
  *   + 400 - re-thrown without a notice when it carries field errors, because the form
  *       renders those inline and a snackbar on top would be duplicate noise.
  *
+ * - Background requests flagged with SKIP_ERROR_TOAST (notification polling) get no notice: the
+ * user did not start them and cannot act on them. The 401 notice is kept because it explains
+ * the redirect that follows.
+ * 
  * - The error is always re-thrown. Swallowing it would leave a caller's loading spinner running
  * forever, since neither `next` nor `error` would ever arrive.
  */
@@ -38,7 +43,12 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
   const auth = inject(AuthService);
   const router = inject(Router);
 
-  const notify = (message: string) => toast.error(message);
+  const silent = req.context.get(SKIP_ERROR_TOAST);
+  const notify = (message: string) => {
+    if (!silent) {
+      toast.error(message);
+    }
+  }
 
   return next(req).pipe(
     catchError((error: HttpErrorResponse) => {
@@ -61,8 +71,9 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
           const isSignInAttempt = req.url.includes(ApiEndpoint.Login)
               || req.url.includes(ApiEndpoint.GoogleLogin);
 
-          if (!isSignInAttempt && !router.url.startsWith(AppRoute.Login)) {
-            notify(message);
+          if (!isSignInAttempt && !router.url.startsWith('/' +AppRoute.Login)) {
+            // Shown even for a background call: it explains the redirect.
+            toast.error(message);
             void router.navigate([AppRoute.Login], {
               queryParams: { [QueryParam.ReturnUrl]: router.url },
             });
@@ -81,9 +92,11 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
           break;
 
         case 409:
-          toast.error(message, 'Reload')
-            .onAction()
-            .subscribe(() => window.location.reload());
+          if (!silent) {
+            toast.error(message, 'Reload')
+              .onAction()
+              .subscribe(() => window.location.reload());
+          }
           break;
 
         case 422:

@@ -40,4 +40,9 @@ export enum ApiEndpoint {
     // Approval routes
     Approvals = '/approvals',
     ApprovalQueue = '/approvals/queue',
+
+    // Notification routes
+    Notifications = '/notifications',
+    NotificationsUnreadCount = '/notifications/unread-count',
+    NotificationsReadAll = '/notifications/read-all',
 }

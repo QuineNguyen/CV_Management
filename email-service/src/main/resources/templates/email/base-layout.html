@@ -38,12 +38,12 @@
 
                         <div th:replace="${content}"></div>
 
-                        <table th:if="${actionUrl}" role="presentation" cellpadding="0" cellspacing="0" border="0"
-                               style="margin-top:24px;">
+                        <table th:if="${actionUrl}" role="presentation" align="center" cellpadding="0" cellspacing="0" border="0"
+                               style="margin:24px auto 0 auto;">
                             <tr>
-                                <td style="background-color:#ee0033;border-radius:6px;">
+                                <td align="center" style="background-color:#ee0033;border-radius:6px;">
                                     <a th:href="${actionUrl}" th:text="|Open in ${appName}|"
-                                       style="display:inline-block;padding:12px 24px;color:#ffffff;font-weight:bold;text-decoration:none;">
+                                       style="display:inline-block;padding:12px 24px;color:#ffffff;font-weight:bold;text-decoration:none;text-align:center;">
                                         Open in CV Management
                                     </a>
                                 </td>
