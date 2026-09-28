@@ -69,6 +69,12 @@ public enum ErrorCode {
     // ---------- Update requests ----------
     PENDING_REQUEST_EXISTS("A pending update request already exists for this employee, profile and language"),
     CV_PROFILE_MISMATCH("The linked CV does not belong to the profile this request targets"),
+    EMPLOYEE_NOT_ACTIVE("Update requests can only be sent to an active employee"),
+    PROFILE_NOT_OF_EMPLOYEE("The selected profile does not belong to this employee"),
+    DEADLINE_IN_PAST("The deadline cannot be earlier than today"),
+    NOTES_NEED_SINGLE_LANGUAGE("Feedback notes can only be attached when one language is selected"),
+    NOTES_NEED_EXISTING_CV("Feedback notes need a CV with a published version in this profile and language"),
+    INVALID_NOTE_ANCHOR("A feedback note points at a section, entry or field that does not exist in this CV"),
 
     // ---------- Catalogue ----------
     DUPLICATE_SKILL_CODE("Another skill already uses that code"),

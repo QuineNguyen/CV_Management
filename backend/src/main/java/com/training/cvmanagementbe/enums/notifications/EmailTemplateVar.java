@@ -26,7 +26,10 @@ public enum EmailTemplateVar {
     CHANGED_FIELDS("changedFields"),
     DECIDED("decided"),
     APPROVED("approved"),
-    TEMPORARY_PASSWORD("temporaryPassword");
+    TEMPORARY_PASSWORD("temporaryPassword"),
+    DEADLINE("deadline"),
+    NOTE_COUNT("noteCount"),
+    CV_EXISTS("cvExists");
 
     private final String key;
 }

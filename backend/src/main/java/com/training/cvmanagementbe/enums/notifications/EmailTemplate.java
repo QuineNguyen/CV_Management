@@ -13,6 +13,7 @@ public enum EmailTemplate {
     DRAFT_CANCELLED("draft-cancelled"),
     ASSIGNMENT_REASSIGNED("assignment-reassigned"),
     CV_LIFECYCLE("cv-lifecycle"),
+    CV_UPDATE_REQUESTED("cv-update-requested"),
     PROFILE_UPDATE("profile-update"),
     PASSWORD_RESET("password-reset");
 

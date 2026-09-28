@@ -18,6 +18,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 import static com.training.cvmanagementbe.enums.notifications.EmailTemplateVar.*;
@@ -41,6 +42,9 @@ public class NotificationListener {
     private static final String UNKNOWN_VALUE = "-";
     private static final String TARGET_CV = "CV";
     private static final String TARGET_PROFILE = "competency profile and all the CVs in it";
+    private static final DateTimeFormatter DEADLINE_FORMAT = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+    private static final String ACTION_UPDATE = "update";
+    private static final String ACTION_CREATE = "create";
 
     private final NotificationDispatcher dispatcher;
     private final CvDraftRepository cvDraftRepository;
@@ -49,6 +53,68 @@ public class NotificationListener {
     private final UserRepository userRepository;
     private final ApprovalDecisionRepository decisionRepository;
     private final ProfileUpdateRequestRepository profileUpdateRequestRepository;
+    private final UpdateRequestRepository updateRequestRepository;
+    private final AnchoredNoteCodec anchoredNoteCodec;
+
+    // ---------- Update requests ----------
+
+    /*
+     * The employee only: what to update, why, by when and a link to the right screen.
+     * Deadline, note count and requester are read from the row; the event carries the rest.
+     */
+    @Async
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void onCvUpdateRequested(CvUpdateRequestedEvent event) {
+        Optional<UpdateRequest> found = updateRequestRepository.findById(event.updateRequestId());
+        if (found.isEmpty()) {
+            log.warn("Update request {} is gone; notification skipped", event.updateRequestId());
+            return;
+        }
+        UpdateRequest request = found.get();
+
+        String requester = nameOf(request.getCreatedBy());
+        String language = event.language().name();
+        String profileName = event.profileId() == null ? null : profileNameOf(event.profileId());
+        String action = event.cvId() == null ? ACTION_CREATE : ACTION_UPDATE;
+        String target = profileName == null
+                ? "a new CV (%s)".formatted(language)
+                : "your CV %s (%s)".formatted(profileName, language);
+        String deadline = DEADLINE_FORMAT.format(request.getDeadline());
+        int noteCount = anchoredNoteCodec.read(request.getAnchoredNotes()).size();
+
+        dispatcher.dispatch(new NotificationCommand(
+                event.employeeId(), request.getCreatedBy(), NotificationEventType.CV_UPDATE_REQUESTED,
+                withNotes(withReason("%s asked you to %s %s by %s"
+                        .formatted(requester, action, target, deadline), event.reason()), noteCount),
+                updateLinkOf(event),
+                "CV update requested - due %s".formatted(deadline),
+                vars()
+                        .with(ACTOR_NAME, requester)
+                        .with(PROFILE_NAME, profileName)
+                        .with(LANGUAGE, language)
+                        .with(REASON, event.reason())
+                        .with(DEADLINE, deadline)
+                        .with(NOTE_COUNT, noteCount)
+                        .with(CV_EXISTS, event.cvId() != null)
+                        .build()
+        ));
+    }
+
+    // Existing CV: edit it. No CV yet: the create screen, preselected as far as the request knows
+    private static String updateLinkOf(CvUpdateRequestedEvent event) {
+        String language = event.language().name();
+        if (event.cvId() != null) {
+            return NotificationLink.CV_EDIT.path(event.cvId());
+        }
+        if (event.profileId() != null) {
+            return NotificationLink.CV_CREATE_FOR_PROFILE.path(event.profileId(), language);
+        }
+        return NotificationLink.CV_CREATE_FOR_LANGUAGE.path(language);
+    }
+
+    private static String withNotes(String sentence, int noteCount) {
+        return noteCount == 0 ? sentence : "%s. %d feedback note(s) attached".formatted(sentence, noteCount);
+    }
 
     // ---------- Approval workflow ----------
 

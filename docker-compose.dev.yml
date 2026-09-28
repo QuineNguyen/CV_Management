@@ -29,3 +29,17 @@ services:
       MINIO_PUBLIC_ENDPOINT: ${MINIO_PUBLIC_ENDPOINT}
     ports:
       - "${BACKEND_DEBUG_PORT:-8081}:8080"
+
+  rabbitmq:
+    ports:
+      - "5673:5672"   
+      - "15673:15672"
+
+  email-service:
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+      SPRING_DATASOURCE_URL: "jdbc:mariadb://mariadb:3306/${MARIADB_DATABASE}?useUnicode=true&characterEncoding=UTF-8&connectionTimeZone=Asia/Ho_Chi_Minh&forceConnectionTimeZoneToSession=true"
+      SPRING_DATASOURCE_USERNAME: ${MARIADB_USER}
+      SPRING_DATASOURCE_PASSWORD: ${MARIADB_PASSWORD}
+      FRONTEND_BASE_URL: ${FRONTEND_BASE_URL:-http://localhost:8000}
+      EMAIL_RETRY_DELAY_MS: ${EMAIL_RETRY_DELAY_MS:-3000}

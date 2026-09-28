@@ -33,7 +33,7 @@ public class ApiResponseAdvice implements ResponseBodyAdvice<Object> {
     public Object beforeBodyWrite(Object body, MethodParameter returnType, MediaType contentType,
                                   Class<? extends HttpMessageConverter<?>> converterType,
                                   ServerHttpRequest request, ServerHttpResponse response) {
-        // Already an envelope: an endpoint built it explicitly or it came from an error handler.
+        // Already an envelope: an endpoint built it explicitly, or it came from an error handler.
         if (body instanceof ApiResponse<?>) {
             return body;
         }

@@ -45,7 +45,7 @@ public class CvVersion {
     @Column(name = "avatar_image_id", updatable = false)
     private UUID avatarImageId;
 
-    // Always the CV owner. For ROLLBACK it is copied from the source version.
+    // Always the CV owner. For ROLLBACK, it is copied from the source version.
     @Column(name = "authored_by", updatable = false, nullable = false)
     private UUID authoredBy;
 
