@@ -68,5 +68,8 @@ public final class ApiPath {
     public static final String NOTIFICATION_READ = "/{id}/read";
     public static final String NOTIFICATIONS_READ_ALL = "/read-all";
 
+    // Update requests
+    public static final String UPDATE_REQUESTS = "/update-requests";
+
     private ApiPath() {}
 }

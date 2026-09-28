@@ -11,7 +11,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum NotificationLink {
 
-    /**
+    /*
      * Route for Tech Lead, HR, or Admin to review a submitted CV draft.
      * Pattern expects draftId. Example: approvals/drafts/123/review
      */
@@ -20,17 +20,29 @@ public enum NotificationLink {
     // Route to the approval queue listing all pending approval tasks.
     APPROVAL_QUEUE("approvals/queue"),
 
-    /**
+    /*
      * Route to view the details of a published CV.
      * Pattern expects cvId. Example: cvs/456
      */
     CV_DETAIL("cvs/%s"),
 
-    /**
+    /*
      * Route to edit a CV (e.g., when a draft is rejected and requires revision).
      * Pattern expects cvId. Example: cvs/456/edit
      */
     CV_EDIT("cvs/%s/edit"),
+
+    /*
+     * Route to create the CV an update request asks for, profile and language preselected.
+     * Pattern expects profileId, language. Example: cvs/new?profileId=123&language=EN
+     */
+    CV_CREATE_FOR_PROFILE("cvs/new?profileId=%s&language=%s"),
+
+    /*
+     * Same, when the request targets no profile: the employee picks or creates one.
+     * Pattern expects language. Example: cvs/new?language=JA
+     */
+    CV_CREATE_FOR_LANGUAGE("cvs/new?language=%s"),
 
     // Route to the CV profiles management page.
     CV_PROFILES("cv-profiles"),
@@ -46,7 +58,7 @@ public enum NotificationLink {
 
     private final String pattern;
 
-    /**
+    /*
      * Formats the route pattern with dynamic arguments (e.g., IDs) to generate a relative URL.
      *
      * @param args arguments to replace format specifiers (%s) in the pattern
