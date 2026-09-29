@@ -18,6 +18,7 @@ import { InlineCommentStatus } from "../../../enums/inline-comment-status.enum";
 import { ApprovalService } from "../../../services/approval.service";
 import { CreateUpdateRequestDialogComponent } from "../../update-requests/create-update-request-dialog/create-update-request-dialog.component";
 import { leaveIfAccessDenied } from "../../../utils/access-denied.util";
+import { PendingNoteResponse } from "../../../dtos/update-request.dto";
 
 /*
  * Read-only view of a CV's current version, plus the actions available on it.
@@ -105,6 +106,9 @@ export class CvDetailComponent implements OnInit {
         return this.canEdit() && (status === DraftStatus.Draft || status === DraftStatus.Rejected);
     })
 
+    // Feedback of the pending update request, pinned by the editor at each anchor
+    readonly pendingNotes = signal<PendingNoteResponse[]>([]);
+
     ngOnInit(): void {
         const id = this.route.snapshot.paramMap.get('id');
         if (id) {
@@ -118,6 +122,7 @@ export class CvDetailComponent implements OnInit {
                 this.detail.set(detail);
                 this.loading.set(false);
                 this.loadSiblings(detail.cv.profileId);
+                this.loadPendingNotes(detail.cv.id);
             },
             // Spinner stays up while leaving, so a dead link never renders a blank page
             error: err => {
@@ -131,6 +136,12 @@ export class CvDetailComponent implements OnInit {
     private loadSiblings(profileId: string): void {
         this.cvService.listByProfile(profileId).subscribe({
             next: cvs => this.siblings.set(cvs),
+        });
+    }
+
+    private loadPendingNotes(cvId: string): void {
+        this.cvService.getPendingNotes(cvId).subscribe({
+            next: notes => this.pendingNotes.set(notes),
         });
     }
 

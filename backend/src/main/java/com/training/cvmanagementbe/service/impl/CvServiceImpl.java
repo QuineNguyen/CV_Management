@@ -14,6 +14,7 @@ import com.training.cvmanagementbe.enums.configs.TargetType;
 import com.training.cvmanagementbe.enums.cvs.DraftStatus;
 import com.training.cvmanagementbe.enums.cvs.Language;
 import com.training.cvmanagementbe.enums.cvs.LifecycleStatus;
+import com.training.cvmanagementbe.enums.users.RequestStatus;
 import com.training.cvmanagementbe.enums.users.Role;
 import com.training.cvmanagementbe.exception.ApiException;
 import com.training.cvmanagementbe.record.cvs.CvContent;
@@ -45,6 +46,9 @@ public class CvServiceImpl implements CvService {
     private final CvProfileRepository cvProfileRepository;
     private final UserRepository userRepository;
     private final InlineCommentRepository inlineCommentRepository;
+    private final UpdateRequestRepository updateRequestRepository;
+    private final AnchoredNoteCodec anchoredNoteCodec;
+    private final UpdateRequestCanceller updateRequestCanceller;
     private final VersionPublisher versionPublisher;
     private final CvContentCodec codec;
     private final CvItemIdGuard itemIdGuard;
@@ -126,6 +130,41 @@ public class CvServiceImpl implements CvService {
 
         return cvVersionRepository.findByCvIdOrderByVersionNumberDesc(cvId).stream()
                 .map(this::toSummary)
+                .toList();
+    }
+
+    /*
+     * Notes of the PENDING request(s) on this CV, flat per anchor so the editor pins each one.
+     * Same scope as reading the CV. Bounded by the pending slot rule, so not paged.
+     */
+    @Override
+    public List<PendingNoteResponse> getPendingNotes(UUID cvId) {
+        Cv cv = requireCv(cvId);
+        requireCanRead(requireProfileAnyStatus(cv.getProfileId()).getEmployeeId());
+
+        List<UpdateRequest> pending = updateRequestRepository
+                .findByCvIdAndStatusOrderByCreatedAtAsc(cvId, RequestStatus.PENDING);
+        if (pending.isEmpty()) {
+            return List.of();
+        }
+
+        Set<UUID> creatorIds = pending.stream()
+                .map(UpdateRequest::getCreatedBy)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+        Map<UUID, String> names = userRepository.findAllById(creatorIds).stream()
+                .collect(Collectors.toMap(User::getId, User::getFullName));
+
+        return pending.stream()
+                .flatMap(request -> anchoredNoteCodec.read(request.getAnchoredNotes()).stream()
+                        .map(note -> new PendingNoteResponse(
+                                note.sectionKey(),
+                                note.itemId(),
+                                note.fieldKey(),
+                                note.note(),
+                                names.get(request.getCreatedBy()),
+                                request.getCreatedAt()
+                        )))
                 .toList();
     }
 
@@ -251,8 +290,8 @@ public class CvServiceImpl implements CvService {
             promoteToMaster(cv, successor);
         }
 
-        // A request pointing at a deleted CV can never be answered, so it stops asking.
-        cvRepository.cancelPendingRequestsByCvId(cvId, actorId, deletedAt);
+        // A request pointing at a deleted CV can never be answered, so it stops asking
+        updateRequestCanceller.cancelPendingForCv(cvId, actorId, deletedAt);
 
         auditLogger.record(Action.DELETE_CV, TargetType.CV, cvId, before, null);
         eventPublisher.publishEvent(new CvDeletedEvent(cvId, profile.getEmployeeId(), actorId));

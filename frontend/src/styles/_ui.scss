@@ -151,6 +151,21 @@
   color: var(--vt-red-dark);
 }
 
+/* ---------- Field label with a trailing marker ---------- */
+.field-label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+/* An open note popover must sit above the next fields */
+.field:has(app-pending-note-badge.is-open),
+.field:has(app-pending-note-badge:hover) {
+  z-index: 30;
+}
+
 /* ---------- Form layout ---------- */
 .form {
   display: flex;

@@ -70,6 +70,8 @@ public final class ApiPath {
 
     // Update requests
     public static final String UPDATE_REQUESTS = "/update-requests";
+    public static final String UPDATE_REQUESTS_CANCEL = "/{id}/cancel";
+    public static final String UPDATE_REQUESTS_PENDING_NOTES = "/{id}/pending-notes";
 
     private ApiPath() {}
 }

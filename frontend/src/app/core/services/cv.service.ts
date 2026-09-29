@@ -5,6 +5,7 @@ import { Observable } from "rxjs";
 import { CvCreateRequest, CvDeleteRequest, CvDetailResponse, CvEditRequest, CvEditResponse, CvResponse, CvVersionSummary, DeletedCvQuery } from "../dtos/cv.dto";
 import { ApiEndpoint } from "../enums/api-endpoint.enum";
 import { PagedResponse } from "../dtos/page.dto";
+import { PendingNoteResponse } from "../dtos/update-request.dto";
 
 @Injectable({ providedIn: 'root' })
 export class CvService {
@@ -59,5 +60,10 @@ export class CvService {
 
     restore(id: string): Observable<CvResponse> {
         return this.http.post<CvResponse>(this.url(`${ApiEndpoint.Cvs}/${id}/restore`), null);
+    }
+
+    // Feedback notes of the pending update request, flat per anchor
+    getPendingNotes(id: string): Observable<PendingNoteResponse[]> {
+        return this.http.get<PendingNoteResponse[]>(this.url(`${ApiEndpoint.Cvs}/${id}/pending-notes`))
     }
 }

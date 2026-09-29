@@ -24,6 +24,9 @@ import { AppRoute } from "../../enums/app-route.enum";
 import { QueryParam } from "../../enums/query-param.enum";
 import { CV_SECTIONS } from "../../models/cv-section-descriptor.model";
 import { CreateUpdateRequestDialogComponent } from "./create-update-request-dialog/create-update-request-dialog.component";
+import { ToastService } from "../../services/toast.service";
+import { error } from "console";
+import { HttpErrorResponse, HttpStatusCode } from "@angular/common/http";
 
 /*
  * One list for every role; the server narrows rows to the caller.
@@ -68,6 +71,7 @@ export class UpdateRequestsComponent implements OnInit {
     private readonly auth = inject(AuthService);
     private readonly router = inject(Router);
     private readonly destroyRef = inject(DestroyRef);
+    private readonly toast = inject(ToastService);
 
     readonly pageSizeOptions = [5, 10, 20, 50];
     readonly statusLabels = UPDATE_REQUEST_STATUS_LABELS;
@@ -102,6 +106,12 @@ export class UpdateRequestsComponent implements OnInit {
     readonly detailTarget = signal<UpdateRequestResponse | null>(null);
     readonly isDetailClosing = signal(false);
     private detailBackdropMouseDownTarget: EventTarget | null = null;
+
+    // ---------- Cancel dialog ----------
+    readonly cancelTarget = signal<UpdateRequestResponse | null>(null);
+    readonly cancelling = signal(false);
+    readonly isCancelClosing = signal(false);
+    private cancelBackdropMouseDownTarget: EventTarget | null = null;
 
     // Only Admin and HR send requests
     readonly canCreate = computed(() => this.auth.hasRole(UserRole.Admin, UserRole.HR));
@@ -227,6 +237,11 @@ export class UpdateRequestsComponent implements OnInit {
 
     @HostListener('document:keydown.escape')
     onEscape(): void {
+        // Innermost layer first: the cancel dialog can sit on top of the detail modal
+        if (this.cancelTarget()) {
+            this.dismissCancel();
+            return;
+        }
         if (this.openFilter()) {
             this.openFilter.set(null);
             return;
@@ -305,6 +320,68 @@ export class UpdateRequestsComponent implements OnInit {
             this.detailTarget.set(null);
             this.isDetailClosing.set(false);
         }, UpdateRequestsComponent.CLOSE_DELAY_MS);
+    }
+
+    // ---------- Cancel dialog ----------
+
+    // Offered only where the server set cancellable; it re-checks both scope and status
+    askCancel(request: UpdateRequestResponse): void {
+        this.isCancelClosing.set(false);
+        this.cancelTarget.set(request);
+    }
+
+    onCancelBackdropMouseDown(event: MouseEvent): void {
+        this.cancelBackdropMouseDownTarget = event.target;
+    }
+
+    onCancelBackdropClick(event: MouseEvent): void {
+        if (event.target === event.currentTarget && this.cancelBackdropMouseDownTarget === event.currentTarget) {
+            this.dismissCancel();
+        }
+        this.cancelBackdropMouseDownTarget = null;
+    }
+
+    dismissCancel(): void {
+        if (this.isCancelClosing() || this.cancelling()) {
+            return;
+        }
+        this.isCancelClosing.set(true);
+        setTimeout(() => this.closeCancel(), UpdateRequestsComponent.CLOSE_DELAY_MS);
+    }
+
+    /*
+     * Error toasts come from the error interceptor. A 409 means someone else closed the request
+     * first, so the list reloads to show its real status.
+     */
+    confirmCancel(): void {
+        const target = this.cancelTarget();
+        if (!target || this.cancelling()) {
+            return;
+        }
+        this.cancelling.set(true);
+
+        this.updateRequestService.cancel(target.id).subscribe({
+            next: () => {
+                this.closeCancel();
+                if (this.detailTarget()?.id === target.id) {
+                    this.closeDetail();
+                }
+                this.toast.success(`Update request cancelled - ${target.employeeName ?? 'the employee'} has been notified`);
+                this.load(false);
+            },
+            error: (error: HttpErrorResponse) => {
+                this.closeCancel();
+                if (error.status === HttpStatusCode.Conflict) {
+                    this.load(false);
+                }
+            },
+        });
+    }
+
+    private closeCancel(): void {
+        this.cancelTarget.set(null);
+        this.cancelling.set(false);
+        this.isCancelClosing.set(false);
     }
 
     // ---------- Row helpers ----------

@@ -22,6 +22,9 @@
       @if (openThreadCount(); as count) {
         <span class="status-badge is-comment">{{ count }} {{ count === 1 ? 'comment' : 'comments' }}</span>
       }
+      @if (noteCount(); as count) {
+        <span class="status-badge is-note">{{ count }} {{ count === 1 ? 'note' : 'notes' }}</span>
+      }
     </div>
 
     <div class="cv-item-actions">
@@ -43,15 +46,27 @@
         </div>
       }
 
+      <!-- Update request notes on this entry; one-way, no reply -->
+      @if (entryNotes().length) {
+        <div class="cv-item-notes">
+          <app-pending-note-list [notes]="entryNotes()" />
+        </div>
+      }
+
       <div class="cv-item-body form-grid">
         @for (field of section().fields; track field.key) {
           <div class="field" [class.field-half]="field.half" [class.custom-select-wrap]="field.kind === FieldKind.Select">
-            <label class="field-label" [for]="section().key + '-' + index() + '-' + field.key">
-              {{ field.label }}
-              @if (field.required) {
-                <span class="field-required">*</span>
+            <div class="field-label-row">
+              <label class="field-label" [for]="section().key + '-' + index() + '-' + field.key">
+                {{ field.label }}
+                @if (field.required) {
+                  <span class="field-required">*</span>
+                }
+              </label>
+              @if (fieldNotes().get(field.key); as notes) {
+                <app-pending-note-badge [notes]="notes" />
               }
-            </label>
+            </div>
 
             @switch (field.kind) {
               @case (FieldKind.Textarea) {

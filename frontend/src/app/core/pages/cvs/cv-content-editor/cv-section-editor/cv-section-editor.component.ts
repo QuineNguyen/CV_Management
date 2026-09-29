@@ -10,6 +10,10 @@ import { CustomDateAdapter, DD_MM_YYYY_FORMATS } from "../../../../utils/app-dat
 import { InlineCommentStore } from "../../../../services/inline-comment-store.service";
 import { InlineCommentThreadComponent } from "../../../approvals/inline-comment-thread/inline-comment-thread.component";
 import { InlineCommentThread } from "../../../../models/inline-comment.model";
+import { PendingNoteBadgeComponent } from "../pending-note-badge/pending-note-badge.component";
+import { PendingNoteListComponent } from "../pending-note-list/pending-note-list.component";
+import { PendingNoteStore } from "../../../../services/pending-note-store.service";
+import { PendingNoteResponse } from "../../../../dtos/update-request.dto";
 
 /*
  * One of the nine sections. SINGLE sections render their fields directly; REPEATED ones render a
@@ -23,7 +27,16 @@ import { InlineCommentThread } from "../../../../models/inline-comment.model";
 @Component({
     selector: 'app-cv-section-editor',
     standalone: true,
-    imports: [ReactiveFormsModule, CdkDropList, CvItemEditorComponent, MatDatepickerModule, MatNativeDateModule, InlineCommentThreadComponent],
+    imports: [
+        ReactiveFormsModule, 
+        CdkDropList, 
+        CvItemEditorComponent, 
+        MatDatepickerModule, 
+        MatNativeDateModule, 
+        InlineCommentThreadComponent,
+        PendingNoteBadgeComponent,
+        PendingNoteListComponent
+    ],
     providers: [
         { provide: DateAdapter, useClass: CustomDateAdapter },
         { provide: MAT_DATE_FORMATS, useValue: DD_MM_YYYY_FORMATS },
@@ -35,6 +48,7 @@ import { InlineCommentThread } from "../../../../models/inline-comment.model";
 export class CvSectionEditorComponent {
 
     private readonly commentStore = inject(InlineCommentStore);
+    private readonly noteStore = inject(PendingNoteStore);
 
     readonly FieldKind = FieldKind;
 
@@ -56,6 +70,14 @@ export class CvSectionEditorComponent {
     readonly sectionThreads = computed(() =>
         this.section().repeated ? [] : this.commentStore.threadsFor(this.section().key, null));
 
+    // Notes on the section itself, under its header
+    readonly sectionNotes = computed(() => this.noteStore.anchoredTo(this.section().key, null));
+
+    // Field notes of a SINGLE section; entries of a REPEATED one read their own
+    readonly fieldNotes = computed(() => this.section().repeated
+        ? new Map<string, PendingNoteResponse[]>()
+        : this.noteStore.byField(this.section().key, null));
+
     /*
      * Threads whose entry the owner has since removed. Shown here so a comment never disappears
      * just because its anchor did.
@@ -70,6 +92,15 @@ export class CvSectionEditorComponent {
             && !!thread.root.itemId
             && !liveIds.has(thread.root.itemId)
         );
+    }
+
+    // Same idea as orphanThreads: a note never disappears because its entry did
+    orphanNotes(): PendingNoteResponse[] {
+        if (!this.section().repeated) {
+            return [];
+        }
+        const liveIds = new Set(this.itemGroups.map(group => group.get('item_id')?.value as string));
+        return this.noteStore.orphans(this.section().key, liveIds);
     }
 
     get singleGroup(): FormGroup {

@@ -3,48 +3,92 @@
       th:replace="~{email/base-layout :: layout(~{::content})}">
 <body>
 <div th:fragment="content">
-    <p style="margin:0 0 16px;">
-        <strong th:text="${actorName}">HR</strong>
-        <span th:text="${cvExists} ? 'asked you to update one of your CVs.' : 'asked you to create a CV.'">
-            asked you to update one of your CVs.
-        </span>
-    </p>
+    <!-- ---------- Request ---------- -->
+    <th:block th:unless="${requestCancelled}">
+        <p style="margin:0 0 16px;">
+            <strong th:text="${actorName}">HR</strong>
+            <span th:text="${cvExists} ? 'asked you to update one of your CVs.' : 'asked you to create a CV.'">
+                asked you to update one of your CVs.
+            </span>
+        </p>
 
-    <table class="facts" role="presentation">
-        <tr>
-            <td class="label">Profile</td>
-            <td class="value" th:text="${profileName} ?: 'A new profile you create'">Software Developer</td>
-        </tr>
-        <tr>
-            <td class="label">Language</td>
-            <td class="value" th:text="${language}">EN</td>
-        </tr>
-        <tr>
-            <td class="label">Deadline</td>
-            <td class="value" th:text="|${deadline} at 23:59|">31/12/2026 at 23:59</td>
-        </tr>
-        <tr th:if="${noteCount > 0}">
-            <td class="label">Feedback notes</td>
-            <td class="value" th:text="${noteCount}">2</td>
-        </tr>
-    </table>
+        <table class="facts" role="presentation">
+            <tr>
+                <td class="label">Profile</td>
+                <td class="value" th:text="${profileName} ?: 'A new profile you create'">Software Developer</td>
+            </tr>
+            <tr>
+                <td class="label">Language</td>
+                <td class="value" th:text="${language}">EN</td>
+            </tr>
+            <tr>
+                <td class="label">Deadline</td>
+                <td class="value" th:text="|${deadline} at 23:59|">31/12/2026 at 23:59</td>
+            </tr>
+            <tr th:if="${noteCount > 0}">
+                <td class="label">Feedback notes</td>
+                <td class="value" th:text="${noteCount}">2</td>
+            </tr>
+        </table>
 
-    <div class="reason">
-        <span class="reason-label">Reason</span>
-        <span class="reason-text" th:text="${reason}">Update your skills for project X</span>
-    </div>
+        <div class="reason">
+            <span class="reason-label">Reason</span>
+            <span class="reason-text" th:text="${reason}">Update your skills for project X</span>
+        </div>
 
-    <!-- One hint, matching the screen the button opens -->
-    <p class="note" th:if="${noteCount > 0}">
-        The feedback notes are pinned to the sections to change. You will see them when you open the CV.
-    </p>
-    <p class="note" th:if="${!cvExists and profileName != null}">
-        This profile has no CV in this language yet. The button opens the create screen with the
-        profile and language already selected.
-    </p>
-    <p class="note" th:if="${!cvExists and profileName == null}">
-        Create a new competency profile for this CV, then create the CV in this language.
-    </p>
+        <!-- One hint, matching the screen the button opens -->
+        <p class="note" th:if="${noteCount > 0}">
+            The feedback notes are pinned to the sections to change. You will see them when you open the CV.
+        </p>
+        <p class="note" th:if="${!cvExists and profileName != null}">
+            This profile has no CV in this language yet. The button opens the create screen with the
+            profile and language already selected.
+        </p>
+        <p class="note" th:if="${!cvExists and profileName == null}">
+            Create a new competency profile for this CV, then create the CV in this language.
+        </p>
+    </th:block>
+
+    <!-- ---------- Cancelled (event #3) ---------- -->
+    <th:block th:if="${requestCancelled}">
+        <p style="margin:0 0 16px;">
+            <strong th:text="${actorName}">HR</strong>
+            <span th:text="${cvExists} ? 'cancelled the request to update one of your CVs.' : 'cancelled the request to create a CV.'">
+                cancelled the request to update one of your CVs.
+            </span>
+        </p>
+
+        <table class="facts" role="presentation">
+            <tr>
+                <td class="label">Profile</td>
+                <td class="value" th:text="${profileName} ?: 'Not specified'">Software Developer</td>
+            </tr>
+            <tr>
+                <td class="label">Language</td>
+                <td class="value" th:text="${language}">EN</td>
+            </tr>
+            <!-- Helps the employee tell which request this was -->
+            <tr th:if="${deadline}">
+                <td class="label">Was due</td>
+                <td class="value" th:text="|${deadline} at 23:59|">31/12/2026 at 23:59</td>
+            </tr>
+            <tr>
+                <td class="label">Status</td>
+                <td class="value">Cancelled</td>
+            </tr>
+        </table>
+
+        <div class="reason">
+            <span class="reason-label">Original reason</span>
+            <span class="reason-text" th:text="${reason}">Update your skills for project X</span>
+        </div>
+
+        <!-- §5.3 step 4: cancelling a request never removes the employee's draft -->
+        <p class="note">
+            Reminders for this request have stopped. If you already started a draft, it is kept -
+            you can still finish it and submit it for approval.
+        </p>
+    </th:block>
 </div>
 </body>
 </html>

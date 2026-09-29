@@ -1,0 +1,17 @@
+<div class="pending-notes" role="note">
+  <p class="pending-notes-caption">
+    <span class="material-symbols-outlined" aria-hidden="true">sticky_note_2</span>
+    {{ caption() }}
+  </p>
+
+  <ul class="pending-notes-list">
+    @for (note of notes(); track $index) {
+      <li class="pending-note">
+        <p class="pending-note-text">{{ note.note }}</p>
+        <p class="pending-note-meta">
+          {{ note.createdByName ?? 'Admin/HR' }} · {{ note.createdAt | date:'dd/MM/yyyy' }}
+        </p>
+      </li>
+    }
+  </ul>
+</div>

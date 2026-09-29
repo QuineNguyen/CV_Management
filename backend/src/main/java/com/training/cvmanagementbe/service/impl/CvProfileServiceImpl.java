@@ -45,6 +45,7 @@ public class CvProfileServiceImpl implements CvProfileService {
     private final TeamMemberRepository teamMemberRepository;
     private final AuditLogger auditLogger;
     private final ApplicationEventPublisher eventPublisher;
+    private final UpdateRequestCanceller updateRequestCanceller;
 
     // ---------- Queries ----------
 
@@ -160,6 +161,9 @@ public class CvProfileServiceImpl implements CvProfileService {
 
         // Same transaction: a profile and its CVs must never disagree on being deleted.
         cvProfileRepository.softDeleteCvsByProfileId(id, actorId, deletedAt);
+
+        // Request aimed at the profile or its CVs lost their target, so they stop reminding
+        updateRequestCanceller.cancelPendingForProfile(id, actorId, deletedAt);
 
         auditLogger.record(Action.DELETE_CV_PROFILE, TargetType.CV_PROFILE, id, before, null);
         eventPublisher.publishEvent(new CvProfileDeletedEvent(id, profile.getEmployeeId(), actorId));

@@ -59,12 +59,14 @@ export class CvCreateComponent implements OnInit, HasUnsavedChanges {
     readonly languagesLoading = signal(false);
     readonly selectedLanguage = signal<CvLanguage | null>(null);
 
-    /*
-     * Language asked for by the caller, if any. Applied only once the profile's occupied slots are
-     * known: the link may be stale and jumping to the content step for a language that has since
-     * been taken would fail at save rather than at the point of choice.
-     */
+    // Language asked for by the link; preselected whenever the chosen profile still has it free
     private requestedLanguage: CvLanguage | null = null;
+
+    /*
+     * True when the link named one of the user's profiles: the profile step is answered, so the
+     * wizard skips ahead once the free languages are known. Consumed once, so Back is not undone.
+     */
+    private profileFromLink = false;
 
     readonly selectedProfile = computed(() =>
         this.profiles().find(profile => profile.id === this.selectedProfileId()) ?? null);
@@ -117,10 +119,14 @@ export class CvCreateComponent implements OnInit, HasUnsavedChanges {
         this.profileService.listByEmployee({ employeeId, page: 0, size: 100 }).subscribe({
             next: result => {
                 this.profiles.set(result.content);
-                this.loading.set(false);
+                this.profileFromLink = !!preselected && result.content.some(profile => profile.id === preselected);
+
+                // Skipping ahead waits for the language check, so step 1 never flashes first
+                if (!this.profileFromLink) {
+                    this.loading.set(false);
+                }
 
                 if (!result.content.length) {
-                    debugger;
                     this.createFirstProfile(employeeId);
                     return;
                 }
@@ -161,26 +167,35 @@ export class CvCreateComponent implements OnInit, HasUnsavedChanges {
             next: cvs => {
                 this.existingCvs.set(cvs);
                 this.languagesLoading.set(false);
-                this.applyRequestedLanguage();
+                this.applyLinkParams();
+                this.loading.set(false);
             },
-            error: () => this.languagesLoading.set(false),
+            error: () => {
+                this.languagesLoading.set(false);
+                this.profileFromLink = false;
+                this.loading.set(false);
+            },
         });
     }
 
     /*
-     * Skips ahead when the caller already named both the profile and a language that is still
-     * free - asking someone to re-pick what they just clicked is a step that only looks careful.
-     * Consumed one, so a Back is not immediately undone by this running again.
+     * Applies what the link asked for, once the profile's free languages are known:
+     * - profile and a still-free language: straight to content;
+     * - profile only, or its language already taken: the language step;
+     * - language only: stays on the profile step, since a request without a profile lets the employee pick.
      */
-    private applyRequestedLanguage(): void {
+    private applyLinkParams(): void {
         const requested = this.requestedLanguage;
-        this.requestedLanguage = null;
+        const free = requested !== null && this.availableLanguages().includes(requested);
+        if (free) {
+            this.selectedLanguage.set(requested);
+        }
 
-        if (!requested || !this.availableLanguages().includes(requested)) {
+        if (!this.profileFromLink) {
             return;
         }
-        this.selectedLanguage.set(requested);
-        this.step.set(3);
+        this.profileFromLink = false;
+        this.step.set(free ? 3 : 2);
     }
 
     selectLanguage(language: CvLanguage): void {

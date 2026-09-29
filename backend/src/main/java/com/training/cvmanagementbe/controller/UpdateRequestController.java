@@ -62,4 +62,12 @@ public class UpdateRequestController {
         UpdateRequestCriteria criteria = new UpdateRequestCriteria(status, departmentId, language, fromDate, toDate);
         return ResponseEntity.ok(updateRequestService.search(criteria, pageable));
     }
+
+    // RBAC here; "HR only their own" is enforced in the service
+    @PostMapping(ApiPath.UPDATE_REQUESTS_CANCEL)
+    @PreAuthorize(AuthorityExpression.ADMIN_OR_HR)
+    @Operation(summary = "Cancel a pending update request (Admin any, HR only their own)")
+    public ResponseEntity<UpdateRequestResponse> cancel(@PathVariable UUID id) {
+        return ResponseEntity.ok(updateRequestService.cancel(id));
+    }
 }

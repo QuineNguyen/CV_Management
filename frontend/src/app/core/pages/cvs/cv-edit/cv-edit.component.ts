@@ -21,6 +21,7 @@ import { DraftSubmitResponse } from "../../../dtos/approval.dto";
 import { DatePipe } from "@angular/common";
 import { messageFor } from "../../../models/error-messages.model";
 import { leaveIfAccessDenied } from "../../../utils/access-denied.util";
+import { PendingNoteResponse } from "../../../dtos/update-request.dto";
 
 /*
  * Edit CV content. The screen branches on the owner's role, not on anything the user picks:
@@ -81,6 +82,9 @@ export class CvEditComponent implements OnInit, HasUnsavedChanges {
     readonly avatarImageId = signal<string | null>(null);
     readonly avatarUrl = signal<string | null>(null);
 
+    // Feedback of the pending update request, pinned by the editor at each anchor 
+    readonly pendingNotes = signal<PendingNoteResponse[]>([]);
+
     readonly confirmOpen = signal(false);
     readonly isConfirmClosing = signal(false);
     private confirmBackdropMouseDownTarget: EventTarget | null = null;
@@ -132,6 +136,7 @@ export class CvEditComponent implements OnInit, HasUnsavedChanges {
                 this.detail.set(detail);
                 this.seedAvatar(detail);
                 this.loading.set(false);
+                this.loadPendingNotes(detail.cv.id);
             },
             // Spinner stays up while leaving, so a dead link never renders a blank page
             error: err => {
@@ -175,6 +180,13 @@ export class CvEditComponent implements OnInit, HasUnsavedChanges {
         this.avatarImageId.set(null);
         this.avatarUrl.set(null);
         this.avatarDirty.set(true);
+    }
+
+    // Secondary to editting: a failure leaves the list empty and the editor usable
+    private loadPendingNotes(cvId: string): void {
+        this.cvService.getPendingNotes(cvId).subscribe({
+            next: notes => this.pendingNotes.set(notes),
+        });
     }
 
     // ---------- Save ----------

@@ -55,6 +55,7 @@ export interface UpdateRequestResponse {
     anchoredNotes: AnchoredNoteResponse[];
     createdByName: string | null;
     createdAt: string;
+    cancellable: boolean;
 }
 
 // A language left out of an ALL request because a request was already pending there
@@ -66,4 +67,14 @@ export interface SkippedLanguageResponse {
 export interface CreateUpdateRequestResponse {
     created: UpdateRequestResponse[];
     skipped: SkippedLanguageResponse[];
+}
+
+// One row per anchored note of the pending update request
+export interface PendingNoteResponse {
+    sectionKey: CvSectionKey;
+    itemId: string | null;
+    fieldKey: string | null;
+    note: string;
+    createdByName: string | null;
+    createdAt: string;
 }

@@ -20,7 +20,6 @@ import com.training.cvmanagementbe.enums.configs.ErrorCode;
 import com.training.cvmanagementbe.enums.configs.TargetType;
 import com.training.cvmanagementbe.enums.cvs.DraftStatus;
 import com.training.cvmanagementbe.enums.users.AccountStatus;
-import com.training.cvmanagementbe.enums.users.RequestStatus;
 import com.training.cvmanagementbe.enums.users.Role;
 import com.training.cvmanagementbe.exception.ApiException;
 import com.training.cvmanagementbe.repository.DepartmentRepository;
@@ -35,6 +34,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -57,6 +57,7 @@ public class UserServiceImpl implements UserService {
     private final JwtService jwtService;
     private final AvatarUrlResolver avatarUrlResolver;
     private final AuditLogger auditLogger;
+    private final UpdateRequestCanceller updateRequestCanceller;
 
     @Override
     public PagedResponse<UserResponse> search(String keyword,
@@ -186,8 +187,10 @@ public class UserServiceImpl implements UserService {
         // Everything below runs in the same transaction as the status flip
         userRepository.cancelOpenDraftsByOwner(id,
                 DraftStatus.openStatusNames(), DraftStatus.CANCELLED.name());
-        userRepository.cancelPendingRequestsByEmployee(id,
-                RequestStatus.PENDING.name(), RequestStatus.CANCELLED.name());
+
+        // Requests sent to this person stop; the ones they created stay.
+        updateRequestCanceller.cancelPendingForEmployee(id, CurrentActor.requireUserId(), LocalDateTime.now());
+
         userRepository.cancelAssignmentsByAssignee(id,
                 AssignmentStatus.ASSIGNED.name(), AssignmentStatus.CANCELLED.name());
 
