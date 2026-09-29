@@ -17,6 +17,7 @@ import { MatTooltipModule } from "@angular/material/tooltip";
 import { InlineCommentStatus } from "../../../enums/inline-comment-status.enum";
 import { ApprovalService } from "../../../services/approval.service";
 import { CreateUpdateRequestDialogComponent } from "../../update-requests/create-update-request-dialog/create-update-request-dialog.component";
+import { leaveIfAccessDenied } from "../../../utils/access-denied.util";
 
 /*
  * Read-only view of a CV's current version, plus the actions available on it.
@@ -118,7 +119,12 @@ export class CvDetailComponent implements OnInit {
                 this.loading.set(false);
                 this.loadSiblings(detail.cv.profileId);
             },
-            error: () => this.loading.set(false),
+            // Spinner stays up while leaving, so a dead link never renders a blank page
+            error: err => {
+                if (!leaveIfAccessDenied(err, this.router)) {
+                    this.loading.set(false);
+                }
+            },
         });
     }
 

@@ -19,6 +19,8 @@ import { CV_SECTION_LABELS } from "../../../enums/cv-section-key.enum";
 import { InlineCommentStatus } from "../../../enums/inline-comment-status.enum";
 import { DraftSubmitResponse } from "../../../dtos/approval.dto";
 import { DatePipe } from "@angular/common";
+import { messageFor } from "../../../models/error-messages.model";
+import { leaveIfAccessDenied } from "../../../utils/access-denied.util";
 
 /*
  * Edit CV content. The screen branches on the owner's role, not on anything the user picks:
@@ -121,11 +123,22 @@ export class CvEditComponent implements OnInit, HasUnsavedChanges {
     private load(id: string): void {
         this.cvService.getById(id).subscribe({
             next: detail => {
+                // Admin/HR can read any CV but only the owner writes it: send them to the read-only view
+                if (detail.cv.employeeId !== this.auth.user()?.id) {
+                    this.toast.error(messageFor('NOT_CV_OWNER'));
+                    void this.router.navigate(['/' + AppRoute.Cvs, detail.cv.id], { replaceUrl: true });
+                    return;
+                }
                 this.detail.set(detail);
                 this.seedAvatar(detail);
                 this.loading.set(false);
             },
-            error: () => this.loading.set(false),
+            // Spinner stays up while leaving, so a dead link never renders a blank page
+            error: err => {
+                if (!leaveIfAccessDenied(err, this.router)) {
+                    this.loading.set(false);
+                }
+            },
         });
     }
 

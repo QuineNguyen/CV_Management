@@ -453,7 +453,10 @@ public class CvServiceImpl implements CvService {
         if (role == Role.ADMIN || role == Role.HR) {
             return;
         }
-        requireOwner(employeeId);
+        // Reads are refused as out of scope; NOT_CV_OWNER would tell a reader they tried to edit
+        if (!CurrentActor.requireUserId().equals(employeeId)) {
+            throw new ApiException.ForbiddenException(ErrorCode.OUT_OF_SCOPE);
+        }
     }
 
     private void requireOwner(UUID employeeId) {

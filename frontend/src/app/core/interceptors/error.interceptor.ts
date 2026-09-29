@@ -23,8 +23,8 @@ import { SKIP_ERROR_TOAST } from './skip-error-toast.token';
  *   + 401 - the session is gone or was revoked server-side. Clear local state without
  *       calling sign-out (that call would only produce a second 401) and send the user to the
  *       sign-in page, remembering where they were.
- *   + 403 - out of data scope. Nothing the user can do, so a notice is the whole
- *       response; the error is not re-thrown as something screens should handle.
+ *   + 403 - out of data scope. Announced here. A page whose own resource (the id in its
+ *       URL) returns 403/404 also leaves via leaveIfAccessDenied(), so it never sits empty.
  *   + 409 - someone else acted first. The user needs to reload, so say exactly that.
  *   + 422 - a business rule was broken. Shown here, and re-thrown so a form can also
  *       react (for example by keeping the submit button enabled).

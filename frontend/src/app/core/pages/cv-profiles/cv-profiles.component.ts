@@ -16,6 +16,7 @@ import { CVProfileFormDialogComponent } from "./cv-profile-form/cv-profile-form-
 import { UserService } from "../../services/user.service";
 import { CvLanguageSlotsComponent } from "./cv-language-slots/cv-language-slots.component";
 import { AppRoute } from "../../enums/app-route.enum";
+import { leaveIfAccessDenied } from "../../utils/access-denied.util";
 
 @Component({
     selector: 'app-profiles',
@@ -118,7 +119,12 @@ export class CVProfilesComponent implements OnInit, OnDestroy {
                 this.pageState.update(state => ({ ...state, total: result.totalElements }));
                 this.loading.set(false);
             },
-            error: () => this.loading.set(false),
+            // Spinner stays up while leaving, so a dead link never renders a blank page
+            error: err => {
+                if (!leaveIfAccessDenied(err, this.router)) {
+                    this.loading.set(false);
+                }
+            },
         });
     }
 
