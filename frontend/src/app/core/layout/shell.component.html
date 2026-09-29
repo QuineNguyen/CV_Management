@@ -14,16 +14,59 @@
       <span>CV Management</span>
     </a>
 
-    <mat-nav-list>
-      @for (item of visibleNavItems(); track item.route) {
+    <mat-nav-list class="shell-nav-list">
+      @for (entry of visibleNavItems(); track trackKey(entry)) {
+        @if (isGroup(entry)) {
+          <!-- Group heading: opens and closes, never navigates -->
+          <button mat-list-item type="button"
+            class="shell-nav-link shell-nav-group"
+            [class.has-active]="activeGroupKey() === entry.key && expandedGroup() !== entry.key"
+            [class.is-expanded]="expandedGroup() === entry.key"
+            [attr.aria-expanded]="expandedGroup() === entry.key"
+            [attr.aria-controls]="'nav-group-' + entry.key"
+            (click)="toggleGroup(entry.key)">
+            <span matListItemIcon class="material-symbols-outlined shell-nav-icon">{{ entry.icon }}</span>
+            <span matListItemTitle>{{ entry.label }}</span>
+            <span matListItemMeta class="shell-nav-group-meta">
+              @if (expandedGroup() !== entry.key && groupPendingCount(entry) > 0) {
+                <span class="nav-badge" [attr.aria-label]="groupPendingCount(entry) + ' awaiting review'">
+                  {{ groupPendingCount(entry) }}
+                </span>
+              }
+              <span class="material-symbols-outlined shell-nav-chevron"
+                    [class.is-open]="expandedGroup() === entry.key" aria-hidden="true">expand_more</span>
+            </span>
+          </button>
+ 
+          <!-- inert keeps closed children out of the tab order -->
+          <div class="shell-nav-group-body" role="group"
+            [id]="'nav-group-' + entry.key"
+            [attr.aria-label]="entry.label"
+            [class.is-open]="expandedGroup() === entry.key"
+            [attr.inert]="expandedGroup() === entry.key ? null : ''">
+            <div class="shell-nav-group-inner">
+              @for (child of entry.children; track child.route) {
+                <ng-container *ngTemplateOutlet="navLink; context: { $implicit: child, nested: true }" />
+              }
+            </div>
+          </div>
+        } @else {
+          <ng-container *ngTemplateOutlet="navLink; context: { $implicit: entry, nested: false }" />
+        }
+      }
+ 
+      <!-- One link markup for top-level links and group children -->
+      <ng-template #navLink let-item let-nested="nested">
         <a mat-list-item
           class="shell-nav-link"
+          [class.shell-nav-child]="nested"
           [routerLink]="item.route"
           routerLinkActive="active"
           #rla="routerLinkActive"
           [attr.aria-current]="rla.isActive ? 'page' : null"
           (click)="isCompact() && drawer.close()">
-          <span matListItemIcon class="material-symbols-outlined">{{ item.icon }}</span>
+          <span matListItemIcon class="material-symbols-outlined shell-nav-icon"
+                [class.shell-nav-child-icon]="nested">{{ item.icon }}</span>
           <span matListItemTitle>{{ item.label }}</span>
           @if (item.showsPendingCount && pendingRequestCount() > 0) {
             <span matListItemMeta class="nav-badge"
@@ -32,7 +75,7 @@
             </span>
           }
         </a>
-      }
+      </ng-template>
     </mat-nav-list>
   </mat-sidenav>
 

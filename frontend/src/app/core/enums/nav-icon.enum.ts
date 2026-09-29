@@ -1,4 +1,8 @@
 export enum NavIconEnum {
+  CvsGroup = 'contact_page',
+  RequestsGroup = 'inbox',
+  ApprovalsGroup = 'verified',
+  OrganizationGroup = 'corporate_fare',
   Brand = 'description',
   Menu = 'menu',
   Account = 'account_circle',
@@ -15,4 +19,5 @@ export enum NavIconEnum {
   PendingActions = 'pending_actions',
   ApprovalQueue = 'fact_check',
   Supervision = 'supervisor_account',
+  UpdateRequests = 'assignment',
 }

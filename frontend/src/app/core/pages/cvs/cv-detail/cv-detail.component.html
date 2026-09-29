@@ -32,6 +32,9 @@
         @if (canEdit()) {
           <button type="button" class="btn btn-primary" (click)="edit()">Edit</button>
         }
+        @if (canRequestUpdate()) {
+          <button type="button" class="btn btn-primary" (click)="openRequestUpdate()">Request Update</button>
+        }
         @if (canCancelDraft()) {
           <button type="button" class="btn btn-ghost" (click)="askCancelDraft()">Discard draft</button>
         }
@@ -218,4 +221,14 @@
       </div>
     </div>
   </div>
+}
+
+<!-- Request update: employee fixed, profile and language preselected -->
+@if (requestDialogOpen() && detail(); as current) {
+  <app-create-update-request-dialog
+    [prefillEmployeeId]="current.cv.employeeId"
+    [prefillProfileId]="current.cv.profileId"
+    [prefillLanguage]="current.cv.language"
+    [prefillCvId]="current.cv.id"
+    (closed)="closeRequestUpdate()" />
 }

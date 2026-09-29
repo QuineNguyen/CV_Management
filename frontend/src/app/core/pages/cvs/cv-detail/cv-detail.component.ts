@@ -16,6 +16,7 @@ import { QueryParam } from "../../../enums/query-param.enum";
 import { MatTooltipModule } from "@angular/material/tooltip";
 import { InlineCommentStatus } from "../../../enums/inline-comment-status.enum";
 import { ApprovalService } from "../../../services/approval.service";
+import { CreateUpdateRequestDialogComponent } from "../../update-requests/create-update-request-dialog/create-update-request-dialog.component";
 
 /*
  * Read-only view of a CV's current version, plus the actions available on it.
@@ -26,7 +27,7 @@ import { ApprovalService } from "../../../services/approval.service";
 @Component({
     selector: 'app-cv-detail',
     standalone: true,
-    imports: [CvContentEditorComponent, RouterLink, MatTooltipModule, DatePipe],
+    imports: [CvContentEditorComponent, RouterLink, MatTooltipModule, DatePipe, CreateUpdateRequestDialogComponent],
     templateUrl: './cv-detail.component.html',
     styleUrl: './cv-detail.component.css',
     changeDetection: ChangeDetectionStrategy.OnPush,
@@ -63,6 +64,11 @@ export class CvDetailComponent implements OnInit {
     readonly canEdit = computed(() => this.auth.user()?.id === this.detail()?.cv.employeeId);
 
     readonly canDelete = computed(() => this.auth.hasRole(UserRole.Admin, UserRole.HR));
+
+    // Admin/HR ask the owner for changes; nobody requests an update of their own CV
+    readonly canRequestUpdate = computed(() => !this.canEdit() && this.auth.hasRole(UserRole.Admin, UserRole.HR));
+
+    readonly requestDialogOpen = signal(false);
 
     /*
      * Review feedback is addressed to the author. HR, Admin and tech leads open this screen to read
@@ -127,6 +133,17 @@ export class CvDetailComponent implements OnInit {
         if (id) {
             void this.router.navigate(['/' + AppRoute.Cvs, id, 'edit']);
         }
+    }
+
+    // ---------- Request update ----------
+
+    openRequestUpdate(): void {
+        this.requestDialogOpen.set(true);
+    }
+
+    // The dialog shows its own toast, so closing is all that is left here
+    closeRequestUpdate(): void {
+        this.requestDialogOpen.set(false);
     }
 
     // ---------- Delete ----------

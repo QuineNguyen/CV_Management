@@ -1,5 +1,5 @@
-import { Component, computed, HostListener, inject, signal } from '@angular/core';
-import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { Component, computed, effect, HostListener, inject, signal } from '@angular/core';
+import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatSidenav, MatSidenavModule } from '@angular/material/sidenav';
 import { MatListModule } from '@angular/material/list';
@@ -9,12 +9,11 @@ import { MatMenuModule } from '@angular/material/menu';
 import { MatDividerModule } from '@angular/material/divider';
 import { BreakpointObserver } from '@angular/cdk/layout';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
-import { catchError, EMPTY, map } from 'rxjs';
+import { catchError, EMPTY, filter, map } from 'rxjs';
 import { AuthService } from '../services/auth.service';
 import { ROLE_LABELS } from '../models/user.model';
 import { UserRole } from '../enums/user-role.enum';
 import { AppRoute } from '../enums/app-route.enum';
-import { NavItem } from '../models/nav-item.model';
 import { NavIconEnum } from '../enums/nav-icon.enum';
 import { ConfirmService } from '../services/confirm.service';
 import { ProfileUpdateRequestService } from '../services/profile-update-request.service';
@@ -25,6 +24,9 @@ import { NOTIFICATION_TYPE_ICONS } from '../enums/notification-event-type.enum';
 import { badgeLabelOf } from '../models/notification.model';
 import { NotificationResponse } from '../dtos/notification.dto';
 import { relativeTimeOf } from '../utils/relative-time.util';
+import { NgTemplateOutlet } from '@angular/common';
+import { isNavGroup, NavEntry, NavGroup, NavLink } from '../models/nav-item.model';
+import { NavGroupKey } from '../enums/nav-group.enum';
 
 
 /**
@@ -39,6 +41,7 @@ import { relativeTimeOf } from '../utils/relative-time.util';
   selector: 'app-shell',
   standalone: true,
   imports: [
+    NgTemplateOutlet,
     RouterOutlet,
     RouterLink,
     RouterLinkActive,
@@ -85,20 +88,58 @@ export class ShellComponent {
     { initialValue: false },
   );
 
-  private readonly navItems: NavItem[] = [
+  private readonly navItems: NavEntry[] = [
     { label: 'Home', icon: NavIconEnum.Home, route: AppRoute.Home },
-    { label: 'Users', icon: NavIconEnum.People, route: AppRoute.Users, roles: [UserRole.Admin, UserRole.HR, UserRole.TechLead] },
-    { label: 'Profile Requests', icon: NavIconEnum.PendingActions, route: AppRoute.ProfileUpdateRequests, roles: [UserRole.Admin, UserRole.HR], showsPendingCount: true },
-    { label: 'Departments', icon: NavIconEnum.Departments, route: AppRoute.Departments, roles: [UserRole.Admin] },
-    { label: 'Teams', icon: NavIconEnum.Teams, route: AppRoute.Teams, roles: [UserRole.Admin] },
-    { label: 'Competency Profiles', icon: NavIconEnum.Profiles, route: AppRoute.Profiles },
-    { label: 'Create CV', icon: NavIconEnum.AddCv, route: AppRoute.CvsNew },
-    { label: 'Deleted CVs', icon: NavIconEnum.Deleted, route: AppRoute.CvsDeleted, roles: [UserRole.Admin, UserRole.HR] },
-    { label: 'Approval Queue', icon: NavIconEnum.ApprovalQueue, route: AppRoute.ApprovalQueue, roles: [UserRole.Admin, UserRole.HR, UserRole.TechLead] },
-    { label: 'Drafts Under Review', icon: NavIconEnum.Supervision, route: AppRoute.PendingDrafts, roles: [UserRole.Admin] },
-    // Later stages add their entries here. Each one declares the roles it is offered to; the
-    // server still enforces access independently.
+    {
+      key: NavGroupKey.Cvs,
+      label: 'CVs',
+      icon: NavIconEnum.CvsGroup,
+      children: [
+        { label: 'Competency Profiles', icon: NavIconEnum.Profiles, route: AppRoute.Profiles },
+        { label: 'Create CV', icon: NavIconEnum.AddCv, route: AppRoute.CvsNew },
+        { label: 'Deleted CVs', icon: NavIconEnum.Deleted, route: AppRoute.CvsDeleted, roles: [UserRole.Admin, UserRole.HR] },
+      ],
+    },
+    {
+      key: NavGroupKey.Requests,
+      label: 'Requests',
+      icon: NavIconEnum.RequestsGroup,
+      children: [
+        { label: 'Update Requests', icon: NavIconEnum.UpdateRequests, route: AppRoute.UpdateRequests },
+        { label: 'Profile Requests', icon: NavIconEnum.PendingActions, route: AppRoute.ProfileUpdateRequests, roles: [UserRole.Admin, UserRole.HR], showsPendingCount: true },
+      ],
+    },
+    {
+      key: NavGroupKey.Approvals,
+      label: 'Approvals',
+      icon: NavIconEnum.ApprovalsGroup,
+      children: [
+        { label: 'Approval Queue', icon: NavIconEnum.ApprovalQueue, route: AppRoute.ApprovalQueue, roles: [UserRole.Admin, UserRole.HR, UserRole.TechLead] },
+        { label: 'Drafts Under Review', icon: NavIconEnum.Supervision, route: AppRoute.PendingDrafts, roles: [UserRole.Admin] },
+      ],
+    },
+    {
+      key: NavGroupKey.Organization,
+      label: 'Organization',
+      icon: NavIconEnum.OrganizationGroup,
+      children: [
+        { label: 'Users', icon: NavIconEnum.People, route: AppRoute.Users, roles: [UserRole.Admin, UserRole.HR, UserRole.TechLead] },
+        { label: 'Departments', icon: NavIconEnum.Departments, route: AppRoute.Departments, roles: [UserRole.Admin] },
+        { label: 'Teams', icon: NavIconEnum.Teams, route: AppRoute.Teams, roles: [UserRole.Admin] },
+      ],
+    },
   ];
+
+  // Only one group is open at a time, so the sidebar never grows past a single open group
+  readonly expandedGroup = signal<NavGroupKey | null>(null);
+
+  private readonly currentUrl = toSignal(
+    this.router.events.pipe(
+      filter((event): event is NavigationEnd => event instanceof NavigationEnd),
+      map((event) => event.urlAfterRedirects),
+    ),
+    { initialValue: this.router.url },
+  );
 
   readonly pendingRequestCount = this.profileUpdateRequests.pendingCount;
 
@@ -128,13 +169,69 @@ export class ShellComponent {
 
     // Polled while the shell lives; signing out destroys the shell and stops it.
     this.notifications.poll().pipe(takeUntilDestroyed()).subscribe();
+
+    /*
+     * Navigating into a group opens it, which also covers a reload or a link from a notification.
+     * Pages outside the menu (CV detail, edit) leave the sidebar as the user left it.
+     */
+    effect(() => {
+      const key = this.activeGroupKey();
+      if (key) {
+        this.expandedGroup.set(key);
+      }
+    });
   }
 
-  // Sidebar visibility is convenience only; the backend enforces scope on every query.
-  readonly visibleNavItems = computed(() => {
+  /*
+   * Sidebar visibility is convenience only; the backend enforces scope on every query.
+   * - A group with no visible child disappears.
+   * - A group with one visible child is shown as that link, so nobody clicks to open a single
+   */
+  readonly visibleNavItems = computed<NavEntry[]>(() => {
     const role = this.user()?.role;
-    return this.navItems.filter((item) => !item.roles || (role && item.roles.includes(role)));
+    const isOffered = (link: NavLink) => !link.roles || (!!role && link.roles.includes(role));
+
+    return this.navItems.flatMap((entry): NavEntry[] => {
+      if (!isNavGroup(entry)) {
+        return isOffered(entry) ? [entry] : [];
+      }
+      const children = entry.children.filter(isOffered);
+      if (children.length <= 1) {
+        return children;
+      }
+      return [{ ...entry, children }];
+    });
   });
+
+  // Group holding the current page; null on pages outside the menu
+  readonly activeGroupKey = computed(() => {
+    const url = this.currentUrl();
+    const group = this.visibleNavItems()
+      .filter(isNavGroup)
+      .find((item) => item.children.some((child) => ShellComponent.matchesRoute(url, child.route)));
+    return group?.key ?? null;
+  });
+
+  readonly isGroup = isNavGroup;
+  
+  trackKey(entry: NavEntry): string {
+    return isNavGroup(entry) ? entry.key : entry.route;
+  }
+
+  toggleGroup(key: NavGroupKey): void {
+    this.expandedGroup.update((open) => (open === key ? null : key));
+  }
+ 
+  // A closed group still shows what waits inside it
+  groupPendingCount(group: NavGroup): number {
+    return group.children.some((child) => child.showsPendingCount) ? this.pendingRequestCount() : 0;
+  }
+ 
+  // Same rule as routerLinkActive's default: the route itself or any page below it
+  private static matchesRoute(url: string, route: AppRoute): boolean {
+    const path = url.split(/[?#]/)[0].replace(/^\/+/, '');
+    return path === route || path.startsWith(`${route}/`);
+  }
 
   readonly roleLabel = computed(() => {
     const role = this.user()?.role;

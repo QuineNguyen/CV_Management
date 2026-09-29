@@ -1,0 +1,237 @@
+<div class="modal-backdrop" [class.is-closing]="isClosing()"
+     (mousedown)="onBackdropMouseDown($event)" (click)="onBackdropClick($event)">
+  <div class="modal request-modal" role="dialog" aria-modal="true" aria-labelledby="ur-dialog-title"
+       (click)="onModalClick($event)">
+    <h2 id="ur-dialog-title" class="modal-title">Request a CV update</h2>
+
+    <div class="form">
+
+      <!-- Employee -->
+      <div class="field">
+        <span class="field-label" id="ur-employee-label">Employee <span class="field-required">*</span></span>
+        @if (employeeLocked()) {
+          <p class="field-static">{{ employee()?.fullName ?? 'Loading...' }}</p>
+        } @else {
+          <button type="button" class="field-input picker-trigger" [class.is-open]="pickerOpen()"
+                  aria-haspopup="listbox" [attr.aria-expanded]="pickerOpen()" aria-labelledby="ur-employee-label"
+                  (click)="togglePicker($event)">
+            @if (employee(); as selected) {
+              <span class="picker-value">
+                <span class="picker-name">{{ selected.fullName }}</span>
+                <span class="cell-muted">{{ selected.email }} · {{ roleLabels[selected.role] }}</span>
+              </span>
+            } @else {
+              <span class="picker-value picker-value--empty">Choose an employee</span>
+            }
+            <span class="material-symbols-outlined picker-caret" aria-hidden="true">expand_more</span>
+          </button>
+
+          @if (pickerOpen()) {
+            <div class="picker-panel picker-panel--float" (click)="$event.stopPropagation()">
+              <div class="search-input-wrap">
+                <span class="material-symbols-outlined search-icon" aria-hidden="true">search</span>
+                <input type="search" class="field-input search-input" [formControl]="keyword"
+                       placeholder="Name, email or username" autocomplete="off" aria-label="Search employees" />
+              </div>
+              @if (searching()) {
+                <p class="picker-status">Searching...</p>
+              } @else {
+                <ul class="picker-list" role="listbox">
+                  @for (user of candidates(); track user.id) {
+                    <li role="option" [attr.aria-selected]="employee()?.id === user.id">
+                      <button type="button" class="picker-option" [class.is-selected]="employee()?.id === user.id"
+                              (click)="pickEmployee(user)">
+                        <span class="picker-name">{{ user.fullName }}</span>
+                        <span class="cell-muted">{{ user.email }} · {{ roleLabels[user.role] }}</span>
+                      </button>
+                    </li>
+                  } @empty {
+                    <li class="picker-status">No active employee matches</li>
+                  }
+                </ul>
+              }
+            </div>
+          }
+        }
+        @if (submitAttempted() && !employee()) {
+          <span class="field-error">Choose who should update their CV</span>
+        }
+      </div>
+
+      <!-- Profile + deadline -->
+      <div class="form-grid">
+        <div class="field custom-select-wrap">
+          <span class="field-label" id="ur-profile-label">Competency profile</span>
+          <button id="ur-profile" type="button" class="field-input custom-select-trigger"
+                  [class.is-open]="profilePickerOpen()"
+                  [disabled]="!employee() || profilesLoading()"
+                  (click)="toggleProfilePicker($event)"
+                  aria-haspopup="listbox"
+                  [attr.aria-expanded]="profilePickerOpen()"
+                  aria-labelledby="ur-profile-label">
+            <span class="custom-select-label">{{ selectedProfileLabel() }}</span>
+          </button>
+
+          @if (profilePickerOpen()) {
+            <div class="custom-select-panel" (click)="$event.stopPropagation()">
+              <ul class="custom-select-list" role="listbox">
+                <li role="option" [attr.aria-selected]="selectedProfileId() === null">
+                  <button type="button" class="custom-select-option"
+                          [class.is-selected]="selectedProfileId() === null"
+                          (click)="pickProfile(null)">
+                    None: the employee creates a new one
+                  </button>
+                </li>
+                @for (profile of profiles(); track profile.id) {
+                  <li role="option" [attr.aria-selected]="selectedProfileId() === profile.id">
+                    <button type="button" class="custom-select-option"
+                            [class.is-selected]="selectedProfileId() === profile.id"
+                            (click)="pickProfile(profile.id)">
+                      {{ profile.name }}{{ profile.primary ? ' (primary)' : '' }}
+                    </button>
+                  </li>
+                }
+              </ul>
+            </div>
+          }
+          <span class="field-hint">Defaults to the primary profile</span>
+        </div>
+
+        <div class="field">
+          <label class="field-label" for="ur-deadline">Deadline <span class="field-required">*</span></label>
+          <div class="field-date-wrap">
+            <input id="ur-deadline" class="field-input field-date-input" readonly placeholder="dd/MM/yyyy"
+                   [matDatepicker]="deadlinePicker" [min]="minDeadline" [value]="deadline()"
+                   (dateChange)="onDeadlineChange($event.value)" (click)="deadlinePicker.open()" />
+            <mat-datepicker-toggle [for]="deadlinePicker" class="field-date-toggle" />
+            <mat-datepicker #deadlinePicker />
+          </div>
+          <span class="field-hint">Due at 23:59 on this day</span>
+          @if (submitAttempted() && !deadline()) {
+            <span class="field-error">Pick a deadline</span>
+          }
+        </div>
+      </div>
+
+      <!-- Language -->
+      <div class="field">
+        <span class="field-label" id="ur-language-label">Language <span class="field-required">*</span></span>
+        <div class="language-choices" role="radiogroup" aria-labelledby="ur-language-label">
+          @for (option of languageOptions; track option) {
+            <button type="button" class="language-choice" role="radio"
+                    [class.is-selected]="language() === option" [attr.aria-checked]="language() === option"
+                    (click)="selectLanguage(option)">
+              {{ languageOptionLabel(option) }}
+            </button>
+          }
+        </div>
+        @if (language() === allScope) {
+          <span class="field-hint">One request per language; a language that already has a pending request is skipped</span>
+        }
+        @if (submitAttempted() && !language()) {
+          <span class="field-error">Choose a language</span>
+        }
+      </div>
+
+      <!-- Reason -->
+      <div class="field">
+        <label class="field-label" for="ur-reason">Reason <span class="field-required">*</span></label>
+        <textarea id="ur-reason" class="field-input reason-input" rows="3" [formControl]="reason"
+                  [maxlength]="reasonMaxLength" placeholder="What should change, and why"></textarea>
+        <span class="field-hint">{{ reason.value.length }} / {{ reasonMaxLength }}</span>
+        @if ((submitAttempted() || reason.touched) && reasonMissing()) {
+          <span class="field-error">Tell the employee why the CV needs an update</span>
+        }
+      </div>
+
+      <!-- Feedback notes -->
+      <section class="notes" aria-labelledby="ur-notes-title">
+        <h3 id="ur-notes-title" class="notes-title">
+          Feedback notes <span class="notes-optional">optional</span>
+        </h3>
+
+        @if (contentLoading()) {
+          <p class="field-hint">Loading the CV...</p>
+        } @else if (notesUnavailableReason(); as unavailable) {
+          <p class="field-hint">{{ unavailable }}</p>
+        } @else if (canAddNotes()) {
+          <div class="note-picker">
+            <div class="form-grid">
+              <div class="field">
+                <label class="field-label" for="ur-note-section">Section</label>
+                <select id="ur-note-section" class="field-input" (change)="selectNoteSection($any($event.target).value)">
+                  <option value="" [selected]="!noteSection()">Choose a section</option>
+                  @for (option of sectionOptions(); track option.value) {
+                    <option [value]="option.value" [selected]="option.value === noteSection()">{{ option.label }}</option>
+                  }
+                </select>
+              </div>
+
+              @if (noteSectionDescriptor()?.repeated) {
+                <div class="field">
+                  <label class="field-label" for="ur-note-item">Entry</label>
+                  <select id="ur-note-item" class="field-input" (change)="selectNoteItem($any($event.target).value)">
+                    <option value="" [selected]="!noteItemId()">Choose an entry</option>
+                    @for (option of itemOptions(); track option.value) {
+                      <option [value]="option.value" [selected]="option.value === noteItemId()">{{ option.label }}</option>
+                    }
+                  </select>
+                </div>
+              }
+
+              @if (noteSection()) {
+                <div class="field">
+                  <label class="field-label" for="ur-note-field">Field</label>
+                  <select id="ur-note-field" class="field-input" (change)="selectNoteField($any($event.target).value)">
+                    <option value="" [selected]="!noteFieldKey()">
+                      The whole {{ noteSectionDescriptor()?.repeated ? 'entry' : 'section' }}
+                    </option>
+                    @for (option of fieldOptions(); track option.value) {
+                      <option [value]="option.value" [selected]="option.value === noteFieldKey()">{{ option.label }}</option>
+                    }
+                  </select>
+                </div>
+              }
+            </div>
+
+            <div class="field">
+              <label class="field-label" for="ur-note-text">Note</label>
+              <textarea id="ur-note-text" class="field-input note-input" rows="2" [formControl]="noteText"
+                        [maxlength]="noteMaxLength" placeholder="What to change here"></textarea>
+            </div>
+
+            <div class="note-actions">
+              <button type="button" class="btn btn-ghost" [disabled]="!noteReady()" (click)="addNote()">
+                <span aria-hidden="true">＋</span> Add note
+              </button>
+            </div>
+          </div>
+
+          @if (notes().length) {
+            <ol class="note-list">
+              @for (note of notes(); track $index) {
+                <li class="note-item">
+                  <div class="note-body">
+                    <span class="note-anchor">{{ noteLabel(note) }}</span>
+                    <p class="note-text">{{ note.note }}</p>
+                  </div>
+                  <button type="button" class="icon-btn icon-btn-danger" aria-label="Remove note"
+                          (click)="removeNote($index)">
+                    <span class="material-symbols-outlined" aria-hidden="true">close</span>
+                  </button>
+                </li>
+              }
+            </ol>
+          }
+        }
+      </section>
+    </div>
+
+    <div class="modal-footer">
+      <button type="button" class="btn btn-ghost" (click)="close()" [disabled]="submitting()">Cancel</button>
+      <button type="button" class="btn btn-primary" (click)="submit()" [disabled]="submitting()">
+        {{ submitting() ? 'Sending...' : 'Send request' }}
+      </button>
+    </div>
+  </div>
+</div>

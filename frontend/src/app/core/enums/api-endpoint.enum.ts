@@ -45,4 +45,7 @@ export enum ApiEndpoint {
     Notifications = '/notifications',
     NotificationsUnreadCount = '/notifications/unread-count',
     NotificationsReadAll = '/notifications/read-all',
+
+    // Update request routes
+    UpdateRequests = '/update-requests',
 }

@@ -17,7 +17,11 @@
 }
 
 .data-table td.col-actions {
-  text-align: end;
+  text-align: center;
+}
+
+.data-table td.col-actions .row-actions {
+  justify-content: center;
 }
 
 /* Team descriptions run longer than the shared truncation width. */
