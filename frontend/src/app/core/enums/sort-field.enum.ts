@@ -46,6 +46,12 @@ export enum PendingDraftSortField {
     Status = 'STATUS',
 }
 
+export enum UpdateRequestSortField {
+    CreatedAt = 'CREATED_AT',
+    Deadline = 'DEADLINE',
+    EmployeeName = 'EMPLOYEE_NAME',
+}
+
 export enum SortDirection {
     Asc = 'ASC',
     Desc = 'DESC',

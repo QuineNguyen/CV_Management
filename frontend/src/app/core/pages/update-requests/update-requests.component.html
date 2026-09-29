@@ -1,0 +1,405 @@
+<section class="page">
+
+  <!-- Toolbar -->
+  <header class="page-toolbar">
+    <div class="page-heading">
+      <h1 class="page-title">Update Requests</h1>
+      <p class="page-subtitle">
+        @if (isEmployeeView()) {
+          {{ pageState().total }} request(s) addressed to you
+        } @else if (isTechLeadView()) {
+          {{ pageState().total }} request(s) for you and the teams you lead
+        } @else {
+          {{ pageState().total }} request(s)
+        }
+      </p>
+    </div>
+
+    @if (canCreate()) {
+      <div class="page-toolbar-actions">
+        <button type="button" class="btn btn-primary" (click)="openCreate()">
+          <span aria-hidden="true">＋</span> New Request
+        </button>
+      </div>
+    }
+  </header>
+
+  <!-- Filters -->
+  <div class="page-filters">
+
+    <!-- Status -->
+    <div class="field custom-select-wrap">
+      <span class="field-label">Status</span>
+      <button type="button" class="field-input custom-select-trigger"
+              [class.is-open]="openFilter() === filterKey.Status"
+              (click)="toggleFilter(filterKey.Status, $event)"
+              aria-haspopup="listbox" [attr.aria-expanded]="openFilter() === filterKey.Status">
+        <span class="custom-select-label">{{ selectedStatusLabel() }}</span>
+      </button>
+
+      @if (openFilter() === filterKey.Status) {
+        <div class="custom-select-panel" (click)="$event.stopPropagation()">
+          <ul class="custom-select-list" role="listbox">
+            <li role="option" [attr.aria-selected]="statusFilter() === null">
+              <button type="button" class="custom-select-option" [class.is-selected]="statusFilter() === null"
+                      (click)="selectStatus(null)">All statuses</button>
+            </li>
+            @for (status of statusOptions; track status) {
+              <li role="option" [attr.aria-selected]="statusFilter() === status">
+                <button type="button" class="custom-select-option" [class.is-selected]="statusFilter() === status"
+                        (click)="selectStatus(status)">{{ statusLabels[status] }}</button>
+              </li>
+            }
+          </ul>
+        </div>
+      }
+    </div>
+
+    <!-- Language -->
+    <div class="field custom-select-wrap">
+      <span class="field-label">Language</span>
+      <button type="button" class="field-input custom-select-trigger"
+              [class.is-open]="openFilter() === filterKey.Language"
+              (click)="toggleFilter(filterKey.Language, $event)"
+              aria-haspopup="listbox" [attr.aria-expanded]="openFilter() === filterKey.Language">
+        <span class="custom-select-label">{{ selectedLanguageLabel() }}</span>
+      </button>
+
+      @if (openFilter() === filterKey.Language) {
+        <div class="custom-select-panel" (click)="$event.stopPropagation()">
+          <ul class="custom-select-list" role="listbox">
+            <li role="option" [attr.aria-selected]="languageFilter() === null">
+              <button type="button" class="custom-select-option" [class.is-selected]="languageFilter() === null"
+                      (click)="selectLanguage(null)">All languages</button>
+            </li>
+            @for (language of languageOptions; track language) {
+              <li role="option" [attr.aria-selected]="languageFilter() === language">
+                <button type="button" class="custom-select-option" [class.is-selected]="languageFilter() === language"
+                        (click)="selectLanguage(language)">{{ languageLabels[language] }}</button>
+              </li>
+            }
+          </ul>
+        </div>
+      }
+    </div>
+
+    <!-- Department: company-wide viewers only -->
+    @if (canFilterByDepartment()) {
+      <div class="field custom-select-wrap">
+        <span class="field-label">Department</span>
+        <button type="button" class="field-input custom-select-trigger"
+                [class.is-open]="openFilter() === filterKey.Department"
+                (click)="toggleFilter(filterKey.Department, $event)"
+                aria-haspopup="listbox" [attr.aria-expanded]="openFilter() === filterKey.Department">
+          <span class="custom-select-label">{{ selectedDepartmentLabel() }}</span>
+        </button>
+
+        @if (openFilter() === filterKey.Department) {
+          <div class="custom-select-panel" (click)="$event.stopPropagation()">
+            <ul class="custom-select-list" role="listbox">
+              <li role="option" [attr.aria-selected]="departmentFilter() === null">
+                <button type="button" class="custom-select-option" [class.is-selected]="departmentFilter() === null"
+                        (click)="selectDepartment(null)">All departments</button>
+              </li>
+              @for (department of departments(); track department.id) {
+                <li role="option" [attr.aria-selected]="departmentFilter() === department.id">
+                  <button type="button" class="custom-select-option"
+                          [class.is-selected]="departmentFilter() === department.id"
+                          (click)="selectDepartment(department.id)">
+                    {{ department.code }} — {{ department.name }}
+                  </button>
+                </li>
+              }
+            </ul>
+          </div>
+        }
+      </div>
+    }
+
+    <!-- Created between -->
+    <div class="field date-field">
+      <label class="field-label" for="ur-from">Created from</label>
+      <div class="field-date-wrap">
+        <input id="ur-from" class="field-input field-date-input" readonly placeholder="dd/MM/yyyy"
+               [matDatepicker]="fromPicker" [max]="toDate()" [value]="fromDate()"
+               (dateChange)="onFromDate($event.value)" (click)="fromPicker.open()" />
+        <mat-datepicker-toggle [for]="fromPicker" class="field-date-toggle" />
+        <mat-datepicker #fromPicker />
+      </div>
+    </div>
+
+    <div class="field date-field">
+      <label class="field-label" for="ur-to">Created to</label>
+      <div class="field-date-wrap">
+        <input id="ur-to" class="field-input field-date-input" readonly placeholder="dd/MM/yyyy"
+               [matDatepicker]="toPicker" [min]="fromDate()" [value]="toDate()"
+               (dateChange)="onToDate($event.value)" (click)="toPicker.open()" />
+        <mat-datepicker-toggle [for]="toPicker" class="field-date-toggle" />
+        <mat-datepicker #toPicker />
+      </div>
+    </div>
+
+    <button type="button" class="btn btn-ghost" (click)="clearFilters()">Clear</button>
+  </div>
+
+  <!-- Body -->
+  @if (loading()) {
+    <div class="skeleton-stack" aria-busy="true">
+      @for (row of [1, 2, 3, 4]; track row) {
+        <div class="skeleton-row"></div>
+      }
+    </div>
+  } @else if (isEmpty()) {
+    <div class="empty-state">
+      <p class="empty-state-title">No update request found</p>
+      @if (isEmployeeView()) {
+        <p class="empty-state-hint">When HR asks you to update a CV, the request shows up here with its deadline</p>
+      } @else {
+        <p class="empty-state-hint">No request matches the current filters</p>
+      }
+      @if (canCreate()) {
+        <button type="button" class="btn btn-primary" (click)="openCreate()">New request</button>
+      }
+    </div>
+  } @else {
+
+    <!-- Table: laptop and desktop -->
+    <div class="data-table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr>
+            @if (!isEmployeeView()) {
+              <th scope="col" class="col-employee" [attr.aria-sort]="ariaSort(sortField.EmployeeName)">
+                <button type="button" class="sort-header" (click)="toggleSort(sortField.EmployeeName)">
+                  Employee
+                  <span class="material-symbols-outlined sort-icon" aria-hidden="true">{{ sortIcon(sortField.EmployeeName) }}</span>
+                </button>
+              </th>
+            }
+            <th scope="col" class="col-cv">CV</th>
+            <th scope="col" class="col-reason">Reason</th>
+            <th scope="col" class="col-deadline" [attr.aria-sort]="ariaSort(sortField.Deadline)">
+              <button type="button" class="sort-header" (click)="toggleSort(sortField.Deadline)">
+                Deadline
+                <span class="material-symbols-outlined sort-icon" aria-hidden="true">{{ sortIcon(sortField.Deadline) }}</span>
+              </button>
+            </th>
+            <th scope="col" class="col-status">Status</th>
+            <th scope="col" class="col-requested" [attr.aria-sort]="ariaSort(sortField.CreatedAt)">
+              <button type="button" class="sort-header" (click)="toggleSort(sortField.CreatedAt)">
+                Requested
+                <span class="material-symbols-outlined sort-icon" aria-hidden="true">{{ sortIcon(sortField.CreatedAt) }}</span>
+              </button>
+            </th>
+            <th scope="col" class="col-actions">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (request of requests(); track request.id) {
+            <tr>
+              @if (!isEmployeeView()) {
+                <td class="col-employee">
+                  <span class="cell-strong">{{ request.employeeName ?? '—' }}</span>
+                </td>
+              }
+              <td class="col-cv">
+                <div class="cv-cell">
+                  <span class="code-chip is-primary">{{ request.language }}</span>
+                  <span class="cv-cell-profile">{{ request.profileName ?? 'New profile' }}</span>
+                </div>
+              </td>
+              <td class="col-reason">
+                <span class="reason-clamp" [matTooltip]="request.reason">{{ request.reason }}</span>
+                @if (request.anchoredNotes.length) {
+                  <span class="note-count">
+                    <span class="material-symbols-outlined" aria-hidden="true">sticky_note_2</span>
+                    {{ request.anchoredNotes.length }} note(s)
+                  </span>
+                }
+              </td>
+              <td class="col-deadline">
+                <span class="cell-date">{{ request.deadline | date:'dd/MM/yyyy' }}</span>
+                @if (isOverdue(request)) {
+                  <span class="overdue-chip">Overdue</span>
+                }
+              </td>
+              <td class="col-status">
+                <span class="status-badge"
+                      [class.is-pending]="request.status === pendingStatus"
+                      [class.is-active]="request.status === completedStatus">
+                  {{ statusLabels[request.status] }}
+                </span>
+              </td>
+              <td class="col-requested">
+                <span class="cell-date">{{ request.createdAt | date:'dd/MM/yyyy HH:mm' }}</span>
+                <span class="cell-muted">by {{ request.createdByName ?? '—' }}</span>
+              </td>
+              <td class="col-actions">
+                <div class="row-actions">
+                  <button type="button" class="icon-btn" matTooltip="View details" aria-label="View details"
+                          (click)="openDetail(request)">
+                    <span class="material-symbols-outlined" aria-hidden="true">visibility</span>
+                  </button>
+                  @if (canUpdateCv(request)) {
+                    <button type="button" class="icon-btn" aria-label="Open the CV"
+                            [matTooltip]="request.cvId ? 'Update this CV' : 'Create this CV'"
+                            (click)="updateCv(request)">
+                      <span class="material-symbols-outlined" aria-hidden="true">edit_document</span>
+                    </button>
+                  }
+                </div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Cards: iPad and phone -->
+    <ul class="data-cards">
+      @for (request of requests(); track request.id) {
+        <li class="data-card">
+          <div class="data-card-head">
+            <div class="data-card-text">
+              <div class="cv-cell">
+                <span class="code-chip is-primary">{{ request.language }}</span>
+                <span class="data-card-title">{{ request.profileName ?? 'New profile' }}</span>
+              </div>
+              @if (!isEmployeeView()) {
+                <p class="data-card-line">{{ request.employeeName ?? '—' }}</p>
+              }
+            </div>
+
+            <div class="row-actions">
+              <button type="button" class="icon-btn" aria-label="View details" (click)="openDetail(request)">
+                <span class="material-symbols-outlined" aria-hidden="true">visibility</span>
+              </button>
+              @if (canUpdateCv(request)) {
+                <button type="button" class="icon-btn" aria-label="Open the CV" (click)="updateCv(request)">
+                  <span class="material-symbols-outlined" aria-hidden="true">edit_document</span>
+                </button>
+              }
+            </div>
+          </div>
+
+          <p class="data-card-line reason-clamp">{{ request.reason }}</p>
+
+          <dl class="data-card-facts">
+            <div>
+              <dt>Deadline</dt>
+              <dd>
+                {{ request.deadline | date:'dd/MM/yyyy' }}
+                @if (isOverdue(request)) {
+                  <span class="overdue-chip">Overdue</span>
+                }
+              </dd>
+            </div>
+            <div>
+              <dt>Status</dt>
+              <dd>
+                <span class="status-badge"
+                      [class.is-pending]="request.status === pendingStatus"
+                      [class.is-active]="request.status === completedStatus">
+                  {{ statusLabels[request.status] }}
+                </span>
+              </dd>
+            </div>
+            <div>
+              <dt>Requested</dt>
+              <dd>{{ request.createdAt | date:'dd/MM/yyyy' }} by {{ request.createdByName ?? '—' }}</dd>
+            </div>
+          </dl>
+        </li>
+      }
+    </ul>
+
+    <mat-paginator
+      class="page-paginator"
+      [length]="pageState().total"
+      [pageIndex]="pageState().index"
+      [pageSize]="pageState().size"
+      [pageSizeOptions]="pageSizeOptions"
+      showFirstLastButtons
+      (page)="onPageChange($event)" />
+  }
+</section>
+
+<!-- Detail -->
+@if (detailTarget(); as target) {
+  <div class="modal-backdrop" [class.is-closing]="isDetailClosing()"
+       (mousedown)="onDetailBackdropMouseDown($event)" (click)="onDetailBackdropClick($event)">
+    <div class="modal detail-modal" role="dialog" aria-modal="true" aria-labelledby="ur-detail-title"
+         (click)="$event.stopPropagation()">
+      <h2 id="ur-detail-title" class="modal-title">Update request</h2>
+
+      <dl class="request-facts">
+        @if (!isEmployeeView()) {
+          <div>
+            <dt>Employee</dt>
+            <dd>{{ target.employeeName ?? '—' }}</dd>
+          </div>
+        }
+        <div>
+          <dt>CV</dt>
+          <dd>{{ target.profileName ?? 'New profile' }} · {{ languageLabels[target.language] }}</dd>
+        </div>
+        <div>
+          <dt>Deadline</dt>
+          <dd>
+            {{ target.deadline | date:'dd/MM/yyyy HH:mm' }}
+            @if (isOverdue(target)) {
+              <span class="overdue-chip">Overdue</span>
+            }
+          </dd>
+        </div>
+        <div>
+          <dt>Status</dt>
+          <dd>
+            <span class="status-badge"
+                  [class.is-pending]="target.status === pendingStatus"
+                  [class.is-active]="target.status === completedStatus">
+              {{ statusLabels[target.status] }}
+            </span>
+          </dd>
+        </div>
+        <div>
+          <dt>Requested</dt>
+          <dd>{{ target.createdAt | date:'dd/MM/yyyy HH:mm' }} by {{ target.createdByName ?? '—' }}</dd>
+        </div>
+      </dl>
+
+      <section class="request-block">
+        <h3 class="request-block-title">Reason</h3>
+        <p class="request-reason">{{ target.reason }}</p>
+      </section>
+
+      @if (target.anchoredNotes.length) {
+        <section class="request-block">
+          <h3 class="request-block-title">Feedback notes ({{ target.anchoredNotes.length }})</h3>
+          <ol class="note-list">
+            @for (note of target.anchoredNotes; track $index) {
+              <li class="note-item">
+                <span class="note-anchor">{{ noteAnchorLabel(note) }}</span>
+                <p class="note-text">{{ note.note }}</p>
+              </li>
+            }
+          </ol>
+        </section>
+      }
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-ghost" (click)="closeDetail()">Close</button>
+        @if (canUpdateCv(target)) {
+          <button type="button" class="btn btn-primary" (click)="updateCv(target)">
+            {{ target.cvId ? 'Update CV' : 'Create CV' }}
+          </button>
+        }
+      </div>
+    </div>
+  </div>
+}
+
+<!-- Create -->
+@if (createOpen()) {
+  <app-create-update-request-dialog (created)="onCreated()" (closed)="onCreateClosed()" />
+}

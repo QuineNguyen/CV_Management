@@ -1,11 +1,29 @@
+import { AppRoute } from "../enums/app-route.enum";
+import { NavGroupKey } from "../enums/nav-group.enum";
+import { NavIconEnum } from "../enums/nav-icon.enum";
 import { UserRole } from "../enums/user-role.enum";
 
-export interface NavItem {
+// A page in the sidebar, at the top level or inside a group
+export interface NavLink {
   label: string;
-  icon: string;
-  route: string;
-  // Roles allowed to see the entry. Omitted means everyone signed in.
+  // Also shown when its group is flattened because it is the only visible child
+  icon: NavIconEnum;
+  route: AppRoute;
   roles?: UserRole[];
-  // Draws the pending-request count next to the label. Only one entry uses it today.
   showsPendingCount?: boolean;
+}
+
+// A heading that opens and closes; it is never a page of its own
+export interface NavGroup {
+  key: NavGroupKey;
+  label: string;
+  icon: NavIconEnum;
+  // No roles here: a group is visible when at least one child is
+  children: NavLink[];
+}
+
+export type NavEntry = NavLink | NavGroup;
+
+export function isNavGroup(entry: NavEntry): entry is NavGroup {
+  return 'children' in entry;
 }

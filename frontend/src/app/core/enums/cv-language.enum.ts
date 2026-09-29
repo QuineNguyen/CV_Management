@@ -12,6 +12,14 @@ export enum CvSlotState {
     Empty = 'EMPTY',
 }
 
+// "All languages" on the create form; the server turns it into one request per language
+export enum LanguageScope {
+    All = 'ALL',
+}
+
+// Language sent when creating a request: one CV language or all of them
+export type UpdateRequestLanguage = CvLanguage | LanguageScope;
+
 export const CV_LANGUAGE_LABELS: Record<CvLanguage, string> = {
     [CvLanguage.Vi]: 'Vietnamese',
     [CvLanguage.En]: 'English',
@@ -24,3 +32,7 @@ export const CV_LANGUAGE_ORDER: readonly CvLanguage[] = [
     CvLanguage.En,
     CvLanguage.Ja,
 ];
+
+export const LANGUAGE_SCOPE_LABELS: Record<LanguageScope, string> = {
+    [LanguageScope.All]: 'All languages',
+};

@@ -144,6 +144,13 @@ export const routes: Routes = [
           import('./core/pages/notifications/notifications.component')
             .then(m => m.NotificationsComponent),
       },
+      {
+        path: AppRoute.UpdateRequests,
+        title: 'Update Requests',
+        loadComponent: () =>
+          import('./core/pages/update-requests/update-requests.component')
+            .then(m => m.UpdateRequestsComponent),
+      }
     ],
   },
   { path: '**', redirectTo: '' },
