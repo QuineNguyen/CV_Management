@@ -14,7 +14,7 @@ export function relativeTimeOf(iso: string, now: number = Date.now()): string {
         return `${Math.floor(elapsed / MINUTE_MS)} min ago`;
     }
     if (elapsed < DAY_MS) {
-        return `${Math.floor(elapsed / HOUR_MS)} h ago`;
+        return `${Math.floor(elapsed / HOUR_MS)}h ago`;
     }
     if (elapsed < WEEK_MS) {
         const days = Math.floor(elapsed / DAY_MS);
