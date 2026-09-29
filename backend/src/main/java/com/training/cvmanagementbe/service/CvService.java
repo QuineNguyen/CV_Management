@@ -4,10 +4,7 @@ import com.training.cvmanagementbe.dto.request.cvs.CvCreateRequest;
 import com.training.cvmanagementbe.dto.request.cvs.CvDeleteRequest;
 import com.training.cvmanagementbe.dto.request.cvs.CvEditRequest;
 import com.training.cvmanagementbe.dto.response.configs.PagedResponse;
-import com.training.cvmanagementbe.dto.response.cvs.CvDetailResponse;
-import com.training.cvmanagementbe.dto.response.cvs.CvEditResponse;
-import com.training.cvmanagementbe.dto.response.cvs.CvResponse;
-import com.training.cvmanagementbe.dto.response.cvs.CvVersionSummary;
+import com.training.cvmanagementbe.dto.response.cvs.*;
 import org.springframework.data.domain.Pageable;
 
 import java.util.List;
@@ -49,4 +46,6 @@ public interface CvService {
     PagedResponse<CvResponse> listDeleted(Pageable pageable);
 
     List<CvVersionSummary> listVersions(UUID cvId);
+
+    List<PendingNoteResponse> getPendingNotes(UUID cvId);
 }

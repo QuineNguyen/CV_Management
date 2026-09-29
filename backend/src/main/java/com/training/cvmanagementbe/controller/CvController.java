@@ -7,10 +7,7 @@ import com.training.cvmanagementbe.dto.request.cvs.CvDeleteRequest;
 import com.training.cvmanagementbe.dto.request.cvs.CvEditRequest;
 import com.training.cvmanagementbe.dto.response.configs.ApiResponse;
 import com.training.cvmanagementbe.dto.response.configs.PagedResponse;
-import com.training.cvmanagementbe.dto.response.cvs.CvDetailResponse;
-import com.training.cvmanagementbe.dto.response.cvs.CvEditResponse;
-import com.training.cvmanagementbe.dto.response.cvs.CvResponse;
-import com.training.cvmanagementbe.dto.response.cvs.CvVersionSummary;
+import com.training.cvmanagementbe.dto.response.cvs.*;
 import com.training.cvmanagementbe.enums.cvs.CvSortField;
 import com.training.cvmanagementbe.service.CvService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -108,5 +105,11 @@ public class CvController {
     @Operation(summary = "Restore a soft-deleted CV (Admin/HR)")
     public ResponseEntity<CvResponse> restore(@PathVariable UUID id) {
         return ResponseEntity.ok(cvService.restore(id));
+    }
+
+    @GetMapping(ApiPath.CVS + ApiPath.UPDATE_REQUESTS_PENDING_NOTES)
+    @Operation(summary = "Feedback notes of the pending update request on a CV, flat per anchor")
+    public ResponseEntity<List<PendingNoteResponse>> getPendingNotes(@PathVariable UUID id) {
+        return ResponseEntity.ok(cvService.getPendingNotes(id));
     }
 }

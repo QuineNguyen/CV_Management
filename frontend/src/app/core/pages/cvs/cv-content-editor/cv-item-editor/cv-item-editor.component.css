@@ -167,6 +167,16 @@
   padding: clamp(0.75rem, 2vw, 1.25rem) clamp(0.75rem, 2vw, 1.25rem) 0;
 }
 
+/* ---------- Update request notes ---------- */
+.status-badge.is-note {
+  background: var(--vt-note-surface);
+  color: var(--vt-note-ink);
+}
+
+.cv-item-notes {
+  padding: clamp(0.75rem, 2vw, 1.25rem) clamp(0.75rem, 2vw, 1.25rem) 0;
+}
+
 @media (min-width: 48rem) {
   .form-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));

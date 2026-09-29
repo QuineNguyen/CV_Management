@@ -247,6 +247,12 @@
                       <span class="material-symbols-outlined" aria-hidden="true">edit_document</span>
                     </button>
                   }
+                  @if (request.cancellable) {
+                    <button type="button" class="icon-btn" matTooltip="Cancel request"
+                            aria-label="Cancel request" (click)="askCancel(request)">
+                      <span class="material-symbols-outlined" aria-hidden="true">cancel</span>
+                    </button>
+                  }
                 </div>
               </td>
             </tr>
@@ -277,6 +283,12 @@
               @if (canUpdateCv(request)) {
                 <button type="button" class="icon-btn" aria-label="Open the CV" (click)="updateCv(request)">
                   <span class="material-symbols-outlined" aria-hidden="true">edit_document</span>
+                </button>
+              }
+              @if (request.cancellable) {
+                <button type="button" class="icon-btn" aria-label="Cancel request"
+                        (click)="askCancel(request)">
+                  <span class="material-symbols-outlined" aria-hidden="true">cancel</span>
                 </button>
               }
             </div>
@@ -389,11 +401,43 @@
 
       <div class="modal-footer">
         <button type="button" class="btn btn-ghost" (click)="closeDetail()">Close</button>
+        @if (target.cancellable) {
+          <button type="button" class="btn btn-danger" (click)="askCancel(target)">Cancel request</button>
+        }
         @if (canUpdateCv(target)) {
           <button type="button" class="btn btn-primary" (click)="updateCv(target)">
             {{ target.cvId ? 'Update CV' : 'Create CV' }}
           </button>
         }
+      </div>
+    </div>
+  </div>
+}
+
+<!-- Cancel request: Admin any pending request, HR only their own -->
+@if (cancelTarget(); as target) {
+  <div class="modal-backdrop" [class.is-closing]="isCancelClosing()"
+       (mousedown)="onCancelBackdropMouseDown($event)" (click)="onCancelBackdropClick($event)">
+    <div class="modal modal-sm" role="alertdialog" aria-modal="true"
+         aria-labelledby="ur-cancel-title" aria-describedby="ur-cancel-body"
+         (click)="$event.stopPropagation()">
+      <h2 id="ur-cancel-title" class="modal-title">Cancel update request</h2>
+      <p id="ur-cancel-body" class="modal-body">
+        Cancel the request asking <strong>{{ target.employeeName ?? 'this employee' }}</strong> to update
+        <strong>{{ target.profileName ?? 'a new profile' }} · {{ languageLabels[target.language] }}</strong>?
+        Reminders stop and the employee is notified
+      </p>
+      <p class="cancel-keeps-draft">
+        <span class="material-symbols-outlined" aria-hidden="true">info</span>
+        <span>The employee's draft is <strong>not</strong> deleted — they can still finish and submit it</span>
+      </p>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-ghost" (click)="dismissCancel()" [disabled]="cancelling()">
+          Keep request
+        </button>
+        <button type="button" class="btn btn-danger" (click)="confirmCancel()" [disabled]="cancelling()">
+          {{ cancelling() ? 'Cancelling...' : 'Cancel request' }}
+        </button>
       </div>
     </div>
   </div>

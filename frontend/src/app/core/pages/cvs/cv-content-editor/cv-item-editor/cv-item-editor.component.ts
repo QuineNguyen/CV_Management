@@ -11,6 +11,10 @@ import { CustomDateAdapter, DD_MM_YYYY_FORMATS } from "../../../../utils/app-dat
 import { InlineCommentThreadComponent } from "../../../approvals/inline-comment-thread/inline-comment-thread.component";
 import { InlineCommentStore } from "../../../../services/inline-comment-store.service";
 import { isOpenThread } from "../../../../models/inline-comment.model";
+import { PendingNoteBadgeComponent } from "../pending-note-badge/pending-note-badge.component";
+import { PendingNoteListComponent } from "../pending-note-list/pending-note-list.component";
+import { PendingNoteStore } from "../../../../services/pending-note-store.service";
+import { PendingNoteResponse } from "../../../../dtos/update-request.dto";
 
 /*
  * One entry of a REPEATED section, rendered from its section descriptor rather than a bespoke
@@ -22,7 +26,18 @@ import { isOpenThread } from "../../../../models/inline-comment.model";
 @Component({
     selector: 'app-cv-item-editor',
     standalone: true,
-    imports: [ReactiveFormsModule, CdkDrag, CdkDragHandle, MatToolbarModule, MatDatepickerModule, MatNativeDateModule, CvDatePipe, InlineCommentThreadComponent],
+    imports: [
+        ReactiveFormsModule,
+        CdkDrag,
+        CdkDragHandle,
+        MatToolbarModule,
+        MatDatepickerModule,
+        MatNativeDateModule,
+        CvDatePipe,
+        InlineCommentThreadComponent,
+        PendingNoteBadgeComponent,
+        PendingNoteListComponent
+    ],
     providers: [
         { provide: DateAdapter, useClass: CustomDateAdapter },
         { provide: MAT_DATE_FORMATS, useValue: DD_MM_YYYY_FORMATS },
@@ -34,6 +49,10 @@ import { isOpenThread } from "../../../../models/inline-comment.model";
 export class CvItemEditorComponent {
 
     private readonly commentStore = inject(InlineCommentStore);
+    private readonly noteStore = inject(PendingNoteStore);
+
+    // item_id never changes for a given group
+    private readonly itemId = computed<string | null>(() => this.group().get('item_id')?.value ?? null);
 
     readonly FieldKind = FieldKind;
 
@@ -59,6 +78,23 @@ export class CvItemEditorComponent {
 
     // Shown inside the entry body whenever there are comments pinned to it.
     readonly showThreads = computed(() => this.threads().length > 0);
+
+    // Notes on the entry as a whole, shown at the top of its body
+    readonly entryNotes = computed(() => {
+        const id = this.itemId();
+        return id ? this.noteStore.anchoredTo(this.section().key, id) : [];
+    })
+
+    readonly fieldNotes = computed(() => {
+        const id = this.itemId();
+        return id ? this.noteStore.byField(this.section().key, id) : new Map<string, PendingNoteResponse[]>();
+    })
+
+    // On the collapsed header, so an entry with feedback is visible without opening it
+    readonly noteCount = computed(() => {
+        const id = this.itemId();
+        return id ? this.noteStore.countForItem(this.section().key, id) : 0;
+    })
 
     // Falls back to a positional label so a brand-new entry is still identifiable.
     title(): string {

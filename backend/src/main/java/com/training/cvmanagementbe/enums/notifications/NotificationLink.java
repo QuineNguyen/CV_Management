@@ -44,6 +44,9 @@ public enum NotificationLink {
      */
     CV_CREATE_FOR_LANGUAGE("cvs/new?language=%s"),
 
+    // Route to the update request list; used when the request's CV no longer exists.
+    UPDATE_REQUESTS("update-requests"),
+
     // Route to the CV profiles management page.
     CV_PROFILES("cv-profiles"),
 

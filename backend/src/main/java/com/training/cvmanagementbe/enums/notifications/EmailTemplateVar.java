@@ -29,7 +29,8 @@ public enum EmailTemplateVar {
     TEMPORARY_PASSWORD("temporaryPassword"),
     DEADLINE("deadline"),
     NOTE_COUNT("noteCount"),
-    CV_EXISTS("cvExists");
+    CV_EXISTS("cvExists"),
+    REQUEST_CANCELLED("requestCancelled");
 
     private final String key;
 }

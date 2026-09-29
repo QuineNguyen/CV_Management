@@ -7,6 +7,8 @@ import { CdkDragDrop, moveItemInArray } from "@angular/cdk/drag-drop";
 import { CvLanguage } from "../../../enums/cv-language.enum";
 import { InlineCommentStore } from "../../../services/inline-comment-store.service";
 import { InlineCommentResponse } from "../../../dtos/inline-comment.dto";
+import { PendingNoteStore } from "../../../services/pending-note-store.service";
+import { PendingNoteResponse } from "../../../dtos/update-request.dto";
 
 /*
  * The full CV content form: two SINGLE sections as FormGroups, seven REPEATED ones as FormArrays.
@@ -27,7 +29,7 @@ import { InlineCommentResponse } from "../../../dtos/inline-comment.dto";
     selector: 'app-cv-content-editor',
     standalone: true,
     imports: [ReactiveFormsModule, CvSectionEditorComponent],
-    providers: [InlineCommentStore],
+    providers: [InlineCommentStore, PendingNoteStore],
     templateUrl: './cv-content-editor.component.html',
     styleUrl: './cv-content-editor.component.css',
     changeDetection: ChangeDetectionStrategy.OnPush,
@@ -36,6 +38,7 @@ export class CvContentEditorComponent {
 
     private readonly fb = inject(FormBuilder);
     private readonly commentStore = inject(InlineCommentStore);
+    private readonly noteStore = inject(PendingNoteStore);
 
     readonly sections = CV_SECTIONS;
 
@@ -47,6 +50,10 @@ export class CvContentEditorComponent {
 
     // Every round of the draft; the editor places each thread at its anchor.
     readonly inlineComments = input<InlineCommentResponse[]>([]);
+
+    // Notes of the pending update request; read-only, pinned at their anchors
+    readonly pendingNotes = input<PendingNoteResponse[]>([]);
+
     // Opens reply boxes even when readOnly: the lock covers the CV, not the conversation.
     readonly canReplyToComments = input(false);
 
@@ -69,6 +76,9 @@ export class CvContentEditorComponent {
             this.commentStore.comments.set(this.inlineComments());
             this.commentStore.canReply.set(this.canReplyToComments());
         });
+
+        // Separate from the review comments: a different, one-way flow
+        effect(() => this.noteStore.notes.set(this.pendingNotes()));
 
         this.form.valueChanges.subscribe(() => this.dirtyChanged.emit(this.form.dirty));
     }

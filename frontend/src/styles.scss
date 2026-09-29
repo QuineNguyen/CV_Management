@@ -63,6 +63,11 @@ html {
   /* Minimum touch target on tablets and phones (WCAG 2.5.5) */
   --vt-touch-target: 2.75rem; /* ~44px */
   --vt-tap: clamp(2rem, 8vw, 2.5rem);
+
+  /* Update request notes: amber, apart from the red review comments */
+  --vt-note-surface: #fdf0e0;
+  --vt-note-ink: #8a5210;
+  --vt-note-line: rgba(237, 108, 2, 0.35);
 }
 
 html, body {

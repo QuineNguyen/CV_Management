@@ -7,6 +7,8 @@ import com.training.cvmanagementbe.dto.response.cvs.UpdateRequestResponse;
 import com.training.cvmanagementbe.record.cvs.UpdateRequestCriteria;
 import org.springframework.data.domain.Pageable;
 
+import java.util.UUID;
+
 public interface UpdateRequestService {
 
     // Admin/HR only; ALL creates one request per language and skips taken slots
@@ -14,4 +16,6 @@ public interface UpdateRequestService {
 
     // Every role; rows are narrowed to the caller scope server-side
     PagedResponse<UpdateRequestResponse> search(UpdateRequestCriteria criteria, Pageable pageable);
+
+    UpdateRequestResponse cancel(UUID requestId);
 }

@@ -133,15 +133,25 @@
       </div>
     }
 
+    <!-- Pending update request: the owner learns where its feedback sits -->
+    @if (canEdit() && pendingNotes().length; as count) {
+      <div class="notice notice-warning" role="status">
+        <strong>Update requested.</strong>
+        {{ count }} feedback {{ count === 1 ? 'note is' : 'notes are' }} pinned to the fields and
+        entries below. Use <strong>Edit</strong> to work on them — they stay until the request is
+        completed or cancelled
+      </div>
+    }
+
     <!-- Content, read-only -->
     @if (rejectedForOwner() && detail.openDraft; as draft) {
       <p class="text-muted">Showing the rejected draft content</p>
-      <app-cv-content-editor [content]="draft.content" [language]="detail.cv.language" [readOnly]="true" [inlineComments]="draftComments()" />
+      <app-cv-content-editor [content]="draft.content" [language]="detail.cv.language" [readOnly]="true" [inlineComments]="draftComments()" [pendingNotes]="pendingNotes()" />
     } @else if (detail.content) {
-      <app-cv-content-editor [content]="detail.content" [language]="detail.cv.language" [readOnly]="true" />
+      <app-cv-content-editor [content]="detail.content" [language]="detail.cv.language" [readOnly]="true" [pendingNotes]="pendingNotes()" />
     } @else if (detail.openDraft; as draft) {
       <p class="text-muted">Showing the unpublished draft content</p>
-      <app-cv-content-editor [content]="draft.content" [language]="detail.cv.language" [readOnly]="true" [inlineComments]="draftComments()" />
+      <app-cv-content-editor [content]="draft.content" [language]="detail.cv.language" [readOnly]="true" [inlineComments]="draftComments()" [pendingNotes]="pendingNotes()" />
     }
   </section>
 }

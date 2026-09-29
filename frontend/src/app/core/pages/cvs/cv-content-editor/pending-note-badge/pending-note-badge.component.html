@@ -1,0 +1,14 @@
+<button type="button" class="pending-note-chip"
+        [attr.aria-expanded]="open()"
+        [attr.aria-controls]="panelId"
+        [attr.aria-label]="notes().length + ' feedback note(s) on this field'"
+        (click)="toggle()">
+  <span class="material-symbols-outlined" aria-hidden="true">sticky_note_2</span>
+  <span>{{ notes().length }}</span>
+</button>
+
+<div class="pending-note-pop" [id]="panelId">
+  <div class="pending-note-card">
+    <app-pending-note-list [notes]="notes()" caption="Feedback on this field" [plain]="true" />
+  </div>
+</div>

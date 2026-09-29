@@ -64,6 +64,7 @@ public class UpdateRequestServiceImpl implements UpdateRequestService {
     private final CvContentCodec codec;
     private final AnchoredNoteCodec anchoredNoteCodec;
     private final AnchoredNoteValidator anchoredNoteValidator;
+    private final UpdateRequestCanceller updateRequestCanceller;
     private final AuditLogger auditLogger;
     private final ApplicationEventPublisher eventPublisher;
 
@@ -130,6 +131,40 @@ public class UpdateRequestServiceImpl implements UpdateRequestService {
         return new CreateUpdateRequestResponse(created, skipped);
     }
 
+    /*
+     * Scope is checked before status, so a caller outside it learns nothing
+     * about the request. The employee's draft is left alone; only the reminders stop.
+     */
+    @Override
+    @Transactional
+    public UpdateRequestResponse cancel(UUID requestId) {
+        UpdateRequest request = updateRequestRepository.findById(requestId)
+                .orElseThrow(() -> new ApiException.NotFoundException("update request", requestId));
+
+        Role role = CurrentActor.requireRole();
+        UUID actorId = CurrentActor.requireUserId();
+        if (!mayCancel(request, role, actorId)) {
+            throw new ApiException.ForbiddenException(ErrorCode.OUT_OF_SCOPE);
+        }
+        if (request.getStatus() != RequestStatus.PENDING) {
+            throw new ApiException.ConflictException(ErrorCode.STALE_STATE);
+        }
+
+        UpdateRequestResponse before = toResponses(List.of(request)).get(0);
+
+        // CAS on PENDING: A concurrent cancel or the employee's publish got there first
+        if (!updateRequestCanceller.cancelOne(request, actorId, LocalDateTime.now())) {
+            throw new ApiException.ConflictException(ErrorCode.STALE_STATE);
+        }
+
+        UpdateRequest cancelled = updateRequestRepository.findById(requestId)
+                .orElseThrow(() -> new ApiException.NotFoundException("update request", requestId));
+        UpdateRequestResponse after = toResponses(List.of(cancelled)).get(0);
+
+        auditLogger.record(Action.CANCEL_UPDATE_REQUEST, TargetType.UPDATE_REQUEST, requestId, before, after);
+        return after;
+    }
+
     // ---------- Queries ----------
 
     @Override
@@ -184,8 +219,8 @@ public class UpdateRequestServiceImpl implements UpdateRequestService {
         CvContent content = cv == null
                 ? null
                 : cvVersionRepository.findTopByCvIdOrderByVersionNumberDesc(cv.getId())
-                        .map(version -> codec.read(version.getContentJson()))
-                        .orElse(null);
+                .map(version -> codec.read(version.getContentJson()))
+                .orElse(null);
 
         if (content == null) {
             throw new ApiException.BusinessRuleException(ErrorCode.NOTES_NEED_EXISTING_CV);
@@ -224,6 +259,11 @@ public class UpdateRequestServiceImpl implements UpdateRequestService {
             }
         }
         return ids;
+    }
+
+    // Admin cancels any request, HR only their own - HR peers do not oversee each other
+    private boolean mayCancel(UpdateRequest request, Role role, UUID callerId) {
+        return role == Role.ADMIN || (role == Role.HR && callerId.equals(request.getCreatedBy()));
     }
 
     // ---------- Writing ----------
@@ -328,16 +368,22 @@ public class UpdateRequestServiceImpl implements UpdateRequestService {
         Map<UUID, String> profileNames = profileIds.isEmpty()
                 ? Map.of()
                 : cvProfileRepository.findAllById(profileIds).stream()
-                        .collect(Collectors.toMap(CvProfile::getId, CvProfile::getName));
+                .collect(Collectors.toMap(CvProfile::getId, CvProfile::getName));
+
+        // Resolved once per page: Which rows offer a cancel action to this caller
+        Role role = CurrentActor.requireRole();
+        UUID callerId = CurrentActor.requireUserId();
 
         return requests.stream()
-                .map(request -> toResponse(request, userNames, profileNames))
+                .map(request -> toResponse(request, userNames, profileNames,
+                        request.getStatus() == RequestStatus.PENDING && mayCancel(request, role, callerId)))
                 .toList();
     }
 
     private UpdateRequestResponse toResponse(UpdateRequest request,
                                              Map<UUID, String> userNames,
-                                             Map<UUID, String> profileNames) {
+                                             Map<UUID, String> profileNames,
+                                             boolean cancellable) {
         List<AnchoredNoteResponse> notes = anchoredNoteCodec.read(request.getAnchoredNotes()).stream()
                 .map(note -> new AnchoredNoteResponse(note.sectionKey(), note.itemId(), note.fieldKey(), note.note()))
                 .toList();
@@ -355,7 +401,8 @@ public class UpdateRequestServiceImpl implements UpdateRequestService {
                 request.getStatus(),
                 notes,
                 request.getCreatedBy() == null ? null : userNames.get(request.getCreatedBy()),
-                request.getCreatedAt()
+                request.getCreatedAt(),
+                cancellable
         );
     }
 

@@ -43,4 +43,9 @@ export class UpdateRequestService {
 
         return this.http.get<PagedResponse<UpdateRequestResponse>>(this.url(ApiEndpoint.UpdateRequests), { params });
     }
+
+    // PENDING only; Admin any request, HR their own. 409 when someone else closed it first
+    cancel(id: string): Observable<UpdateRequestResponse> {
+        return this.http.post<UpdateRequestResponse>(this.url(`${ApiEndpoint.UpdateRequests}/${id}/cancel`), null);
+    }
 }

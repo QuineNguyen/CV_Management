@@ -88,6 +88,15 @@
       </div>
     }
 
+    <!-- Pending update request: tell the owner where its feedback sits -->
+    @if (pendingNotes().length; as count) {
+      <div class="notice notice-warning" role="status">
+        <strong>Feedback from an update request.</strong>
+        {{ count }} {{ count === 1 ? 'note is' : 'notes are' }} pinned to the matching fields below.
+        Hover or tap a note marker to read it; entries with feedback show a note count on their header
+      </div>
+    }
+
     <!-- Photo. Applies on save like the rest of the draft; no separate review step -->
     <section class="cv-avatar-panel">
       <div class="cv-avatar-main">
@@ -135,6 +144,7 @@
       [readOnly]="locked()"
       [inlineComments]="inlineComments()"
       [canReplyToComments]="canReplyToComments()"
+      [pendingNotes]="pendingNotes()"
       (dirtyChanged)="onDirtyChanged($event)" />
 
     <div class="edit-footer">

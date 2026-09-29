@@ -4,6 +4,7 @@ import com.training.cvmanagementbe.entity.models.*;
 import com.training.cvmanagementbe.enums.approvals.ApprovalLevel;
 import com.training.cvmanagementbe.enums.approvals.DecisionResult;
 import com.training.cvmanagementbe.enums.cvs.DraftStatus;
+import com.training.cvmanagementbe.enums.cvs.LifecycleStatus;
 import com.training.cvmanagementbe.enums.notifications.EmailTemplateVar;
 import com.training.cvmanagementbe.enums.notifications.NotificationEventType;
 import com.training.cvmanagementbe.enums.notifications.NotificationLink;
@@ -96,6 +97,7 @@ public class NotificationListener {
                         .with(DEADLINE, deadline)
                         .with(NOTE_COUNT, noteCount)
                         .with(CV_EXISTS, event.cvId() != null)
+                        .with(REQUEST_CANCELLED, false)
                         .build()
         ));
     }
@@ -114,6 +116,60 @@ public class NotificationListener {
 
     private static String withNotes(String sentence, int noteCount) {
         return noteCount == 0 ? sentence : "%s. %d feedback note(s) attached".formatted(sentence, noteCount);
+    }
+
+    // ---------- Update requests ----------
+
+    /*
+     * Reminders stop; a draft they started stays open.
+     * The original reason is repeated so they can tell which request it was.
+     */
+    @Async
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void onUpdateRequestCancelled(CvUpdateRequestCancelledEvent event) {
+        String canceller = nameOf(event.actorId());
+        String language = event.language().name();
+        String profileName = event.profileId() == null ? null : profileNameOf(event.profileId());
+        String action = event.cvId() == null ? ACTION_CREATE : ACTION_UPDATE;
+        String target = profileName == null
+                ? "a new CV (%s)".formatted(language)
+                : "your CV %s (%s)".formatted(profileName, language);
+
+        // Read from the row like onCvUpdateRequested; the template hides the line when absent
+        String deadline = updateRequestRepository.findById(event.requestId())
+                        .map(UpdateRequest::getDeadline)
+                        .map(DEADLINE_FORMAT::format)
+                        .orElse(null);
+
+        dispatcher.dispatch(new NotificationCommand(
+                event.employeeId(), event.actorId(), NotificationEventType.CV_UPDATE_REQUEST_CANCELLED,
+                withOriginalReason("%s cancelled the request to %s %s. Reminders stop and any draft you started is kept"
+                        .formatted(canceller, action, target), event.reason()),
+                cancelledLinkOf(event),
+                "CV update request cancelled - %s".formatted(language),
+                vars()
+                        .with(ACTOR_NAME, canceller)
+                        .with(PROFILE_NAME, profileName)
+                        .with(LANGUAGE, language)
+                        .with(REASON, event.reason())
+                        .with(DEADLINE, deadline)
+                        .with(CV_EXISTS, event.cvId() != null)
+                        .with(REQUEST_CANCELLED, true)
+                        .build()
+        ));
+    }
+
+    // The CV while it still exists; a deleted one would open on an error page
+    private String cancelledLinkOf(CvUpdateRequestCancelledEvent event) {
+        boolean cvActive = event.cvId() != null
+                && cvRepository.findByIdAndLifecycleStatus(event.cvId(), LifecycleStatus.ACTIVE).isPresent();
+        return cvActive
+                ? NotificationLink.CV_DETAIL.path(event.cvId())
+                : NotificationLink.UPDATE_REQUESTS.path();
+    }
+
+    private static String withOriginalReason(String sentence, String reason) {
+        return reason == null || reason.isBlank() ? sentence : sentence + ". Original request: " + reason;
     }
 
     // ---------- Approval workflow ----------

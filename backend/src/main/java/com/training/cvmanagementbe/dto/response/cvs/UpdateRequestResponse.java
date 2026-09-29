@@ -27,6 +27,7 @@ public record UpdateRequestResponse(
         RequestStatus status,
         List<AnchoredNoteResponse> anchoredNotes,
         String createdByName,
-        LocalDateTime createdAt
+        LocalDateTime createdAt,
+        boolean cancellable
 ) {
 }
