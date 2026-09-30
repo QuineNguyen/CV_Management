@@ -13,6 +13,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -175,4 +176,9 @@ public interface CvRepository extends JpaRepository<Cv, UUID> {
             """, nativeQuery = true)
     long countItemIdInDraftsOutsideProfile(@Param("profileId") UUID profileId,
                                            @Param("itemId") String itemId);
+
+    // Batch: the active CV each child links to
+    List<Cv> findByProfileIdInAndLanguageAndLifecycleStatus(Collection<UUID> profileIds,
+                                                            Language language,
+                                                            LifecycleStatus lifecycleStatus);
 }

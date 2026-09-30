@@ -11,6 +11,7 @@ public record EmailMessage(
         String subject,
         String templateName,
         String link,
-        Map<String, Object> templateVars
+        Map<String, Object> templateVars,
+        String correlationId
 ) {
 }

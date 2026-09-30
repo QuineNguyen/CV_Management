@@ -10,6 +10,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -74,4 +75,7 @@ public interface CvProfileRepository extends JpaRepository<CvProfile, UUID> {
     int softDeleteCvsByProfileId(@Param("profileId") UUID profileId,
                                  @Param("actorId") UUID actorId,
                                  @Param("deletedAt") LocalDateTime deletedAt);
+
+    // Batch: the primary one is picked in the service
+    List<CvProfile> findByEmployeeIdInAndLifecycleStatus(Collection<UUID> employeeIds, LifecycleStatus lifecycleStatus);
 }

@@ -77,6 +77,13 @@ public enum ErrorCode {
     INVALID_NOTE_ANCHOR("A feedback note points at a section, entry or field that does not exist in this CV"),
     CANNOT_REQUEST_SELF("You cannot send an update request to yourself"),
 
+    // ---------- Batch requests ----------
+    BATCH_EMPTY("Every selected employee already has a pending request; there is no request to create"),
+    BATCH_PREVIEW_OUTDATED("The recipient list changed since the preview; review it again before sending"),
+    BATCH_INVALID_TARGET("Department and team batches need exactly one department or team"),
+    BATCH_STILL_PROCESSING("This batch is still being processed; try again when it finishes"),
+    BATCH_NO_FAILED_EMAILS("This batch has no failed email to resend"),
+
     // ---------- Catalogue ----------
     DUPLICATE_SKILL_CODE("Another skill already uses that code"),
     DUPLICATE_SKILL_NAME("Another skill already uses that name"),

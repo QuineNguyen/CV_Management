@@ -11,6 +11,9 @@ public final class EmailQueue {
     public static final String RETRY_QUEUE = "email.retry.queue";
     public static final String RETRY_ROUTING_KEY = "email.retry";
 
+    // Final-failure feedback to the backend, through the default exchange
+    public static final String FAILED_QUEUE = "email.failed.queue";
+
     private EmailQueue() {
 
     }

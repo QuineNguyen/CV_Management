@@ -4,7 +4,9 @@ import com.training.cvmanagementbe.constant.EmailQueue;
 import com.training.cvmanagementbe.entity.models.EmailLog;
 import com.training.cvmanagementbe.entity.models.InAppNotification;
 import com.training.cvmanagementbe.entity.models.User;
+import com.training.cvmanagementbe.enums.notifications.DispatchOutcome;
 import com.training.cvmanagementbe.enums.notifications.EmailStatus;
+import com.training.cvmanagementbe.record.events.DispatchOptions;
 import com.training.cvmanagementbe.record.events.EmailMessage;
 import com.training.cvmanagementbe.record.events.NotificationCommand;
 import com.training.cvmanagementbe.repository.EmailLogRepository;
@@ -27,6 +29,8 @@ import java.util.Collection;
  * - Both rows commit in their own transaction before anything is published, so a message never
  * points at an email_logs row that does not exist.
  * - Each recipient is isolated: one failure never costs the others their notification.
+ * - Failures come back as an outcome, never thrown: a batch counts an email that never reached
+ * the broker as failed right away.
  */
 @Slf4j
 @Component
@@ -61,25 +65,32 @@ public class NotificationDispatcher {
         commands.forEach(this::dispatch);
     }
 
+    // In-app + email, untracked: every existing caller
     public void dispatch(NotificationCommand command) {
+        dispatch(command, DispatchOptions.DEFAULT);
+    }
+
+    public DispatchOutcome dispatch(NotificationCommand command, DispatchOptions options) {
         if (command.notifiesActor()) {
-            return;
+            return DispatchOutcome.SKIPPED;
         }
 
         EmailMessage message;
         try {
-            message = requiresNew.execute(status -> persist(command));
+            message = requiresNew.execute(status -> persist(command, options));
         } catch (RuntimeException ex) {
             log.error("Could not store {} notification for {}", command.type(), command.recipientId(), ex);
-            return;
+            return DispatchOutcome.FAILED;
         }
 
-        if (message != null) {
-            publish(message);
+        // No recipient row: nobody received anything
+        if (message == null) {
+            return DispatchOutcome.FAILED;
         }
+        return publish(message) ? DispatchOutcome.QUEUED : DispatchOutcome.FAILED;
     }
 
-    private EmailMessage persist(NotificationCommand command) {
+    private EmailMessage persist(NotificationCommand command, DispatchOptions options) {
         User recipient = userRepository.findById(command.recipientId()).orElse(null);
         if (recipient == null) {
             log.warn("Recipient {} of {} not found; notification skipped", command.recipientId(), command.type());
@@ -88,17 +99,21 @@ public class NotificationDispatcher {
 
         LocalDateTime now = LocalDateTime.now();
 
-        notificationRepository.save(InAppNotification.builder()
-                .recipientId(recipient.getId())
-                .type(command.type())
-                .content(command.content())
-                .link(command.link())
-                .read(false)
-                .createdAt(now)
-                .build());
+        // A resend is email only: the in-app row from the first send still stands
+        if (!options.emailOnly()) {
+            notificationRepository.save(InAppNotification.builder()
+                    .recipientId(recipient.getId())
+                    .type(command.type())
+                    .content(command.content())
+                    .link(command.link())
+                    .read(false)
+                    .createdAt(now)
+                    .build());
+        }
 
         String subject = truncate(subjectPrefix + " " + command.subject(), MAX_SUBJECT_LENGTH);
 
+        // A new row every time, so a resend starts again from retry 0
         EmailLog emailLog = emailLogRepository.save(EmailLog.builder()
                 .eventType(command.type())
                 .recipientId(recipient.getId())
@@ -117,17 +132,20 @@ public class NotificationDispatcher {
                 subject,
                 command.type().getTemplate().getFileName(),
                 command.link(),
-                command.templateVars()
+                command.templateVars(),
+                options.correlationId() == null ? null : options.correlationId().toString()
         );
     }
 
     // The in-app row already stands; a broker outage only costs the email.
-    private void publish(EmailMessage message) {
+    private boolean publish(EmailMessage message) {
         try {
             rabbitTemplate.convertAndSend(EmailQueue.EXCHANGE, EmailQueue.SEND_ROUTING_KEY, message);
+            return true;
         } catch (AmqpException ex) {
             log.error("Could not queue email {}", message.emailLogId(), ex);
             markUndelivered(message, ex);
+            return false;
         }
     }
 

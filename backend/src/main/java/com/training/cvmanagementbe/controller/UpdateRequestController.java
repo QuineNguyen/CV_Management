@@ -3,14 +3,19 @@ package com.training.cvmanagementbe.controller;
 import com.training.cvmanagementbe.constant.ApiPath;
 import com.training.cvmanagementbe.constant.AuthorityExpression;
 import com.training.cvmanagementbe.constant.PageDefaults;
+import com.training.cvmanagementbe.dto.request.cvs.BatchPreviewRequest;
+import com.training.cvmanagementbe.dto.request.cvs.CreateBatchRequest;
 import com.training.cvmanagementbe.dto.request.cvs.CreateSingleUpdateRequest;
 import com.training.cvmanagementbe.dto.response.configs.PagedResponse;
+import com.training.cvmanagementbe.dto.response.cvs.BatchPreviewResponse;
+import com.training.cvmanagementbe.dto.response.cvs.BatchRequestResponse;
 import com.training.cvmanagementbe.dto.response.cvs.CreateUpdateRequestResponse;
 import com.training.cvmanagementbe.dto.response.cvs.UpdateRequestResponse;
 import com.training.cvmanagementbe.enums.cvs.Language;
 import com.training.cvmanagementbe.enums.cvs.UpdateRequestSortField;
 import com.training.cvmanagementbe.enums.users.RequestStatus;
 import com.training.cvmanagementbe.record.cvs.UpdateRequestCriteria;
+import com.training.cvmanagementbe.service.BatchRequestService;
 import com.training.cvmanagementbe.service.UpdateRequestService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -25,6 +30,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.net.URI;
 import java.time.LocalDate;
 import java.util.UUID;
 
@@ -35,6 +41,7 @@ import java.util.UUID;
 public class UpdateRequestController {
 
     private final UpdateRequestService updateRequestService;
+    private final BatchRequestService batchRequestService;
 
     @PostMapping
     @PreAuthorize(AuthorityExpression.ADMIN_OR_HR)
@@ -69,5 +76,32 @@ public class UpdateRequestController {
     @Operation(summary = "Cancel a pending update request (Admin any, HR only their own)")
     public ResponseEntity<UpdateRequestResponse> cancel(@PathVariable UUID id) {
         return ResponseEntity.ok(updateRequestService.cancel(id));
+    }
+
+    @PostMapping(ApiPath.BATCH_PREVIEW)
+    @PreAuthorize(AuthorityExpression.ADMIN_OR_HR)
+    @Operation(summary = "Preview a batch: who gets a request and who is skipped, each list paged")
+    public ResponseEntity<BatchPreviewResponse> previewBatch(
+            @Valid @RequestBody BatchPreviewRequest request,
+            @RequestParam(defaultValue = PageDefaults.PAGE) int includedPage,
+            @RequestParam(defaultValue = PageDefaults.PAGE) int excludedPage,
+            @RequestParam(defaultValue = PageDefaults.SIZE) int size
+    ) {
+        int pageSize = PageDefaults.clampSize(size);
+        return ResponseEntity.ok(batchRequestService.preview(
+                request,
+                PageRequest.of(PageDefaults.clampPage(includedPage), pageSize),
+                PageRequest.of(PageDefaults.clampPage(excludedPage), pageSize)
+        ));
+    }
+
+    @PostMapping(ApiPath.BATCH_CREATE)
+    @PreAuthorize(AuthorityExpression.ADMIN_OR_HR)
+    @Operation(summary = "Create a batch; notifications are sent in the background")
+    public ResponseEntity<BatchRequestResponse> createBatch(@Valid @RequestBody CreateBatchRequest request) {
+        BatchRequestResponse created = batchRequestService.create(request);
+        return ResponseEntity
+                .created(URI.create(ApiPath.BATCH_REQUESTS + "/" + created.id()))
+                .body(created);
     }
 }
