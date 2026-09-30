@@ -135,7 +135,7 @@
 
       <!-- Reason -->
       <div class="field">
-        <label class="field-label" for="ur-reason">Reason <span class="field-required">*</span></label>
+        <label class="field-label" for="ur-reason">{{ reasonLabel }}<span class="field-required">*</span></label>
         <textarea id="ur-reason" class="field-input reason-input" rows="3" [formControl]="reason"
                   [maxlength]="reasonMaxLength" placeholder="What should change, and why"></textarea>
         <span class="field-hint">{{ reason.value.length }} / {{ reasonMaxLength }}</span>
@@ -146,82 +146,49 @@
 
       <!-- Feedback notes -->
       <section class="notes" aria-labelledby="ur-notes-title">
-        <h3 id="ur-notes-title" class="notes-title">
-          Feedback notes <span class="notes-optional">optional</span>
-        </h3>
+        <div class="pending-head">
+          <span class="field-label" id="ur-notes-title">Feedback notes ({{ notes().length }})</span>
+          @if (canAddNotes()) {
+            <button type="button" class="link-btn" (click)="toggleNotePicker()" [disabled]="submitting()">
+              {{ notePickerOpen() ? 'Close' : '+ Add note' }}
+            </button>
+          }
+        </div>
 
         @if (contentLoading()) {
           <p class="field-hint">Loading the CV...</p>
         } @else if (notesUnavailableReason(); as unavailable) {
           <p class="field-hint">{{ unavailable }}</p>
         } @else if (canAddNotes()) {
-          <div class="note-picker">
-            <div class="form-grid">
-              <div class="field">
-                <label class="field-label" for="ur-note-section">Section</label>
-                <select id="ur-note-section" class="field-input" (change)="selectNoteSection($any($event.target).value)">
-                  <option value="" [selected]="!noteSection()">Choose a section</option>
-                  @for (option of sectionOptions(); track option.value) {
-                    <option [value]="option.value" [selected]="option.value === noteSection()">{{ option.label }}</option>
-                  }
-                </select>
-              </div>
-
-              @if (noteSectionDescriptor()?.repeated) {
-                <div class="field">
-                  <label class="field-label" for="ur-note-item">Entry</label>
-                  <select id="ur-note-item" class="field-input" (change)="selectNoteItem($any($event.target).value)">
-                    <option value="" [selected]="!noteItemId()">Choose an entry</option>
-                    @for (option of itemOptions(); track option.value) {
-                      <option [value]="option.value" [selected]="option.value === noteItemId()">{{ option.label }}</option>
-                    }
-                  </select>
-                </div>
-              }
-
-              @if (noteSection()) {
-                <div class="field">
-                  <label class="field-label" for="ur-note-field">Field</label>
-                  <select id="ur-note-field" class="field-input" (change)="selectNoteField($any($event.target).value)">
-                    <option value="" [selected]="!noteFieldKey()">
-                      The whole {{ noteSectionDescriptor()?.repeated ? 'entry' : 'section' }}
-                    </option>
-                    @for (option of fieldOptions(); track option.value) {
-                      <option [value]="option.value" [selected]="option.value === noteFieldKey()">{{ option.label }}</option>
-                    }
-                  </select>
-                </div>
-              }
-            </div>
-
-            <div class="field">
-              <label class="field-label" for="ur-note-text">Note</label>
-              <textarea id="ur-note-text" class="field-input note-input" rows="2" [formControl]="noteText"
-                        [maxlength]="noteMaxLength" placeholder="What to change here"></textarea>
-            </div>
-
-            <div class="note-actions">
-              <button type="button" class="btn btn-ghost" [disabled]="!noteReady()" (click)="addNote()">
-                <span aria-hidden="true">＋</span> Add note
-              </button>
-            </div>
-          </div>
+          @if (notePickerOpen()) {
+            <app-anchor-picker [content]="cvContent()!"
+                               [textLabel]="'Note'"
+                               [placeholder]="'What to change here'"
+                               [submitLabel]="'Add note'"
+                               [maxLength]="noteMaxLength"
+                               [fallbackFieldLabel]="reasonLabel"
+                               (added)="addNote($event)" />
+          }
 
           @if (notes().length) {
-            <ol class="note-list">
-              @for (note of notes(); track $index) {
-                <li class="note-item">
-                  <div class="note-body">
-                    <span class="note-anchor">{{ noteLabel(note) }}</span>
-                    <p class="note-text">{{ note.note }}</p>
+            <ul class="pending-list">
+              @for (note of notes(); track note.localId) {
+                <li class="pending-item">
+                  <div class="pending-body">
+                    <span class="pending-anchor">{{ note.anchorLabel }}</span>
+                    <p class="pending-text">{{ note.request.content }}</p>
                   </div>
-                  <button type="button" class="icon-btn icon-btn-danger" aria-label="Remove note"
-                          (click)="removeNote($index)">
-                    <span class="material-symbols-outlined" aria-hidden="true">close</span>
-                  </button>
+                  <button type="button" class="icon-btn icon-btn-danger"
+                          aria-label="Remove note"
+                          [disabled]="submitting()"
+                          (click)="removeNote(note.localId)">✕</button>
                 </li>
               }
-            </ol>
+            </ul>
+          } @else if (!notePickerOpen()) {
+            <p class="pending-empty text-muted">
+              Optional. Pin notes to the sections, entries or fields that need changes
+            </p>
           }
         }
       </section>

@@ -18,12 +18,14 @@ import { ROLE_LABELS } from "../../../models/user.model";
 import { AnchoredNoteRequest, CreateUpdateRequestResponse } from "../../../dtos/update-request.dto";
 import { CvSectionKey } from "../../../enums/cv-section-key.enum";
 import { LifecycleStatus } from "../../../enums/lifecycle-status.enum";
-import { AnchorOption } from "../../../models/update-request.model";
-import { CV_SECTIONS, SectionDescriptor } from "../../../models/cv-section-descriptor.model";
-import { P } from "@angular/cdk/keycodes";
 import { catchError, debounceTime, defer, distinctUntilChanged, finalize, map, Observable, of, startWith, switchMap } from "rxjs";
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 import { AccountStatus } from "../../../enums/account-status.enum";
+import { AuthService } from "../../../services/auth.service";
+import { AnchorPickerComponent } from "../../approvals/anchor-picker/anchor-picker.component";
+import { PendingInlineComment } from "../../../models/inline-comment.model";
+import { CV_SECTIONS } from "../../../models/cv-section-descriptor.model";
+import { isSectionFilled } from "../../../utils/cv-anchor.util";
 
 /*
  * Form for one update request, opened from the list or from CV Detail.
@@ -36,7 +38,7 @@ import { AccountStatus } from "../../../enums/account-status.enum";
 @Component({
     selector: 'app-create-update-request-dialog',
     standalone: true,
-    imports: [ReactiveFormsModule, MatDatepickerModule, MatNativeDateModule],
+    imports: [ReactiveFormsModule, MatDatepickerModule, MatNativeDateModule, AnchorPickerComponent],
     providers: [
         { provide: DateAdapter, useClass: CustomDateAdapter },
         { provide: MAT_DATE_FORMATS, useValue: DD_MM_YYYY_FORMATS },
@@ -51,7 +53,6 @@ export class CreateUpdateRequestDialogComponent implements OnInit {
     private static readonly EMPLOYEE_LOOKUP_SIZE = 20;
     private static readonly PROFILE_LOOKUP_SIZE = 100;
     private static readonly CLOSE_DELAY_MS = 500;
-    private static readonly ITEM_ID_KEY = 'item_id';
     // Same limits as the server-side DTOs
     private static readonly REASON_MAX_LENGTH = 1000;
     private static readonly NOTE_MAX_LENGTH = 1000;
@@ -62,6 +63,7 @@ export class CreateUpdateRequestDialogComponent implements OnInit {
     private readonly cvService = inject(CvService);
     private readonly toast = inject(ToastService);
     private readonly destroyRef = inject(DestroyRef);
+    private readonly auth = inject(AuthService);
 
     // Set when opened from CV Detail
     readonly prefillEmployeeId = input<string | null>(null);
@@ -77,6 +79,7 @@ export class CreateUpdateRequestDialogComponent implements OnInit {
     readonly scopeLabels = LANGUAGE_SCOPE_LABELS;
     readonly allScope = LanguageScope.All;
     readonly languageOptions: readonly UpdateRequestLanguage[] = [...CV_LANGUAGE_ORDER, LanguageScope.All];
+    readonly reasonLabel = 'Overall reason';
     readonly reasonMaxLength = CreateUpdateRequestDialogComponent.REASON_MAX_LENGTH;
     readonly noteMaxLength = CreateUpdateRequestDialogComponent.NOTE_MAX_LENGTH;
     readonly minDeadline = startOfToday();
@@ -123,14 +126,8 @@ export class CreateUpdateRequestDialogComponent implements OnInit {
     readonly cvContent = signal<CvContent | null>(null);
     readonly contentLoading = signal(false);
     private readonly contentCache = new Map<string, CvContent | null>();
-    readonly notes = signal<AnchoredNoteRequest[]>([]);
-    readonly noteSection = signal<CvSectionKey | null>(null);
-    readonly noteItemId = signal<string | null>(null);
-    readonly noteFieldKey = signal<string | null>(null);
-    readonly noteText = new FormControl('', {
-        nonNullable: true,
-        validators: [Validators.maxLength(CreateUpdateRequestDialogComponent.NOTE_MAX_LENGTH)],
-    });
+    readonly notes = signal<PendingInlineComment[]>([]);
+    readonly notePickerOpen = signal(false);
 
     readonly submitting = signal(false);
     readonly submitAttempted = signal(false);
@@ -159,7 +156,13 @@ export class CreateUpdateRequestDialogComponent implements OnInit {
         return isPrefilledSlot ? this.prefillCvId() : null;
     });
 
-    readonly canAddNotes = computed(() => this.isSingleLanguage() && !!this.cvContent());
+    // Same rule the picker uses, so "+ Add note" never opens onto an empty list
+    private readonly hasAnchorableContent = computed(() => {
+        const content = this.cvContent();
+        return !!content && CV_SECTIONS.some(section => isSectionFilled(content, section));
+    });
+
+    readonly canAddNotes = computed(() => this.isSingleLanguage() && this.hasAnchorableContent());
 
     // Why notes cannot be added right now, so the section never disappears without a word
     readonly notesUnavailableReason = computed<string | null>(() => {
@@ -178,37 +181,11 @@ export class CreateUpdateRequestDialogComponent implements OnInit {
         if (!this.cvContent()) {
             return 'This CV has no published version yet, so there is nothing to point at.';
         }
+        if (!this.hasAnchorableContent()) {
+            return `This CV is still empty, so there is nothing to point at. Use "${this.reasonLabel}" instead.`;
+        }
         return null;
     });
-
-    // A repeated section with no entries has nowhere to anchor
-    readonly sectionOptions = computed<AnchorOption[]>(() => {
-        const content = this.cvContent();
-        if (!content) {
-            return [];
-        }
-        return CV_SECTIONS
-            .filter(section => !section.repeated || this.itemsOf(content, section).length > 0)
-            .map(section => ({ value: section.key, label: section.label }));
-    });
-
-    readonly noteSectionDescriptor = computed(() =>
-        CV_SECTIONS.find(section => section.key === this.noteSection()) ?? null);
-
-    readonly itemOptions = computed<AnchorOption[]>(() => {
-        const section = this.noteSectionDescriptor();
-        const content = this.cvContent();
-        if (!section?.repeated || !content) {
-            return [];
-        }
-        return this.itemsOf(content, section).map((item, index) => ({
-            value: String(item[CreateUpdateRequestDialogComponent.ITEM_ID_KEY]),
-            label: this.itemLabel(section, item, index),
-        }));
-    });
-
-    readonly fieldOptions = computed<AnchorOption[]>(() => (this.noteSectionDescriptor()?.fields ?? [])
-        .map(field => ({ value: field.key, label: field.label })));
 
     constructor() {
         // A different target CV means different anchors, so the notes start over
@@ -231,17 +208,22 @@ export class CreateUpdateRequestDialogComponent implements OnInit {
         this.watchKeyword();
     }
 
+    private closeAllPickers(): void {
+        this.pickerOpen.set(false);
+        this.profilePickerOpen.set(false);
+    }
+
     // ---------- Employee ----------
 
     togglePicker(event: MouseEvent): void {
         event.stopPropagation();
-        this.profilePickerOpen.set(false);
-        this.pickerOpen.update(open => !open);
+        const wasOpen = this.pickerOpen();
+        this.closeAllPickers();
+        this.pickerOpen.set(!wasOpen);
     }
 
     pickEmployee(user: UserResponse): void {
-        this.pickerOpen.set(false);
-        this.profilePickerOpen.set(false);
+        this.closeAllPickers();
         if (this.employee()?.id !== user.id) {
             this.selectEmployee(user, null);
         }
@@ -254,8 +236,9 @@ export class CreateUpdateRequestDialogComponent implements OnInit {
         if (!this.employee() || this.profilesLoading()) {
             return;
         }
-        this.pickerOpen.set(false);
-        this.profilePickerOpen.update(open => !open);
+        const wasOpen = this.profilePickerOpen();
+        this.closeAllPickers();
+        this.profilePickerOpen.set(!wasOpen);
     }
 
     pickProfile(profileId: string | null): void {
@@ -285,61 +268,17 @@ export class CreateUpdateRequestDialogComponent implements OnInit {
 
     // ---------- Notes ----------
 
-    selectNoteSection(value: string): void {
-        this.noteSection.set((value || null) as CvSectionKey | null);
-        this.noteItemId.set(null);
-        this.noteFieldKey.set(null);
+    toggleNotePicker(): void {
+        this.notePickerOpen.update(open => !open);
     }
 
-    selectNoteItem(value: string): void {
-        this.noteItemId.set(value || null);
+    addNote(comment: PendingInlineComment): void {
+        this.notes.update(list => [...list, comment]);
+        this.notePickerOpen.set(false);
     }
 
-    selectNoteField(value: string): void {
-        this.noteFieldKey.set(value || null);
-    }
-
-    // Repeated sections need an entry; the field is optional
-    noteReady(): boolean {
-        const section = this.noteSectionDescriptor();
-        return !!section
-            && (!section.repeated || !!this.noteItemId())
-            && this.noteText.valid
-            && this.noteText.value.trim().length > 0;
-    }
-
-    addNote(): void {
-        const section = this.noteSectionDescriptor();
-        if (!section || !this.noteReady()) {
-            return;
-        }
-        this.notes.update(notes => [...notes, {
-            sectionKey: section.key as CvSectionKey,
-            itemId: section.repeated ? this.noteItemId() : null,
-            fieldKey: this.noteFieldKey(),
-            note: this.noteText.value.trim(),
-        }]);
-        // Section and entry stay: several notes on one entry are common
-        this.noteFieldKey.set(null);
-        this.noteText.setValue('');
-    }
-
-    removeNote(index: number): void {
-        this.notes.update(notes => notes.filter((_, position) => position !== index));
-    }
-
-    noteLabel(note: AnchoredNoteRequest): string {
-        const section = CV_SECTIONS.find(item => item.key === note.sectionKey);
-        if (!section) {
-            return note.sectionKey;
-        }
-        const content = this.cvContent();
-        const items = content && section.repeated ? this.itemsOf(content, section) : [];
-        const index = items.findIndex(item => item[CreateUpdateRequestDialogComponent.ITEM_ID_KEY] === note.itemId);
-        const entry = index >= 0 ? this.itemLabel(section, items[index], index) : null;
-        const field = section.fields.find(item => item.key === note.fieldKey)?.label ?? null;
-        
-        return [section.label, entry, field].filter((part): part is string => !!part).join(' › ');
+    removeNote(localId: string): void {
+        this.notes.update(list => list.filter(note => note.localId !== localId));
     }
 
     // ---------- Submit / close ----------
@@ -356,13 +295,20 @@ export class CreateUpdateRequestDialogComponent implements OnInit {
         }
 
         this.submitting.set(true);
+        const anchoredNotes: AnchoredNoteRequest[] = this.notes().map(item => ({
+            sectionKey: item.request.sectionKey,
+            itemId: item.request.itemId,
+            fieldKey: item.request.fieldKey,
+            note: item.request.content,
+        }));
+
         this.updateRequestService.create({
             employeeId: employee.id,
             profileId: this.selectedProfileId(),
             language,
             reason: this.reason.value.trim(),
             deadline,
-            anchoredNotes: this.notes().length ? this.notes() : null,
+            anchoredNotes: anchoredNotes.length ? anchoredNotes : null,
         }).subscribe({
             next: result => {
                 this.toast.success(this.resultMessage(result));
@@ -397,8 +343,7 @@ export class CreateUpdateRequestDialogComponent implements OnInit {
     // Clicks inside the dialog stay inside it and close open pickers on the way
     onModalClick(event: MouseEvent): void {
         event.stopPropagation();
-        this.pickerOpen.set(false);
-        this.profilePickerOpen.set(false);
+        this.closeAllPickers();
     }
 
     @HostListener('document:keydown.escape')
@@ -409,6 +354,10 @@ export class CreateUpdateRequestDialogComponent implements OnInit {
         }
         if (this.profilePickerOpen()) {
             this.profilePickerOpen.set(false);
+            return;
+        }
+        if (this.notePickerOpen()) {
+            this.notePickerOpen.set(false);
             return;
         }
         this.close();
@@ -426,8 +375,14 @@ export class CreateUpdateRequestDialogComponent implements OnInit {
         ).subscribe(users => this.candidates.set(users));
     }
 
-    // Active accounts only: an inactive one cannot act on a request
+    /* 
+     * Active accounts only: an inactive one cannot act on a request
+     * The caller never appears: one extra row is fetched so the list still shows a full page
+     * after they are dropped. The server refuses a self-request anyway.
+     */
     private lookupEmployees(keyword: string): Observable<UserResponse[]> {
+        const selfId = this.auth.user()?.id ?? null;
+        
         // defer: the flag flips when the search starts, after switchMap dropped the previous one
         return defer(() => {
             this.searching.set(true);
@@ -435,10 +390,13 @@ export class CreateUpdateRequestDialogComponent implements OnInit {
                 keyword: keyword.trim() || undefined,
                 status: AccountStatus.Active,
                 page: 0,
-                size: CreateUpdateRequestDialogComponent.EMPLOYEE_LOOKUP_SIZE,
+                size: CreateUpdateRequestDialogComponent.EMPLOYEE_LOOKUP_SIZE + 1,
             });
         }).pipe(
-            map(page => page.content),
+            map(page => page.content
+                .filter(user => user.id !== selfId)
+                .slice(0, CreateUpdateRequestDialogComponent.EMPLOYEE_LOOKUP_SIZE)
+            ),
             catchError(() => of([] as UserResponse[])),
             finalize(() => this.searching.set(false)),
         );
@@ -486,10 +444,7 @@ export class CreateUpdateRequestDialogComponent implements OnInit {
 
     private switchTargetCv(cvId: string | null): void {
         this.notes.set([]);
-        this.noteSection.set(null);
-        this.noteItemId.set(null);
-        this.noteFieldKey.set(null);
-        this.noteText.setValue('');
+        this.notePickerOpen.set(false);
         this.cvContent.set(null);
         if (!cvId) {
             return;
@@ -512,17 +467,6 @@ export class CreateUpdateRequestDialogComponent implements OnInit {
             },
             error: () => this.contentLoading.set(false),
         });
-    }
-
-    private itemsOf(content: CvContent, section: SectionDescriptor): Record<string, unknown>[] {
-        const raw = content as unknown as Record<string, unknown>;
-        return (raw[section.key] as Record<string, unknown>[] | undefined) ?? [];
-    }
-
-    // The entry's title field when it has one, otherwise its position
-    private itemLabel(section: SectionDescriptor, item: Record<string, unknown>, index: number): string {
-        const title = section.titleField ? item[section.titleField] : null;
-        return typeof title === 'string' && title.trim() ? title.trim() : `Entry ${index + 1}`;
     }
 
     private resultMessage(result: CreateUpdateRequestResponse): string {

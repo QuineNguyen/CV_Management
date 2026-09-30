@@ -12,6 +12,27 @@
   border-radius: var(--vt-radius-sm);
 }
 
+/* Sections hidden for having no entries, and where to write instead */
+.anchor-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: calc(var(--vt-gap) * 0.5);
+  margin: 0;
+  padding: calc(var(--vt-gap) * 0.5) calc(var(--vt-gap) * 0.75);
+  background: var(--vt-red-surface);
+  border-radius: var(--vt-radius-sm);
+  color: var(--vt-ink);
+  font-size: var(--vt-fs-sm);
+  line-height: 1.5;
+}
+
+.anchor-notice-icon {
+  flex: 0 0 auto;
+  font-size: var(--vt-fs-md);
+  line-height: 1.4;
+  color: var(--vt-red);
+}
+
 /* .field has a row flex-basis; inside a column it would become a fixed height */
 .anchor-picker .field {
   flex: 0 0 auto;

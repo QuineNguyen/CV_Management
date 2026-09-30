@@ -43,7 +43,7 @@ public class HealthController {
                 "dbCharset", scalar("SELECT @@character_set_database"),
                 "dbCollation", scalar("SELECT @@collation_database"),
                 "schemaVersion", scalar(
-                        "SELECT version FROM flyway_schema_history WHERE success = 1 "
+                        "SELECT version FROM flyway_schema_history WHERE success = 1 AND version IS NOT NULL "
                                 + "ORDER BY installed_rank DESC LIMIT 1")
         );
     }
@@ -54,7 +54,8 @@ public class HealthController {
      */
     private String scalar(String sql) {
         try {
-            return jdbc.queryForObject(sql, String.class);
+            String value = jdbc.queryForObject(sql, String.class);
+            return value != null ? value : "unavailable";
         } catch (Exception e) {
             return "unavailable";
         }

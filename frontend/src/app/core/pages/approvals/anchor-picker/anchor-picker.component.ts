@@ -3,10 +3,14 @@ import { CvContent } from "../../../models/cv-content.model";
 import { AnchorItemOption, anchorLabelOf, INLINE_COMMENT_MAX_LENGTH, itemTitleOf, PendingInlineComment, sectionOf } from "../../../models/inline-comment.model";
 import { CV_SECTIONS } from "../../../models/cv-section-descriptor.model";
 import { CvSectionKey } from "../../../enums/cv-section-key.enum";
+import { AnchorSelectKey } from "../../../enums/inline-comment-status.enum";
+import { anchorableEntriesOf, isSectionFilled, itemIdOf } from "../../../utils/cv-anchor.util";
 
 /*
  * Picks (section, entry, field) and the text of one inline comment.
  * - Entry is shown only for REPEATED sections and is then required.
+ * - Empty sections (no entries or no filled field) are hidden and the reviewer is pointed
+ * to the parent's overall field instead; a CV with nothing filled in shows only that notice.
  * - Field is optional and limited to the fields of the chosen section, so the anchor always
  * names something the editor can render.
  * - Uses custom-select-wrap dropdown matching CV item editor (e.g. Proficiency select).
@@ -21,17 +25,46 @@ import { CvSectionKey } from "../../../enums/cv-section-key.enum";
 export class AnchorPickerComponent {
 
     readonly content = input.required<CvContent>();
+    readonly textLabel = input<string>('Comment');
+    readonly placeholder = input<string>('What is wrong here and what should it say');
+    readonly submitLabel = input<string>('Add comment');
+    readonly maxLength = input<number>(INLINE_COMMENT_MAX_LENGTH);
+    // Label of the parent's free-text field that covers what cannot be anchored
+    readonly fallbackFieldLabel = input<string>('Overall reason');
     readonly added = output<PendingInlineComment>();
-
-    readonly sections = CV_SECTIONS;
-    readonly maxLength = INLINE_COMMENT_MAX_LENGTH;
+    
+    readonly selectKey = AnchorSelectKey;
 
     readonly sectionKey = signal("");
     readonly itemId = signal("");
     readonly fieldKey = signal("");
     readonly text = signal("");
 
-    readonly section = computed(() => sectionOf(this.sectionKey()) ?? null);
+    // Only sections with something to point at: an entry or a filled field
+    readonly sections = computed(() =>
+        CV_SECTIONS.filter(section => isSectionFilled(this.content(), section)));
+
+    readonly emptySectionLabels = computed(() => CV_SECTIONS
+        .filter(section => !isSectionFilled(this.content(), section))
+        .map(section => section.label));
+
+    // Tells the reviewer why a section is missing and where to write instead
+    readonly emptySectionsHint = computed(() => {
+        const labels = this.emptySectionLabels();
+        if (!labels.length) {
+            return null;
+        }
+        const target = `"${this.fallbackFieldLabel()}"`;
+        if (!this.sections().length) {
+            return `This CV is still empty. Write your feedback in ${target}.`;
+        }
+        const [verb, pronoun] = labels.length === 1 ? ['is', 'it'] : ['are', 'them'];
+        return `${labels.join(', ')} ${verb} still empty. Mention ${pronoun} in ${target}`;
+    });
+
+    // Looked up in the visible list, so a section that became empty drops out
+    readonly section = computed(() => 
+        this.sections().find(section => section.key === this.sectionKey()) ?? null);
 
     // Entries of the chosen section, as the draft currently holds them.
     readonly items = computed<AnchorItemOption[]>(() => {
@@ -39,10 +72,10 @@ export class AnchorPickerComponent {
         if (!section?.repeated) {
             return [];
         }
-        const raw = (this.content() as unknown as Record<string, Record<string, unknown>[] | undefined>)[section.key] ?? [];
-        return raw
-            .filter(item => !!item["item_id"])
-            .map((item, index) => ({ id: String(item["item_id"]), label: itemTitleOf(section, item, index) }));
+        return anchorableEntriesOf(this.content(), section).map((item, index) => ({
+            id: itemIdOf(item),
+            label: itemTitleOf(section, item, index),
+        }));
     });
 
     readonly canAdd = computed(() => {
@@ -53,10 +86,10 @@ export class AnchorPickerComponent {
         return !section.repeated || !!this.itemId();
     });
 
-    readonly openSelectKey = signal<'section' | 'item' | 'field' | null>(null);
+    readonly openSelectKey = signal<AnchorSelectKey | null>(null);
 
     readonly selectedSectionLabel = computed(() =>
-        this.sections.find(option => option.key === this.sectionKey())?.label ?? 'Select a section'
+        this.section()?.label ?? 'Select a section'
     );
 
     readonly selectedItemLabel = computed(() =>
@@ -75,7 +108,7 @@ export class AnchorPickerComponent {
         return section.repeated ? 'Whole entry' : 'Whole section';
     });
 
-    toggleSelect(key: 'section' | 'item' | 'field', event: MouseEvent): void {
+    toggleSelect(key: AnchorSelectKey, event: MouseEvent): void {
         event.stopPropagation();
         this.openSelectKey.update(current => (current === key ? null : key));
     }

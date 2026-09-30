@@ -1,5 +1,5 @@
 -- =============================================================================
--- V11 - CV_UPDATE_REQUESTED joins the notification event types
+-- V11 - Notification event types
 -- notifications.type and email_logs.event_type share the value set of
 -- NotificationEventType, stored by constant name.
 -- Verify names and current lists first: SHOW CREATE TABLE notifications;

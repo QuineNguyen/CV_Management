@@ -64,6 +64,7 @@ export const ERROR_MESSAGES: Readonly<Record<ClientErrorCode, string>> = {
   NOTES_NEED_SINGLE_LANGUAGE: 'Feedback notes can only be attached when one language is selected',
   NOTES_NEED_EXISTING_CV: 'Feedback notes need a CV with a published version in this profile and language',
   INVALID_NOTE_ANCHOR: 'A feedback note points at a section, entry or field that does not exist in this CV',
+  CANNOT_REQUEST_SELF: 'You cannot send an update request to yourself',
 
   // Catalogue
   DUPLICATE_SKILL_CODE: 'Another skill already uses that code',

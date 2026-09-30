@@ -75,6 +75,7 @@ public class UpdateRequestServiceImpl implements UpdateRequestService {
     public CreateUpdateRequestResponse create(CreateSingleUpdateRequest request) {
         // Only Admin/HR create requests; a tech lead does not
         requireAdminOrHr();
+        requireNotSelf(request.employeeId());
 
         // Shared validation, run once whatever the language
         User employee = requireActiveEmployee(request.employeeId());
@@ -232,6 +233,13 @@ public class UpdateRequestServiceImpl implements UpdateRequestService {
         Role role = CurrentActor.requireRole();
         if (role != Role.ADMIN && role != Role.HR) {
             throw new ApiException.ForbiddenException(ErrorCode.OUT_OF_SCOPE);
+        }
+    }
+
+    // An Admin/HR owner edits their own CV directly; asking yourself for an update means nothing.
+    private void requireNotSelf(UUID employeeId) {
+        if (CurrentActor.requireUserId().equals(employeeId)) {
+            throw new ApiException.BusinessRuleException(ErrorCode.CANNOT_REQUEST_SELF);
         }
     }
 

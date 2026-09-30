@@ -10,7 +10,7 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
-// Payload for creating a user account. Email and username are immutable afterwards.
+// Payload for creating a user account. Email and username are immutable afterward.
 @Schema(name = "CreateUserRequest", description = "Payload for creating a user account. Email and username are immutable afterwards")
 public record CreateUserRequest(
 
