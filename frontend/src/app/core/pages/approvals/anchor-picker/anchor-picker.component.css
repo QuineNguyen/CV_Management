@@ -15,7 +15,7 @@
 /* Sections hidden for having no entries, and where to write instead */
 .anchor-notice {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: calc(var(--vt-gap) * 0.5);
   margin: 0;
   padding: calc(var(--vt-gap) * 0.5) calc(var(--vt-gap) * 0.75);
@@ -27,9 +27,12 @@
 }
 
 .anchor-notice-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   flex: 0 0 auto;
   font-size: var(--vt-fs-md);
-  line-height: 1.4;
+  line-height: 1;
   color: var(--vt-red);
 }
 

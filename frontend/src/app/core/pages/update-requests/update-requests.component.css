@@ -85,13 +85,22 @@
   display: inline-flex;
   align-items: center;
   gap: 0.25rem;
+  width: fit-content;
+  max-width: 100%;
   margin-block-start: 0.25rem;
-  font-size: var(--vt-fs-sm);
+  padding: 0.125rem 0.5rem;
+  border-radius: var(--vt-radius-sm);
+  background: var(--vt-canvas);
   color: var(--vt-ink-muted);
+  font-size: var(--vt-fs-sm);
+  white-space: nowrap;
 }
 
 .note-count .material-symbols-outlined {
+  display: inline-flex;
+  align-items: center;
   font-size: 1rem;
+  line-height: 1;
 }
 
 /* ---------- Status ---------- */
