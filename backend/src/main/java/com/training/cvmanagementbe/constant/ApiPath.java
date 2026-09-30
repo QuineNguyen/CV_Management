@@ -73,5 +73,13 @@ public final class ApiPath {
     public static final String UPDATE_REQUESTS_CANCEL = "/{id}/cancel";
     public static final String UPDATE_REQUESTS_PENDING_NOTES = "/{id}/pending-notes";
 
+    // Batch requests
+    public static final String BATCH_PREVIEW = "/batch/preview";
+    public static final String BATCH_CREATE = "/batch";
+    public static final String BATCH_REQUESTS = "batch-requests";
+    public static final String BATCH_DETAIL = "/{id}";
+    public static final String BATCH_FAILED_ITEMS = "/{id}/failed-items";
+    public static final String BATCH_RESEND_FAILED = "/{id}/resend-failed";
+
     private ApiPath() {}
 }

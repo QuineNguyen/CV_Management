@@ -96,4 +96,12 @@ public interface UserRepository extends JpaRepository<User, UUID> {
                            @Param("status") AccountStatus status,
                            @Param("departmentId") UUID departmentId,
                            Pageable pageable);
+
+    // Department batch: primary department in the subtree, active, CV owners only
+    List<User> findByPrimaryDepartmentIdInAndStatusAndRoleIn(Collection<UUID> departmentIds,
+                                                             AccountStatus status,
+                                                             Collection<Role> roles);
+
+    // Team batch: active accounts among the members
+    List<User> findAllByIdInAndStatus(Collection<UUID> ids, AccountStatus status);
 }

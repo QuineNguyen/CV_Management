@@ -55,7 +55,7 @@ public class NotificationListener {
     private final ApprovalDecisionRepository decisionRepository;
     private final ProfileUpdateRequestRepository profileUpdateRequestRepository;
     private final UpdateRequestRepository updateRequestRepository;
-    private final AnchoredNoteCodec anchoredNoteCodec;
+    private final UpdateRequestNotifier updateRequestNotifier;
 
     // ---------- Update requests ----------
 
@@ -71,51 +71,7 @@ public class NotificationListener {
             log.warn("Update request {} is gone; notification skipped", event.updateRequestId());
             return;
         }
-        UpdateRequest request = found.get();
-
-        String requester = nameOf(request.getCreatedBy());
-        String language = event.language().name();
-        String profileName = event.profileId() == null ? null : profileNameOf(event.profileId());
-        String action = event.cvId() == null ? ACTION_CREATE : ACTION_UPDATE;
-        String target = profileName == null
-                ? "a new CV (%s)".formatted(language)
-                : "your CV %s (%s)".formatted(profileName, language);
-        String deadline = DEADLINE_FORMAT.format(request.getDeadline());
-        int noteCount = anchoredNoteCodec.read(request.getAnchoredNotes()).size();
-
-        dispatcher.dispatch(new NotificationCommand(
-                event.employeeId(), request.getCreatedBy(), NotificationEventType.CV_UPDATE_REQUESTED,
-                withNotes(withReason("%s asked you to %s %s by %s"
-                        .formatted(requester, action, target, deadline), event.reason()), noteCount),
-                updateLinkOf(event),
-                "CV update requested - due %s".formatted(deadline),
-                vars()
-                        .with(ACTOR_NAME, requester)
-                        .with(PROFILE_NAME, profileName)
-                        .with(LANGUAGE, language)
-                        .with(REASON, event.reason())
-                        .with(DEADLINE, deadline)
-                        .with(NOTE_COUNT, noteCount)
-                        .with(CV_EXISTS, event.cvId() != null)
-                        .with(REQUEST_CANCELLED, false)
-                        .build()
-        ));
-    }
-
-    // Existing CV: edit it. No CV yet: the create screen, preselected as far as the request knows
-    private static String updateLinkOf(CvUpdateRequestedEvent event) {
-        String language = event.language().name();
-        if (event.cvId() != null) {
-            return NotificationLink.CV_EDIT.path(event.cvId());
-        }
-        if (event.profileId() != null) {
-            return NotificationLink.CV_CREATE_FOR_PROFILE.path(event.profileId(), language);
-        }
-        return NotificationLink.CV_CREATE_FOR_LANGUAGE.path(language);
-    }
-
-    private static String withNotes(String sentence, int noteCount) {
-        return noteCount == 0 ? sentence : "%s. %d feedback note(s) attached".formatted(sentence, noteCount);
+        updateRequestNotifier.notifyRequested(found.get());
     }
 
     // ---------- Update requests ----------

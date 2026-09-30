@@ -12,6 +12,7 @@ public enum TargetType {
     CV_DRAFT,
     APPROVAL_ASSIGNMENT,
     UPDATE_REQUEST,
+    BATCH_UPDATE_REQUEST,
     SKILL,
     SYSTEM_CONFIG
 }

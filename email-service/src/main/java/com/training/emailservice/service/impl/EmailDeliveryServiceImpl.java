@@ -61,7 +61,7 @@ public class EmailDeliveryServiceImpl implements EmailDeliveryService {
 
         Optional<EmailTemplate> template = EmailTemplate.fromFileName(message.templateName());
         if (template.isEmpty()) {
-            fail(emailLog, "Unknown template: " + message.templateName());
+            fail(emailLog, message, "Unknown template: " + message.templateName());
             return;
         }
 
@@ -70,7 +70,7 @@ public class EmailDeliveryServiceImpl implements EmailDeliveryService {
             html = renderer.render(template.get(), message);
         } catch (TemplateEngineException ex) {
             // Rendering is deterministic: a retry would fail the same way.
-            fail(emailLog, "Template error: " + ex.getMessage());
+            fail(emailLog, message, "Template error: " + ex.getMessage());
             return;
         }
 
@@ -106,7 +106,7 @@ public class EmailDeliveryServiceImpl implements EmailDeliveryService {
         String error = truncate(cause.getMessage());
 
         if (emailLog.getRetryCount() >= properties.maxRetries()) {
-            fail(emailLog, error);
+            fail(emailLog, message, error);
             return;
         }
 
@@ -119,7 +119,7 @@ public class EmailDeliveryServiceImpl implements EmailDeliveryService {
             log.warn("Email {} failed, retry {}/{} in {} ms: {}", emailLog.getId(),
                     emailLog.getRetryCount(), properties.maxRetries(), properties.retryDelayMs(), error);
         } catch (AmqpException ex) {
-            fail(emailLog, "Could not schedule retry: " + ex.getMessage());
+            fail(emailLog, message, "Could not schedule retry: " + ex.getMessage());
         }
     }
 
@@ -131,11 +131,12 @@ public class EmailDeliveryServiceImpl implements EmailDeliveryService {
         });
     }
 
-    private void fail(EmailLog emailLog, String error) {
+    // The message goes along so the hook can report its correlation id
+    private void fail(EmailLog emailLog, EmailMessage message, String error) {
         emailLog.setStatus(EmailStatus.FAILED);
         emailLog.setErrorMessage(truncate(error));
         emailLogRepository.save(emailLog);
-        finalFailureHook.onFinalFailure(emailLog);
+        finalFailureHook.onFinalFailure(emailLog, message);
     }
 
     private static String truncate(String value) {
