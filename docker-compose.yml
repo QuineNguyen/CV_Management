@@ -173,7 +173,7 @@ services:
       context: ./email-service
       dockerfile: Dockerfile
     image: cvproject-email-service:${IMAGE_TAG:-latest}
-    container_name: email-service-${STACK_SUFFIX:-dev}
+    container_name: email-service
     restart: unless-stopped
     depends_on:
       mariadb:
