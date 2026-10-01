@@ -48,4 +48,11 @@ export enum ApiEndpoint {
 
     // Update request routes
     UpdateRequests = '/update-requests',
+
+    // Batch requests
+    UpdateRequestBatch = '/update-requests/batch',
+    UpdateRequestBatchPreview = '/update-requests/batch/preview',
+    BatchRequests = '/batch-requests',
+    BatchFailedItems = '/failed-items',
+    BatchResendFailed = '/resend-failed',
 }

@@ -89,7 +89,7 @@ public class UpdateRequestNotifier {
             return NotificationLink.CV_EDIT.path(request.getCvId());
         }
         if (request.getProfileId() != null) {
-            return NotificationLink.CV_CREATE_FOR_PROFILE.path(request.getProfileId());
+            return NotificationLink.CV_CREATE_FOR_PROFILE.path(request.getProfileId(), language);
         }
         return NotificationLink.CV_CREATE_FOR_LANGUAGE.path(language);
     }

@@ -62,6 +62,7 @@
           [class.shell-nav-child]="nested"
           [routerLink]="item.route"
           routerLinkActive="active"
+          [routerLinkActiveOptions]="{ exact: !!item.exact }"
           #rla="routerLinkActive"
           [attr.aria-current]="rla.isActive ? 'page' : null"
           (click)="isCompact() && drawer.close()">

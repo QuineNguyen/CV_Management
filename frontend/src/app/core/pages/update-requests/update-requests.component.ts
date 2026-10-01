@@ -419,6 +419,11 @@ export class UpdateRequestsComponent implements OnInit {
             .join(' › ');
     }
 
+    // The batch wizard is its own page; the list only links to it
+    openBatchCreate(): void {
+        void this.router.navigate(['/' + AppRoute.BatchCreate]);
+    }
+
     // ---------- Private helpers ----------
 
     private loadDepartments(): void {

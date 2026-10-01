@@ -20,4 +20,5 @@ export enum NavIconEnum {
   ApprovalQueue = 'fact_check',
   Supervision = 'supervisor_account',
   UpdateRequests = 'assignment',
+  BatchRequest = 'group_add',
 }
