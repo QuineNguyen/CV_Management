@@ -5,6 +5,7 @@ import { mustChangePasswordGuard } from './core/services/must-change-password.gu
 import { AppRoute } from './core/enums/app-route.enum';
 import { UserRole } from './core/enums/user-role.enum';
 import { unsavedChangesGuard } from './core/services/unsaved-changes.guard';
+import { BatchRouteParam } from './core/enums/batch-request.enum';
 
 export const routes: Routes = [
   {
@@ -143,6 +144,22 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./core/pages/notifications/notifications.component')
             .then(m => m.NotificationsComponent),
+      },
+      {
+        path: AppRoute.BatchCreate,
+        canActivate: [roleGuard(UserRole.Admin, UserRole.HR)],
+        title: 'Batch Update Request',
+        loadComponent: () =>
+          import('./core/pages/batch-requests/batch-create/batch-create.component')
+            .then(m => m.BatchCreateComponent),
+      },
+      {
+        path: `${AppRoute.BatchDetail}/:${BatchRouteParam.Id}`,
+        canActivate: [roleGuard(UserRole.Admin, UserRole.HR)],
+        title: 'Batch Request Detail',
+        loadComponent: () =>
+          import('./core/pages/batch-requests/batch-detail/batch-detail.component')
+            .then(m => m.BatchDetailComponent),
       },
       {
         path: AppRoute.UpdateRequests,

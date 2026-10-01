@@ -1,0 +1,193 @@
+<section class="page">
+
+  <!-- Toolbar -->
+  <header class="page-toolbar">
+    <div class="page-heading">
+      <h1 class="page-title">Batch Request #{{ shortId() }}</h1>
+      @if (batch(); as current) {
+        <p class="page-subtitle">
+          Created {{ current.createdAt | date:'dd/MM/yyyy HH:mm' }} by {{ current.createdByName ?? '—' }}
+        </p>
+      }
+    </div>
+    <div class="page-toolbar-actions">
+      <button type="button" class="btn btn-ghost" (click)="goToRequests()">Update requests</button>
+      <button type="button" class="btn btn-ghost" (click)="refresh()" [disabled]="loading()">Refresh</button>
+    </div>
+  </header>
+
+  @if (loading()) {
+    <div class="skeleton-stack" aria-busy="true">
+      @for (row of [1, 2, 3]; track row) {
+        <div class="skeleton-row"></div>
+      }
+    </div>
+  } @else if (batch(); as current) {
+
+    <!-- Counters -->
+    <div class="stat-grid">
+      <div class="stat-card">
+        <span class="stat-label">Total</span>
+        <span class="stat-value">{{ current.totalCount }}</span>
+      </div>
+      <div class="stat-card is-processed">
+        <span class="stat-label">Processed</span>
+        <span class="stat-value">{{ current.processedCount }}</span>
+      </div>
+      <div class="stat-card" [class.has-errors]="current.errorCount > 0">
+        <span class="stat-label">Failed</span>
+        <span class="stat-value">{{ current.errorCount }}</span>
+      </div>
+    </div>
+
+    <!-- Progress -->
+    <section class="detail-panel" aria-labelledby="bd-progress-title">
+      <div class="panel-head">
+        <h2 id="bd-progress-title" class="panel-title">Progress</h2>
+        <span class="status-badge"
+              [class.is-processing]="current.status === status.Processing"
+              [class.is-active]="current.status === status.Completed"
+              [class.is-warning]="current.status === status.CompletedWithErrors">
+          {{ statusLabels[current.status] }}
+        </span>
+      </div>
+
+      <div class="progress-track" role="progressbar" aria-label="Batch progress"
+           aria-valuemin="0" aria-valuemax="100" [attr.aria-valuenow]="percent()">
+        <div class="progress-fill" [class.is-running]="isProcessing()" [style.width.%]="percent()"></div>
+      </div>
+
+      <p class="progress-text" aria-live="polite">
+        <span>
+          @if (isProcessing()) {
+            Sent {{ current.processedCount }}/{{ current.totalCount }} request(s)...
+          } @else {
+            Done · {{ current.totalCount }} request(s)
+          }
+        </span>
+        <strong>{{ percent() }}%</strong>
+      </p>
+
+      @if (slowWarning()) {
+        <p class="detail-note is-warning" role="status">
+          <span class="material-symbols-outlined" aria-hidden="true">schedule</span>
+          <span>Still processing after 5 minutes. The page now checks every 15 seconds; use Refresh to check right away</span>
+        </p>
+      } @else if (!isProcessing()) {
+        <p class="detail-note">
+          <span class="material-symbols-outlined" aria-hidden="true">info</span>
+          <span>A failed email is retried up to 3 times, 5 minutes apart, so a late failure can still appear here within about 15 minutes</span>
+        </p>
+      }
+    </section>
+
+    <!-- Details -->
+    <section class="detail-panel" aria-labelledby="bd-details-title">
+      <h2 id="bd-details-title" class="panel-title">Details</h2>
+      <dl class="detail-facts">
+        <div>
+          <dt>Recipients</dt>
+          <dd>{{ targetTypeLabels[current.targetType] }} · {{ targetText(current) }}</dd>
+        </div>
+        <div>
+          <dt>CV language</dt>
+          <dd>{{ languageLabels[current.language] }}</dd>
+        </div>
+        <div>
+          <dt>Deadline</dt>
+          <dd>{{ current.deadline | date:'dd/MM/yyyy HH:mm' }}</dd>
+        </div>
+        <div>
+          <dt>Profile</dt>
+          <dd>Each employee's primary profile</dd>
+        </div>
+      </dl>
+      <div class="request-block">
+        <h3 class="request-block-title">Reason</h3>
+        <p class="request-reason">{{ current.reason }}</p>
+      </div>
+    </section>
+
+    <!-- Failed emails -->
+    @if (current.errorCount > 0) {
+      <section class="detail-panel" aria-labelledby="bd-failed-title">
+        <div class="panel-head">
+          <div class="panel-heading">
+            <h2 id="bd-failed-title" class="panel-title">Emails not delivered ({{ current.errorCount }})</h2>
+            <p class="panel-hint">These requests exist and stay pending; the employees still got the in-app notification</p>
+          </div>
+          @if (canResend()) {
+            <button type="button" class="btn btn-primary" (click)="resend()" [disabled]="resending()">
+              {{ resending() ? 'Resending...' : 'Resend failed emails' }}
+            </button>
+          }
+        </div>
+
+        @if (failedLoading() && !failedItems().length) {
+          <div class="skeleton-stack" aria-busy="true">
+            @for (row of [1, 2]; track row) {
+              <div class="skeleton-row"></div>
+            }
+          </div>
+        } @else {
+          <div class="data-table-wrap" [class.is-refreshing]="failedLoading()">
+            <table class="data-table failed-table">
+              <thead>
+                <tr>
+                  <th scope="col" class="col-employee">Employee</th>
+                  <th scope="col" class="col-email">Email</th>
+                  <th scope="col" class="col-profile">Profile</th>
+                  <th scope="col" class="col-delivery">Delivery</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (item of failedItems(); track item.updateRequestId) {
+                  <tr>
+                    <td class="col-employee"><span class="cell-strong">{{ item.fullName ?? '—' }}</span></td>
+                    <td class="col-email"><span class="cell-email">{{ item.email ?? '—' }}</span></td>
+                    <td class="col-profile">{{ item.profileName ?? 'No profile yet' }}</td>
+                    <td class="col-delivery"><span class="failed-chip">Failed</span></td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+
+          <ul class="data-cards" [class.is-refreshing]="failedLoading()">
+            @for (item of failedItems(); track item.updateRequestId) {
+              <li class="data-card">
+                <div class="data-card-head">
+                  <div class="data-card-text">
+                    <p class="data-card-title">{{ item.fullName ?? '—' }}</p>
+                    <p class="data-card-line">{{ item.email ?? '—' }}</p>
+                  </div>
+                  <span class="failed-chip">Failed</span>
+                </div>
+                <dl class="data-card-facts">
+                  <div>
+                    <dt>Profile</dt>
+                    <dd>{{ item.profileName ?? 'No profile yet' }}</dd>
+                  </div>
+                </dl>
+              </li>
+            }
+          </ul>
+
+          <mat-paginator class="page-paginator"
+                         [length]="failedPage().total"
+                         [pageIndex]="failedPage().index"
+                         [pageSize]="failedPage().size"
+                         [pageSizeOptions]="pageSizeOptions"
+                         showFirstLastButtons
+                         (page)="onFailedPageChange($event)" />
+        }
+      </section>
+    }
+  } @else {
+    <div class="empty-state">
+      <p class="empty-state-title">Batch request not found</p>
+      <p class="empty-state-hint">The link may be incomplete, or this batch is outside your access</p>
+      <button type="button" class="btn btn-primary" (click)="goToRequests()">Back to update requests</button>
+    </div>
+  }
+</section>

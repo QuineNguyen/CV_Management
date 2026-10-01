@@ -1,0 +1,467 @@
+<section class="page">
+
+  <!-- Toolbar -->
+  <header class="page-toolbar">
+    <div class="page-heading">
+      <h1 class="page-title">Batch Update Request</h1>
+      <p class="page-subtitle">Ask many employees to update their primary CV in one go</p>
+    </div>
+    <div class="page-toolbar-actions">
+      <button type="button" class="btn btn-ghost" (click)="cancel()" [disabled]="creating()">Back to requests</button>
+    </div>
+  </header>
+
+  <!-- Steps -->
+  <ol class="wizard-steps" aria-label="Batch request steps">
+    @for (item of steps; track item.step; let position = $index) {
+      <li class="wizard-step"
+          [class.is-current]="step() === item.step"
+          [class.is-done]="position < stepIndex()"
+          [attr.aria-current]="step() === item.step ? 'step' : null">
+        <span class="wizard-step-number" aria-hidden="true">
+          @if (position < stepIndex()) {
+            <span class="material-symbols-outlined">check</span>
+          } @else {
+            {{ position + 1 }}
+          }
+        </span>
+        <span class="wizard-step-label">{{ item.label }}</span>
+      </li>
+    }
+  </ol>
+
+  @switch (step()) {
+
+    @case (wizardStep.Criteria) {
+      <!-- Step 1: who, which language, by when, why -->
+      <div class="wizard-card form">
+
+        <!-- Target type -->
+        <div class="field">
+          <span class="field-label" id="bc-type-label">Recipients <span class="field-required">*</span></span>
+          <div class="choice-group" role="radiogroup" aria-labelledby="bc-type-label">
+            @for (type of targetTypes; track type) {
+              <button type="button" class="choice choice-card" role="radio"
+                      [class.is-selected]="targetType() === type"
+                      [attr.aria-checked]="targetType() === type"
+                      (click)="selectTargetType(type)">
+                <span class="material-symbols-outlined choice-icon" aria-hidden="true">{{ targetTypeIcons[type] }}</span>
+                <span class="choice-text">
+                  <span class="choice-title">{{ targetTypeLabels[type] }}</span>
+                  <span class="choice-hint">{{ targetTypeHints[type] }}</span>
+                </span>
+              </button>
+            }
+          </div>
+        </div>
+
+        <!-- Target -->
+        @if (targetType() === targetTypeKey.Department) {
+          <div class="field custom-select-wrap">
+            <span class="field-label" id="bc-department-label">Department <span class="field-required">*</span></span>
+            <button type="button" class="field-input custom-select-trigger"
+                    [class.is-open]="openPicker() === picker.Department"
+                    (click)="togglePicker(picker.Department, $event)"
+                    aria-haspopup="listbox" [attr.aria-expanded]="openPicker() === picker.Department"
+                    aria-labelledby="bc-department-label">
+              <span class="custom-select-label">{{ selectedDepartmentLabel() }}</span>
+            </button>
+
+            @if (openPicker() === picker.Department) {
+              <div class="custom-select-panel" (click)="$event.stopPropagation()">
+                <ul class="custom-select-list" role="listbox">
+                  @for (department of departments(); track department.id) {
+                    <li role="option" [attr.aria-selected]="departmentId() === department.id">
+                      <button type="button" class="custom-select-option"
+                              [class.is-selected]="departmentId() === department.id"
+                              (click)="pickDepartment(department.id)">
+                        {{ departmentLabel(department) }}
+                      </button>
+                    </li>
+                  } @empty {
+                    <li class="picker-status">No department found</li>
+                  }
+                </ul>
+              </div>
+            }
+            <span class="field-hint">Sub-departments are included; employees and tech leads receive the request</span>
+            @if (submitAttempted() && !departmentId()) {
+              <span class="field-error">Choose a department</span>
+            }
+          </div>
+        } @else if (targetType() === targetTypeKey.Team) {
+          <div class="field custom-select-wrap">
+            <span class="field-label" id="bc-team-label">Team <span class="field-required">*</span></span>
+            <button type="button" class="field-input custom-select-trigger"
+                    [class.is-open]="openPicker() === picker.Team"
+                    (click)="togglePicker(picker.Team, $event)"
+                    aria-haspopup="listbox" [attr.aria-expanded]="openPicker() === picker.Team"
+                    aria-labelledby="bc-team-label">
+              <span class="custom-select-label">{{ selectedTeamLabel() }}</span>
+            </button>
+
+            @if (openPicker() === picker.Team) {
+              <div class="custom-select-panel" (click)="$event.stopPropagation()">
+                <ul class="custom-select-list" role="listbox">
+                  @for (team of teams(); track team.id) {
+                    <li role="option" [attr.aria-selected]="teamId() === team.id">
+                      <button type="button" class="custom-select-option"
+                              [class.is-selected]="teamId() === team.id"
+                              (click)="pickTeam(team.id)">
+                        {{ teamLabel(team) }}
+                      </button>
+                    </li>
+                  } @empty {
+                    <li class="picker-status">No team found</li>
+                  }
+                </ul>
+              </div>
+            }
+            <span class="field-hint">Every active member receives it, the tech lead included</span>
+            @if (submitAttempted() && !teamId()) {
+              <span class="field-error">Choose a team</span>
+            }
+          </div>
+        } @else {
+          <div class="field">
+            <span class="field-label" id="bc-employee-label">Employees <span class="field-required">*</span></span>
+            <button type="button" class="field-input picker-trigger"
+                    [class.is-open]="openPicker() === picker.Employee"
+                    aria-haspopup="listbox" [attr.aria-expanded]="openPicker() === picker.Employee"
+                    aria-labelledby="bc-employee-label"
+                    (click)="togglePicker(picker.Employee, $event)">
+              <span class="picker-value" [class.picker-value--empty]="!employees().length">
+                {{ employeeTriggerLabel() }}
+              </span>
+              <span class="material-symbols-outlined picker-caret" aria-hidden="true">expand_more</span>
+            </button>
+
+            @if (openPicker() === picker.Employee) {
+              <div class="picker-panel picker-panel--float" (click)="$event.stopPropagation()">
+                <div class="search-input-wrap">
+                  <span class="material-symbols-outlined search-icon" aria-hidden="true">search</span>
+                  <input type="search" class="field-input search-input" [formControl]="keyword"
+                         placeholder="Name, email or username" autocomplete="off" aria-label="Search employees" />
+                </div>
+                @if (searching()) {
+                  <p class="picker-status">Searching...</p>
+                } @else {
+                  <ul class="picker-list" role="listbox" aria-multiselectable="true">
+                    @for (user of candidates(); track user.id) {
+                      <li role="option" [attr.aria-selected]="isPicked(user)">
+                        <button type="button" class="picker-option" [class.is-selected]="isPicked(user)"
+                                (click)="toggleEmployee(user)">
+                          <span class="picker-option-text">
+                            <span class="picker-name">{{ user.fullName }}</span>
+                            <span class="cell-muted">{{ user.email }} · {{ roleLabels[user.role] }}</span>
+                          </span>
+                          @if (isPicked(user)) {
+                            <span class="material-symbols-outlined picker-option-check" aria-hidden="true">check</span>
+                          }
+                        </button>
+                      </li>
+                    } @empty {
+                      <li class="picker-status">No active employee matches</li>
+                    }
+                  </ul>
+                }
+              </div>
+            }
+
+            @if (employees().length) {
+              <div class="selected-head">
+                <span class="field-hint">{{ employees().length }} / {{ maxEmployees }} selected</span>
+                <button type="button" class="link-btn" (click)="clearEmployees()">Clear all</button>
+              </div>
+              <ul class="selected-list">
+                @for (user of employees(); track user.id) {
+                  <li class="selected-chip">
+                    <span class="selected-chip-name">{{ user.fullName }}</span>
+                    <button type="button" class="selected-chip-remove" [attr.aria-label]="'Remove ' + user.fullName"
+                            (click)="removeEmployee(user.id)">
+                      <span class="material-symbols-outlined" aria-hidden="true">close</span>
+                    </button>
+                  </li>
+                }
+              </ul>
+            }
+            @if (submitAttempted() && !employees().length) {
+              <span class="field-error">Pick at least one employee</span>
+            }
+          </div>
+        }
+
+        <!-- Language + deadline -->
+        <div class="form-grid">
+          <div class="field">
+            <span class="field-label" id="bc-language-label">CV language <span class="field-required">*</span></span>
+            <div class="choice-group choice-group--compact" role="radiogroup" aria-labelledby="bc-language-label">
+              @for (option of languageOptions; track option) {
+                <button type="button" class="choice" role="radio"
+                        [class.is-selected]="language() === option" [attr.aria-checked]="language() === option"
+                        (click)="selectLanguage(option)">
+                  {{ languageLabels[option] }}
+                </button>
+              }
+            </div>
+            @if (submitAttempted() && !language()) {
+              <span class="field-error">Choose a language</span>
+            }
+          </div>
+
+          <div class="field">
+            <label class="field-label" for="bc-deadline">Deadline <span class="field-required">*</span></label>
+            <div class="field-date-wrap">
+              <input id="bc-deadline" class="field-input field-date-input" readonly placeholder="dd/MM/yyyy"
+                     [matDatepicker]="deadlinePicker" [min]="minDeadline" [value]="deadline()"
+                     (dateChange)="onDeadlineChange($event.value)" (click)="deadlinePicker.open()" />
+              <mat-datepicker-toggle [for]="deadlinePicker" class="field-date-toggle" />
+              <mat-datepicker #deadlinePicker />
+            </div>
+            <span class="field-hint">Due at 23:59 on this day</span>
+            @if (submitAttempted() && !deadline()) {
+              <span class="field-error">Pick a deadline</span>
+            }
+          </div>
+        </div>
+
+        <!-- Reason -->
+        <div class="field">
+          <label class="field-label" for="bc-reason">Reason <span class="field-required">*</span></label>
+          <textarea id="bc-reason" class="field-input reason-input" rows="3" [formControl]="reason"
+                    [maxlength]="reasonMaxLength" placeholder="What should change, and why"></textarea>
+          <span class="field-hint">Shared by every request · {{ reason.value.length }} / {{ reasonMaxLength }}</span>
+          @if ((submitAttempted() || reason.touched) && reasonMissing()) {
+            <span class="field-error">Tell the employees why their CV needs an update</span>
+          }
+        </div>
+
+        <p class="wizard-note is-info">
+          <span class="material-symbols-outlined" aria-hidden="true">info</span>
+          <span>
+            Each request targets the employee's <strong>primary profile</strong>; employees without a profile are asked
+            to create one. To target another profile, send a single request instead
+          </span>
+        </p>
+
+        <div class="wizard-actions">
+          <button type="button" class="btn btn-ghost" (click)="cancel()">Cancel</button>
+          <button type="button" class="btn btn-primary" (click)="goToPreview()">Preview</button>
+        </div>
+      </div>
+    }
+
+    @case (wizardStep.Preview) {
+      <!-- Step 2: who gets a request, who is skipped and why -->
+      <div class="wizard-card">
+        @if (previewLoading() && !preview()) {
+          <div class="skeleton-stack" aria-busy="true">
+            @for (row of [1, 2, 3, 4]; track row) {
+              <div class="skeleton-row"></div>
+            }
+          </div>
+        } @else if (preview(); as result) {
+          <div class="preview-summary">
+            <div class="summary-stat">
+              <span class="summary-value">{{ includedCount() }}</span>
+              <span class="summary-label">will receive a request</span>
+            </div>
+            <div class="summary-stat is-excluded">
+              <span class="summary-value">{{ excludedCount() }}</span>
+              <span class="summary-label">skipped</span>
+            </div>
+          </div>
+
+          @if (nothingToCreate()) {
+            <p class="wizard-alert" role="alert">
+              <span class="material-symbols-outlined" aria-hidden="true">block</span>
+              <span>
+                @if (excludedCount()) {
+                  Every selected employee already has a pending request — there is no request to create
+                } @else {
+                  No active employee matches these criteria
+                }
+              </span>
+            </p>
+          } @else if (excludedCount()) {
+            <p class="wizard-note">
+              <span class="material-symbols-outlined" aria-hidden="true">info</span>
+              <span>{{ excludedCount() }} employee(s) will be skipped; the reason for each one is listed below</span>
+            </p>
+          }
+
+          <!-- Will receive -->
+          @if (includedCount()) {
+            <section class="preview-block" [class.is-refreshing]="previewLoading()" aria-labelledby="bc-included-title">
+              <h2 id="bc-included-title" class="preview-block-title">Will receive a request ({{ includedCount() }})</h2>
+
+              <div class="data-table-wrap">
+                <table class="data-table preview-table">
+                  <thead>
+                    <tr>
+                      <th scope="col" class="col-name">Employee</th>
+                      <th scope="col" class="col-department">Department</th>
+                      <th scope="col" class="col-profile">Primary profile</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (row of result.included.content; track $index) {
+                      <tr>
+                        <td class="col-name"><span class="cell-strong">{{ row.fullName }}</span></td>
+                        <td class="col-department">{{ row.departmentName ?? '—' }}</td>
+                        <td class="col-profile">
+                          @if (row.profileName) {
+                            {{ row.profileName }}
+                          } @else {
+                            <span class="profile-missing">No profile yet — asked to create one</span>
+                          }
+                        </td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+
+              <ul class="data-cards">
+                @for (row of result.included.content; track $index) {
+                  <li class="data-card">
+                    <p class="data-card-title">{{ row.fullName }}</p>
+                    <dl class="data-card-facts">
+                      <div>
+                        <dt>Department</dt>
+                        <dd>{{ row.departmentName ?? '—' }}</dd>
+                      </div>
+                      <div>
+                        <dt>Primary profile</dt>
+                        <dd>
+                          @if (row.profileName) {
+                            {{ row.profileName }}
+                          } @else {
+                            <span class="profile-missing">No profile yet</span>
+                          }
+                        </dd>
+                      </div>
+                    </dl>
+                  </li>
+                }
+              </ul>
+
+              <mat-paginator class="page-paginator"
+                             [length]="result.included.totalElements"
+                             [pageIndex]="includedPage()"
+                             [pageSize]="pageSize"
+                             [hidePageSize]="true"
+                             showFirstLastButtons
+                             (page)="onIncludedPage($event)" />
+            </section>
+          }
+
+          <!-- Skipped -->
+          @if (excludedCount()) {
+            <section class="preview-block" [class.is-refreshing]="previewLoading()" aria-labelledby="bc-excluded-title">
+              <h2 id="bc-excluded-title" class="preview-block-title">Skipped ({{ excludedCount() }})</h2>
+
+              <div class="data-table-wrap">
+                <table class="data-table preview-table">
+                  <thead>
+                    <tr>
+                      <th scope="col" class="col-name">Employee</th>
+                      <th scope="col" class="col-reason">Reason</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (row of result.excluded.content; track $index) {
+                      <tr>
+                        <td class="col-name"><span class="cell-strong">{{ row.fullName }}</span></td>
+                        <td class="col-reason"><span class="exclusion-chip">{{ exclusionLabels[row.reason] }}</span></td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+
+              <ul class="data-cards">
+                @for (row of result.excluded.content; track $index) {
+                  <li class="data-card">
+                    <div class="data-card-head">
+                      <p class="data-card-title">{{ row.fullName }}</p>
+                      <span class="exclusion-chip">{{ exclusionLabels[row.reason] }}</span>
+                    </div>
+                  </li>
+                }
+              </ul>
+
+              <mat-paginator class="page-paginator"
+                             [length]="result.excluded.totalElements"
+                             [pageIndex]="excludedPage()"
+                             [pageSize]="pageSize"
+                             [hidePageSize]="true"
+                             showFirstLastButtons
+                             (page)="onExcludedPage($event)" />
+            </section>
+          }
+        }
+
+        <div class="wizard-actions">
+          <button type="button" class="btn btn-ghost" (click)="backToCriteria()">Back</button>
+          <button type="button" class="btn btn-primary" (click)="goToConfirm()"
+                  [disabled]="!preview() || nothingToCreate() || previewLoading()">
+            Create batch
+          </button>
+        </div>
+      </div>
+    }
+
+    @case (wizardStep.Confirm) {
+      <!-- Step 3: last look before sending -->
+      <div class="wizard-card">
+        @if (criteria(); as sent) {
+          <dl class="summary-facts">
+            <div>
+              <dt>Recipients</dt>
+              <dd>{{ targetTypeLabels[sent.targetType] }} · {{ targetSummary() }}</dd>
+            </div>
+            <div>
+              <dt>Requests to create</dt>
+              <dd>
+                <strong>{{ includedCount() }}</strong>
+                @if (excludedCount()) {
+                  <span class="fact-muted">· {{ excludedCount() }} skipped</span>
+                }
+              </dd>
+            </div>
+            <div>
+              <dt>CV language</dt>
+              <dd>{{ languageLabels[sent.language] }}</dd>
+            </div>
+            <div>
+              <dt>Deadline</dt>
+              <dd>{{ sent.deadline | date:'dd/MM/yyyy' }} · 23:59</dd>
+            </div>
+            <div>
+              <dt>Profile</dt>
+              <dd>Each employee's primary profile</dd>
+            </div>
+          </dl>
+
+          <section class="request-block" aria-labelledby="bc-reason-title">
+            <h2 id="bc-reason-title" class="request-block-title">Reason</h2>
+            <p class="request-reason">{{ sent.reason }}</p>
+          </section>
+        }
+
+        <p class="wizard-note is-info">
+          <span class="material-symbols-outlined" aria-hidden="true">info</span>
+          <span>Emails and in-app notifications go out in the background; the next screen shows the progress</span>
+        </p>
+
+        <div class="wizard-actions">
+          <button type="button" class="btn btn-ghost" (click)="backToPreview()" [disabled]="creating()">Back</button>
+          <button type="button" class="btn btn-primary" (click)="confirm()" [disabled]="creating()">
+            {{ creating() ? 'Sending...' : 'Confirm & send' }}
+          </button>
+        </div>
+      </div>
+    }
+  }
+</section>

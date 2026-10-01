@@ -17,6 +17,7 @@
 
     @if (canCreate()) {
       <div class="page-toolbar-actions">
+        <button type="button" class="btn btn-ghost" (click)="openBatchCreate()">Batch Request</button>
         <button type="button" class="btn btn-primary" (click)="openCreate()">
           <span aria-hidden="true">＋</span> New Request
         </button>
