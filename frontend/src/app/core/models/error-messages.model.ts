@@ -67,7 +67,7 @@ export const ERROR_MESSAGES: Readonly<Record<ClientErrorCode, string>> = {
   CANNOT_REQUEST_SELF: 'You cannot send an update request to yourself',
 
   // Batch requests
-  BATCH_EMPTY: 'Every selected employee already has a pending request - there is no request to create',
+  BATCH_EMPTY: 'None of the selected employees can receive a request - there is no request to create',
   BATCH_PREVIEW_OUTDATED: 'The recipient list changed since the preview. Review it again before sending',
   BATCH_INVALID_TARGET: 'Choose exactly one department or team',
   BATCH_STILL_PROCESSING: 'This batch is still being processed. Try again when it finishes',

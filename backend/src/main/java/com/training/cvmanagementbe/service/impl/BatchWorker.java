@@ -65,7 +65,7 @@ public class BatchWorker {
             DispatchOutcome outcome = emailOnly
                     ? notifier.resendRequestedEmail(child)
                     : notifier.notifyRequested(child);
-            // SKIPPED: the employee is the creator; nothing to deliver
+            // SKIPPED (recipient is the creator) no longer happens: the preview excludes self
             return outcome != DispatchOutcome.FAILED;
         } catch (RuntimeException e) {
             // Building the message failed (missing data): same as never queued

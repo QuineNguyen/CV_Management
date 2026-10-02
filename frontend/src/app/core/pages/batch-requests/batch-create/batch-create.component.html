@@ -151,13 +151,8 @@
                       <li role="option" [attr.aria-selected]="isPicked(user)">
                         <button type="button" class="picker-option" [class.is-selected]="isPicked(user)"
                                 (click)="toggleEmployee(user)">
-                          <span class="picker-option-text">
-                            <span class="picker-name">{{ user.fullName }}</span>
-                            <span class="cell-muted">{{ user.email }} · {{ roleLabels[user.role] }}</span>
-                          </span>
-                          @if (isPicked(user)) {
-                            <span class="material-symbols-outlined picker-option-check" aria-hidden="true">check</span>
-                          }
+                          <span class="picker-name">{{ user.fullName }}</span>
+                          <span class="cell-muted">{{ user.email }} · {{ roleLabels[user.role] }}</span>
                         </button>
                       </li>
                     } @empty {
@@ -277,7 +272,7 @@
               <span class="material-symbols-outlined" aria-hidden="true">block</span>
               <span>
                 @if (excludedCount()) {
-                  Every selected employee already has a pending request — there is no request to create
+                  Every selected employee is skipped — see the reason for each one below. There is no request to create
                 } @else {
                   No active employee matches these criteria
                 }

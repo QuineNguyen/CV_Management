@@ -26,6 +26,7 @@ import { AccountStatus } from "../../../enums/account-status.enum";
 import { AppRoute } from "../../../enums/app-route.enum";
 import { HttpErrorResponse } from "@angular/common/http";
 import { ApiErrorResponse } from "../../../dtos/api-error.dto";
+import { AuthService } from "../../../services/auth.service";
 
 /*
  * Batch wizard: criteria -> preview -> confirm.
@@ -62,6 +63,7 @@ export class BatchCreateComponent implements OnInit {
     private readonly toast = inject(ToastService);
     private readonly router = inject(Router);
     private readonly destroyRef = inject(DestroyRef);
+    private readonly auth = inject(AuthService);
 
     readonly steps = BATCH_WIZARD_STEPS;
     readonly wizardStep = BatchWizardStep;
@@ -196,6 +198,10 @@ export class BatchCreateComponent implements OnInit {
 
     // The picker stays open, so several employees can be ticked in a row
     toggleEmployee(user: UserResponse): void {
+        if (user.id === this.auth.user()?.id) {
+            this.toast.error('You cannot send an update request to yourself');
+            return;
+        }
         if (this.isPicked(user)) {
             this.removeEmployee(user.id);
             return;
@@ -408,8 +414,14 @@ export class BatchCreateComponent implements OnInit {
         ).subscribe(users => this.candidates.set(users));
     }
 
-    // Active accounts only: the server refuses an inactive pick anyway
+    /*
+     * Active accounts only: the server refuses an inactive pick anyway.
+     * The caller never appears: one extra row is fetched so the list still shows a full page
+     * after they are dropped.
+     */
     private lookupEmployees(keyword: string): Observable<UserResponse[]> {
+        const selfId = this.auth.user()?.id ?? null;
+
         // defer: the flag flips when the search starts, after switchMap dropped the previous one
         return defer(() => {
             this.searching.set(true);
@@ -417,10 +429,13 @@ export class BatchCreateComponent implements OnInit {
                 keyword: keyword.trim() || undefined,
                 status: AccountStatus.Active,
                 page: 0,
-                size: BatchCreateComponent.EMPLOYEE_LOOKUP_SIZE,
+                size: BatchCreateComponent.EMPLOYEE_LOOKUP_SIZE + 1,
             });
         }).pipe(
-            map(page => page.content),
+            map(page => page.content
+                .filter(user => user.id !== selfId)
+                .slice(0, BatchCreateComponent.EMPLOYEE_LOOKUP_SIZE)
+            ),
             catchError(() => of([] as UserResponse[])),
             finalize(() => this.searching.set(false)),
         );

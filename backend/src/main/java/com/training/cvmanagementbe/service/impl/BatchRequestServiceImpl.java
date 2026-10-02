@@ -230,6 +230,7 @@ public class BatchRequestServiceImpl implements BatchRequestService {
     /*
      * Recipients in criteria order, each with the primary profile and why it is left out, if it is.
      * Runs on every preview page and again on create.
+     * The language is a Language (VI/EN/JA): "ALL" never reaches here, the JSON binding refuses it.
      */
     private List<BatchRecipient> resolve(BatchPreviewRequest request) {
         List<User> candidates = switch (request.targetType()) {
@@ -241,6 +242,8 @@ public class BatchRequestServiceImpl implements BatchRequestService {
             return List.of();
         }
 
+        // Admin/HT edit their own CV directly, so the caller is skipped, never asked
+        UUID currentActorId = CurrentActor.requireUserId();
         Set<UUID> employeeIds = candidates.stream().map(User::getId).collect(Collectors.toSet());
         Map<UUID, CvProfile> primaryProfiles = primaryProfilesOf(employeeIds);
         Map<UUID, Set<UUID>> pendingProfiles = pendingProfilesOf(employeeIds, request.language());
@@ -257,15 +260,24 @@ public class BatchRequestServiceImpl implements BatchRequestService {
                     departmentNames.get(user.getPrimaryDepartmentId()),
                     profileId,
                     profile == null ? null : profile.getName(),
-                    exclusionOf(user.getId(), profileId, seen, pendingProfiles)
+                    exclusionOf(user.getId(), profileId, seen, pendingProfiles, currentActorId)
             ));
         }
         return recipients;
     }
 
-    // First occurrence wins; "no profile" is one value of the slot key, same as the unique index
+    /*
+     * Checked in this order:
+     * - SELF_REQUEST first: Whatever else is true, the real reason is "you cannot ask yourself".
+     * - DUPLICATE_IN_BATCH: The first occurrence wins.
+     * - ALREADY_PENDING: "no profile" is one value of the slot key, same as the unique index.
+     */
     private BatchExclusionReason exclusionOf(UUID employeeId, UUID profileId,
-                                             Set<UUID> seen, Map<UUID, Set<UUID>> pendingProfiles) {
+                                             Set<UUID> seen, Map<UUID, Set<UUID>> pendingProfiles,
+                                             UUID currentActorId) {
+        if (employeeId.equals(currentActorId)) {
+            return BatchExclusionReason.SELF_REQUEST;
+        }
         if (!seen.add(employeeId)) {
             return BatchExclusionReason.DUPLICATE_IN_BATCH;
         }
