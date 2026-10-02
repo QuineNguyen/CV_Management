@@ -5,6 +5,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 // Payload for creating or updating a team
@@ -26,6 +27,9 @@ public record TeamRequest(
         @NotNull
         UUID techLeadId,
 
-        Integer displayOrder
+        Integer displayOrder,
+
+        // Null on create; on update the value last read, checked by CAS
+        LocalDateTime updatedAt
 ) {
 }

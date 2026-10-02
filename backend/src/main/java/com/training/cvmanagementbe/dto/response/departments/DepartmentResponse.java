@@ -2,6 +2,7 @@ package com.training.cvmanagementbe.dto.response.departments;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -12,6 +13,7 @@ public record DepartmentResponse(
         String name,
         UUID parentDepartmentId,
         int displayOrder,
+        LocalDateTime updatedAt,
         List<DepartmentResponse> children
 ) {
 }

@@ -13,6 +13,7 @@ import { TeamFormDialogComponent } from "./team-form/team-form-dialog.component"
 import { TeamMembersDialogComponent } from "./team-members/team-members-dialog.component";
 import { AriaSortDirection, SortDirection, SortIcon, TeamSortField } from "../../enums/sort-field.enum";
 import { SortState } from "../../models/sort-state.model";
+import { HttpErrorResponse, HttpStatusCode } from "@angular/common/http";
 
 @Component({
     selector: 'app-teams',
@@ -170,10 +171,11 @@ export class TeamsComponent implements OnInit {
         }
 
         this.saving.set(true);
-        const isEdit = state.mode === DialogMode.Edit && state.team;
+        const editing = state.mode === DialogMode.Edit ? state.team : null;
 
-        const request$ = isEdit
-            ? this.teamService.update(state.team!.id, body)
+        // An edit echoes the CAS token of the row the dialog was opened with
+        const request$ = editing
+            ? this.teamService.update(editing.id, { ...body, updatedAt: editing.updatedAt })
             : this.teamService.create(body);
 
         request$.subscribe({
@@ -181,12 +183,36 @@ export class TeamsComponent implements OnInit {
                 this.saving.set(false);
                 this.closeDialog();
                 this.toast.success(
-                    isEdit ? `Team ${saved.code} updated` : `Team ${saved.code} created`
+                    editing ? `Team ${saved.code} updated` : `Team ${saved.code} created`
                 );
                 this.loadTeams(false);
             },
-            error: () => this.saving.set(false),
+            error: (error: HttpErrorResponse) => {
+                this.saving.set(false);
+                this.recoverFromStaleWrite(error, editing);
+            },
         });
+    }
+
+    /*
+     * Failures caused by another user's write; the list on screen is outdated either way.
+     * - 409: changed first. The interceptor announces it; the dialog stays open and
+     * reopening it after the reload picks up the new token.
+     * - 404: the team or the chosen tech lead was deleted. The interceptor is silent on write 404s.
+     */
+    private recoverFromStaleWrite(error: HttpErrorResponse, editing: TeamResponse | null): void {
+        if (error.status === HttpStatusCode.NotFound) {
+            this.toast.error(editing
+                ? `Team ${editing.code} or its tech lead no longer exists`
+                : 'The selected tech lead no longer exists');
+            // An edited row may be gone; a create can still pick another tech lead
+            if (editing) {
+                this.closeDialog();
+            }
+        } else if (error.status !== HttpStatusCode.Conflict) {
+            return;
+        }
+        this.loadTeams(false);
     }
 
     // ---------- Members panel ----------
@@ -255,10 +281,15 @@ export class TeamsComponent implements OnInit {
                 this.toast.success(`Deleted team ${target.code}`);
                 this.loadTeams(false);
             },
-            error: () => {
+            error: (error: HttpErrorResponse) => {
                 this.deleting.set(false);
                 this.deleteTarget.set(null);
                 this.isDeleteClosing.set(false);
+                // Someone else deleted it first; the interceptor is silent on write 404s
+                if (error.status === HttpStatusCode.NotFound) {
+                    this.toast.error(`Team ${target.code} was already deleted`);
+                    this.loadTeams(false);
+                }
             }
         });
     }

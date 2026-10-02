@@ -58,6 +58,7 @@
     cdkDropList
     [cdkDropListData]="{ parentId: parentId, nodes: nodes }"
     [cdkDropListConnectedTo]="[]"
+    [cdkDropListDisabled]="moving()"
     (cdkDropListDropped)="onDrop($event)">
 
     @for (node of nodes; track node.id) {

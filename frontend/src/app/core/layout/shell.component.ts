@@ -125,8 +125,8 @@ export class ShellComponent {
       icon: NavIconEnum.OrganizationGroup,
       children: [
         { label: 'Users', icon: NavIconEnum.People, route: AppRoute.Users, roles: [UserRole.Admin, UserRole.HR, UserRole.TechLead] },
-        { label: 'Departments', icon: NavIconEnum.Departments, route: AppRoute.Departments, roles: [UserRole.Admin] },
-        { label: 'Teams', icon: NavIconEnum.Teams, route: AppRoute.Teams, roles: [UserRole.Admin] },
+        { label: 'Departments', icon: NavIconEnum.Departments, route: AppRoute.Departments, roles: [UserRole.Admin, UserRole.HR] },
+        { label: 'Teams', icon: NavIconEnum.Teams, route: AppRoute.Teams, roles: [UserRole.Admin, UserRole.HR] },
       ],
     },
   ];

@@ -2,6 +2,7 @@ package com.training.cvmanagementbe.dto.request.departments;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 /*
@@ -20,7 +21,10 @@ public record MoveDepartmentRequest(
         // Sibling the node is dropped below. Null when dropped at the top of a page.
         UUID afterDepartmentId,
 
-        // Subling the node is dropped above. Only read when afterDepartmentId is null
-        UUID beforeDepartmentId
+        // Sibling the node is dropped above. Only read when afterDepartmentId is null
+        UUID beforeDepartmentId,
+
+        // updatedAt of the moving node as last read, checked by CAS
+        LocalDateTime updatedAt
 ) {
 }

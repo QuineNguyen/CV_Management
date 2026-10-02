@@ -74,7 +74,7 @@ public class DepartmentController {
     }
 
     @PostMapping
-    @PreAuthorize(AuthorityExpression.ADMIN)
+    @PreAuthorize(AuthorityExpression.ADMIN_OR_HR)
     @Operation(summary = "Create a department")
     public ResponseEntity<DepartmentResponse> create(@Valid @RequestBody DepartmentRequest request) {
         DepartmentResponse created = departmentService.create(request);
@@ -84,15 +84,15 @@ public class DepartmentController {
     }
 
     @PutMapping(ApiPath.BY_ID)
-    @PreAuthorize(AuthorityExpression.ADMIN)
-    @Operation(summary = "Update a department")
+    @PreAuthorize(AuthorityExpression.ADMIN_OR_HR)
+    @Operation(summary = "Update a department (compare-and-set on updatedAt)")
     public ResponseEntity<DepartmentResponse> update(@PathVariable UUID id,
                                                      @Valid @RequestBody DepartmentRequest request) {
         return ResponseEntity.ok(departmentService.update(id, request));
     }
 
     @DeleteMapping(ApiPath.BY_ID)
-    @PreAuthorize(AuthorityExpression.ADMIN)
+    @PreAuthorize(AuthorityExpression.ADMIN_OR_HR)
     @Operation(summary = "Delete an empty department")
     public ResponseEntity<ApiResponse<Void>> delete(@PathVariable UUID id) {
         departmentService.delete(id);
@@ -100,8 +100,8 @@ public class DepartmentController {
     }
 
     @PutMapping(ApiPath.MOVE)
-    @PreAuthorize(AuthorityExpression.ADMIN)
-    @Operation(summary = "Reposition a department relative to its neighbours")
+    @PreAuthorize(AuthorityExpression.ADMIN_OR_HR)
+    @Operation(summary = "Reposition a department relative to its neighbours (compare-and-set on updatedAt)")
     public ResponseEntity<ApiResponse<Void>> move(@PathVariable UUID id,
                                      @Valid @RequestBody MoveDepartmentRequest request) {
         departmentService.move(id, request);

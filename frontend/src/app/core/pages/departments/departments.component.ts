@@ -9,6 +9,7 @@ import { DepartmentNode, DepartmentRequest } from '../../dtos/department.dto';
 import { DepartmentDialogState, DepartmentDropList, DepartmentPageState } from '../../models/department.model';
 import { DepartmentFormDialogComponent } from './department-form/department-form-dialog.component';
 import { ToastService } from '../../services/toast.service';
+import { HttpErrorResponse, HttpStatusCode } from '@angular/common/http';
 
 @Component({
     selector: 'app-departments',
@@ -34,6 +35,9 @@ export class DepartmentsComponent implements OnInit {
 
     readonly tree = signal<DepartmentNode[]>([]);
     readonly loading = signal(false);
+
+    // Locks drag and drop from a drop until the tree reloads with fresh CAS tokens
+    readonly moving = signal(false);
 
     readonly expandedIds = signal<ReadonlySet<string>>(new Set<string>());
 
@@ -63,8 +67,12 @@ export class DepartmentsComponent implements OnInit {
                 this.tree.set(result.content);
                 this.pageState.update(state => ({ ...state, total: result.totalElements }));
                 this.loading.set(false);
+                this.moving.set(false);
             },
-            error: () => this.loading.set(false),
+            error: () => {
+                this.loading.set(false);
+                this.moving.set(false);
+            },
         });
     }
 
@@ -122,12 +130,13 @@ export class DepartmentsComponent implements OnInit {
             return;
         }
         this.saving.set(true);
-        const isEdit = state.mode === DialogMode.Edit && state.department;
+        const editing = state.mode === DialogMode.Edit ? state.department : null;
 
         // The '$' suffix (Finnish Notation) signifies that this variable holds an RxJS Observable stream
         // rather than a plain synchronous value, indicating it needs to be subscribed to.
-        const request$ = isEdit
-            ? this.departmentService.update(state.department!.id, body)
+        // An edit echoes the CAS token of the node the dialog was opened with.
+        const request$ = editing
+            ? this.departmentService.update(editing.id, { ...body, updatedAt: editing.updatedAt })
             : this.departmentService.create(body);
 
         request$.subscribe({
@@ -135,15 +144,39 @@ export class DepartmentsComponent implements OnInit {
                 this.saving.set(false);
                 this.closeDialog();
                 this.toast.success(
-                    isEdit
+                    editing
                         ? `Department ${saved.code} updated`
                         : `Department ${saved.code} created`
                 );
 
                 this.loadTree(false);
             },
-            error: () => this.saving.set(false),
+            error: (error: HttpErrorResponse) => {
+                this.saving.set(false);
+                this.recoverFromStaleWrite(error, editing);
+            },
         });
+    }
+
+    /*
+     * Failures caused by another user's write; the tree on screen is outdated either way.
+     * - 409: changed first. The interceptor announces it; the dialog stays open and
+     * reopening it after the reload picks up the new token.
+     * - 404: the department or its parent was deleted. The interceptor is silent on write 404s.
+     */
+    private recoverFromStaleWrite(error: HttpErrorResponse, editing: DepartmentNode | null): void {
+        if (error.status === HttpStatusCode.NotFound) {
+            this.toast.error(editing
+                ? `Department ${editing.code} or its parent no longer exists`
+                : 'The parent department no longer exists');
+            // An edited row may be gone; a create can still pick another parent
+            if (editing) {
+                this.closeDialog();
+            }
+        } else if (error.status !== HttpStatusCode.Conflict) {
+            return;
+        }
+        this.loadTree(false);
     }
 
     // ---------- Delete ----------
@@ -197,10 +230,15 @@ export class DepartmentsComponent implements OnInit {
                 this.toast.success(`Deleted department ${target.code}`);
                 this.loadTree(false);
             },
-            error: () => {
+            error: (error: HttpErrorResponse) => {
                 this.deleting.set(false);
                 this.deleteTarget.set(null);
                 this.isDeleteClosing.set(false);
+                // Someone else deleted it first; the interceptor is silent on write 404s
+                if (error.status === HttpStatusCode.NotFound) {
+                    this.toast.error(`Department ${target.code} was already deleted`);
+                    this.loadTree(false);
+                }
             },
         });
     }
@@ -220,13 +258,22 @@ export class DepartmentsComponent implements OnInit {
         const index = event.currentIndex;
         const moved = nodes[index];
 
+        // The server renumbers the siblings, so every token in this list is stale until the reload
+        this.moving.set(true);
         this.departmentService.move(moved.id, {
             parentDepartmentId: parentId,
             afterDepartmentId: index > 0 ? nodes[index - 1].id : null,
             beforeDepartmentId: index < nodes.length - 1 ? nodes[index + 1].id : null,
+            updatedAt: moved.updatedAt,
         }).subscribe({
-            error: () => this.loadTree(false),
-        })
+            next: () => this.loadTree(false),
+            error: (error: HttpErrorResponse) => {
+                if (error.status === HttpStatusCode.NotFound) {
+                    this.toast.error(`Department ${moved.code} or its parent no longer exists`);
+                }
+                this.loadTree(false);
+            },
+        });
     }
 
     // ---------- Helpers ----------

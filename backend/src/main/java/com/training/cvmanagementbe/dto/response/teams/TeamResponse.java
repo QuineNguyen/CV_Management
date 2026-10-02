@@ -2,6 +2,7 @@ package com.training.cvmanagementbe.dto.response.teams;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 // Team row returned to the client, tech lead name already resolved.
@@ -16,6 +17,7 @@ public record TeamResponse(
         UUID techLeadId,
         String techLeadFullName,
         int displayOrder,
-        long memberCount
+        long memberCount,
+        LocalDateTime updatedAt
 ) {
 }
