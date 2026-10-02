@@ -227,6 +227,20 @@ button.shell-nav-link {
   gap: 0.375rem;
 }
 
+.shell-nav-meta {
+  display: inline-flex;
+  align-items: center;
+}
+
+/* Align child badge with the parent group badge (accounting for chevron width & gap) */
+.shell-nav-child .shell-nav-meta {
+  margin-inline-end: 1.5rem !important;
+}
+
+:host ::ng-deep .shell-nav-link .nav-badge {
+  color: #fff !important;
+}
+
 .shell-nav-chevron {
   font-size: 1.25rem;
   color: var(--vt-ink-muted);

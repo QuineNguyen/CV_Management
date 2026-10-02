@@ -555,7 +555,7 @@ th[aria-sort]:not([aria-sort='none']) .sort-icon {
   place-items: center;
   border-radius: 999px;
   background: var(--vt-red);
-  color: #fff;
+  color: #fff !important;
   font-size: 0.6875rem;
   font-weight: 700;
   line-height: 1;

@@ -69,9 +69,11 @@
                 [class.shell-nav-child-icon]="nested">{{ item.icon }}</span>
           <span matListItemTitle>{{ item.label }}</span>
           @if (item.showsPendingCount && pendingRequestCount() > 0) {
-            <span matListItemMeta class="nav-badge"
-                  [attr.aria-label]="pendingRequestCount() + ' awaiting review'">
-              {{ pendingRequestCount() }}
+            <span matListItemMeta class="shell-nav-meta">
+              <span class="nav-badge"
+                    [attr.aria-label]="pendingRequestCount() + ' awaiting review'">
+                {{ pendingRequestCount() }}
+              </span>
             </span>
           }
         </a>
