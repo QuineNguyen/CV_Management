@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en"
+      th:replace="~{email/base-layout :: layout(~{::content})}">
+<body>
+<div th:fragment="content">
+    <p style="margin:0 0 12px;">
+        <strong th:text="${actorName}">Admin</strong> created an account for you.
+        Use the details below to sign in.
+    </p>
+
+    <!-- Sign-in details -->
+    <table role="presentation" class="facts">
+        <tr>
+            <td class="label">Username</td>
+            <td class="value" th:text="${username}">username</td>
+        </tr>
+    </table>
+
+    <p style="margin:0;">Temporary password:</p>
+    <div class="secret" th:text="${temporaryPassword}">Abc@1234</div>
+
+    <p class="note" style="margin:0;">
+        You must choose a new password the first time you sign in.
+        Do not forward this email or share the password with anyone.
+    </p>
+</div>
+</body>
+</html>

@@ -22,12 +22,15 @@ import com.training.cvmanagementbe.enums.cvs.DraftStatus;
 import com.training.cvmanagementbe.enums.users.AccountStatus;
 import com.training.cvmanagementbe.enums.users.Role;
 import com.training.cvmanagementbe.exception.ApiException;
+import com.training.cvmanagementbe.record.events.AccountCreatedEvent;
+import com.training.cvmanagementbe.record.events.TeamHandoverEvent;
 import com.training.cvmanagementbe.repository.DepartmentRepository;
 import com.training.cvmanagementbe.repository.TeamMemberRepository;
 import com.training.cvmanagementbe.repository.TeamRepository;
 import com.training.cvmanagementbe.repository.UserRepository;
 import com.training.cvmanagementbe.service.UserService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -58,6 +61,7 @@ public class UserServiceImpl implements UserService {
     private final AvatarUrlResolver avatarUrlResolver;
     private final AuditLogger auditLogger;
     private final UpdateRequestCanceller updateRequestCanceller;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Override
     public PagedResponse<UserResponse> search(String keyword,
@@ -128,6 +132,11 @@ public class UserServiceImpl implements UserService {
         auditLogger.record(Action.CREATE_USER, TargetType.USER,
                 saved.getId(), null, toFlatResponse(saved));
 
+        // Sign-in details reach the new user once the transaction commits
+        eventPublisher.publishEvent(new AccountCreatedEvent(
+                saved.getId(), CurrentActor.requireUserId(), temporaryPassword
+        ));
+
         return new CreatedUserResponse(getDetail(saved.getId()), temporaryPassword);
     }
 
@@ -182,7 +191,7 @@ public class UserServiceImpl implements UserService {
 
         UserResponse before = toFlatResponse(user);
         List<Team> ledTeams = teamRepository.findByTechLeadId(id);
-        handOverLedTeams(id, ledTeams, request);
+        Map<UUID, List<UUID>> teamIdsByReplacement = handOverLedTeams(id, ledTeams, request);
 
         // Everything below runs in the same transaction as the status flip
         userRepository.cancelOpenDraftsByOwner(id,
@@ -200,6 +209,8 @@ public class UserServiceImpl implements UserService {
         User saved = userRepository.save(user);
         auditLogger.record(Action.DEACTIVATE_USER, TargetType.USER,
                 id, before, toFlatResponse(saved));
+
+        publishHandovers(id, teamIdsByReplacement);
     }
 
     @Override
@@ -396,9 +407,10 @@ public class UserServiceImpl implements UserService {
         return teamRepository.findByTechLeadId(techLeadId).stream().map(Team::getId).toList();
     }
 
-    private void handOverLedTeams(UUID userId, List<Team> ledTeams, DeactivateUserRequest request) {
+    // Returns handed-over team ids grouped by replacement, in handover order
+    private Map<UUID, List<UUID>> handOverLedTeams(UUID userId, List<Team> ledTeams, DeactivateUserRequest request) {
         if (ledTeams.isEmpty()) {
-            return;
+            return Map.of();
         }
 
         Map<UUID, UUID> replacementByTeamId = Optional.ofNullable(request)
@@ -408,6 +420,7 @@ public class UserServiceImpl implements UserService {
                 .collect(Collectors.toMap(TeamReplacement::teamId,
                         TeamReplacement::replacementTechLeadId, (first, second) -> first));
 
+        Map<UUID, List<UUID>> teamIdsByReplacement = new LinkedHashMap<>();
         for (Team team : ledTeams) {
             UUID replacementId = replacementByTeamId.get(team.getId());
             if (replacementId == null) {
@@ -416,9 +429,19 @@ public class UserServiceImpl implements UserService {
             requireValidReplacement(userId, replacementId);
             team.setTechLeadId(replacementId);
             ensureTechLeadMembership(team.getId(), replacementId);
+            teamIdsByReplacement.computeIfAbsent(replacementId, key -> new ArrayList<>()).add(team.getId());
         }
 
         teamRepository.saveAll(ledTeams);
+        return teamIdsByReplacement;
+    }
+
+    // One event per replacement, so a lead taking several teams gets a single notification
+    private void publishHandovers(UUID previousTechLeadId, Map<UUID, List<UUID>> teamIdsByReplacement) {
+        UUID actorId = CurrentActor.requireUserId();
+        teamIdsByReplacement.forEach((replacementId, teamIds) -> eventPublisher.publishEvent(
+                new TeamHandoverEvent(replacementId, previousTechLeadId, actorId, teamIds)
+        ));
     }
 
     private void requireValidReplacement(UUID deactivatingUserId, UUID replacementId) {

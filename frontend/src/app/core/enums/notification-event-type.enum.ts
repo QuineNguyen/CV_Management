@@ -13,6 +13,8 @@ export enum NotificationEventType {
     ProfileUpdateSubmitted = 'PROFILE_UPDATE_SUBMITTED',
     ProfileUpdateDecided = 'PROFILE_UPDATE_DECIDED',
     PasswordReset = 'PASSWORD_RESET',
+    AccountCreated = 'ACCOUNT_CREATED',
+    TeamHandover = 'TEAM_HANDOVER',
 }
 
 export const NOTIFICATION_TYPE_LABELS: Record<NotificationEventType, string> = {
@@ -30,6 +32,8 @@ export const NOTIFICATION_TYPE_LABELS: Record<NotificationEventType, string> = {
     [NotificationEventType.ProfileUpdateSubmitted]: 'Profile update request',
     [NotificationEventType.ProfileUpdateDecided]: 'Profile update result',
     [NotificationEventType.PasswordReset]: 'Security',
+    [NotificationEventType.AccountCreated]: 'Account created',
+    [NotificationEventType.TeamHandover]: 'Team handover',
 };
 
 // Material Symbols name per type
@@ -48,6 +52,8 @@ export const NOTIFICATION_TYPE_ICONS: Record<NotificationEventType, string> = {
     [NotificationEventType.ProfileUpdateSubmitted]: 'manage_accounts',
     [NotificationEventType.ProfileUpdateDecided]: 'how_to_reg',
     [NotificationEventType.PasswordReset]: 'lock_reset',
+    [NotificationEventType.AccountCreated]: 'person_add',
+    [NotificationEventType.TeamHandover]: 'groups',
 };
 
 export enum NotificationFilter {
