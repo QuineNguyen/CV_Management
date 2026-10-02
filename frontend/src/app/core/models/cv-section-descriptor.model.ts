@@ -169,9 +169,9 @@ export const CV_SECTIONS: readonly SectionDescriptor[] = [
         fields: [
             { key: 'name', label: 'Project', kind: FieldKind.Text, required: true, maxLength: 255, half: true },
             { key: 'role', label: 'Your role', kind: FieldKind.Text, maxLength: 255, half: true },
-            { key: 'team_size', label: 'Team size', kind: FieldKind.Number, half: true },
             { key: 'start_date', label: 'From', kind: FieldKind.Date, dateStyle: 'monthYear', half: true },
             { key: 'end_date', label: 'To', kind: FieldKind.Date, dateStyle: 'monthYear', half: true, hint: 'Leave empty if ongoing' },
+            { key: 'team_size', label: 'Team size', kind: FieldKind.Number, half: true },
             { key: 'technologies', label: 'Technologies', kind: FieldKind.Tags, placeholder: 'Java, Angular, MariaDB', hint: 'Separate with commas' },
             { key: 'description', label: 'Description', kind: FieldKind.Textarea, maxLength: 4000 },
         ],
