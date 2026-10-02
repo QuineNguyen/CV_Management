@@ -190,6 +190,15 @@ public class BatchRequestServiceImpl implements BatchRequestService {
         return PagedResponse.of(page, content);
     }
 
+    @Override
+    public PagedResponse<BatchRequestResponse> list(BatchRequestStatus status, Pageable pageable) {
+        requireAdminOrHr();
+        Page<BatchRequest> page = status == null
+                ? batchRequestRepository.findAll(pageable)
+                : batchRequestRepository.findByStatus(status, pageable);
+        return PagedResponse.of(page, toResponses(page.getContent()));
+    }
+
     // ---------- Resend ----------
 
     // Only the flagged children go back to the queue; no new child is created
@@ -409,32 +418,64 @@ public class BatchRequestServiceImpl implements BatchRequestService {
     // ---------- Private helpers ----------
 
     private BatchRequestResponse toResponse(BatchRequest batch) {
-        String createdByName = batch.getCreatedBy() == null
-                ? null
-                : userRepository.findById(batch.getCreatedBy()).map(User::getFullName).orElse(null);
+        return toResponses(List.of(batch)).get(0);
+    }
 
-        return new BatchRequestResponse(
-                batch.getId(),
-                batch.getTargetType(),
-                targetLabel(batch),
-                batch.getLanguage(),
-                batch.getReason(),
-                batch.getDeadline(),
-                batch.getTotalCount(),
-                batch.getProcessedCount(),
-                batch.getErrorCount(),
-                batch.getStatus(),
-                batch.getCreatedAt(),
-                createdByName
-        );
+    // One lookup per kind of name per page, not one per row
+    private List<BatchRequestResponse> toResponses(List<BatchRequest> batches) {
+        if (batches.isEmpty()) {
+            return List.of();
+        }
+        Map<UUID, List<UUID>> targetIds = batches.stream()
+                .collect(Collectors.toMap(BatchRequest::getId, batch -> targetCodec.read(batch.getTargetValue())));
+
+        Map<UUID, String> departmentNames = departmentRepository
+                .findAllById(firstTargetsOf(batches, targetIds, BatchTargetType.DEPARTMENT)).stream()
+                .collect(Collectors.toMap(Department::getId, Department::getName));
+        Map<UUID, String> teamNames = teamRepository
+                .findAllById(firstTargetsOf(batches, targetIds, BatchTargetType.TEAM)).stream()
+                .collect(Collectors.toMap(Team::getId, Team::getName));
+
+        Set<UUID> creatorIds = batches.stream()
+                .map(BatchRequest::getCreatedBy)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+        Map<UUID, String> creatorNames = userRepository.findAllById(creatorIds).stream()
+                .collect(Collectors.toMap(User::getId, User::getFullName));
+
+        return batches.stream()
+                .map(batch -> new BatchRequestResponse(
+                        batch.getId(),
+                        batch.getTargetType(),
+                        targetLabel(batch, targetIds.get(batch.getId()), departmentNames, teamNames),
+                        batch.getLanguage(),
+                        batch.getReason(),
+                        batch.getDeadline(),
+                        batch.getTotalCount(),
+                        batch.getProcessedCount(),
+                        batch.getErrorCount(),
+                        batch.getStatus(),
+                        batch.getCreatedAt(),
+                        batch.getCreatedBy() == null ? null : creatorNames.get(batch.getCreatedBy())
+                ))
+                .toList();
+    }
+
+    // Department and team batches hold exactly one id
+    private Set<UUID> firstTargetsOf(List<BatchRequest> batches, Map<UUID, List<UUID>> targetIds,
+                                     BatchTargetType type) {
+        return batches.stream()
+                .filter(batch -> batch.getTargetType() == type)
+                .map(batch -> targetIds.get(batch.getId()).get(0))
+                .collect(Collectors.toSet());
     }
 
     // Display name of the criteria; the ids stay in target_value
-    private String targetLabel(BatchRequest batch) {
-        List<UUID> ids = targetCodec.read(batch.getTargetValue());
+    private String targetLabel(BatchRequest batch, List<UUID> ids,
+                               Map<UUID, String> departmentNames, Map<UUID, String> teamNames) {
         return switch (batch.getTargetType()) {
-            case DEPARTMENT -> departmentRepository.findById(ids.get(0)).map(Department::getName).orElse(UNKNOWN_TARGET);
-            case TEAM -> teamRepository.findById(ids.get(0)).map(Team::getName).orElse(UNKNOWN_TARGET);
+            case DEPARTMENT -> departmentNames.getOrDefault(ids.get(0), UNKNOWN_TARGET);
+            case TEAM -> teamNames.getOrDefault(ids.get(0), UNKNOWN_TARGET);
             case MANUAL -> MANUAL_LABEL.formatted(new HashSet<>(ids).size());
         };
     }

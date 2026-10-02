@@ -1,0 +1,138 @@
+/* ---------- Filters ---------- */
+.status-filter {
+  flex: 0 1 min(16rem, 100%);
+}
+
+.custom-select-wrap:has(.is-open) {
+  z-index: 60;
+}
+
+/* ---------- Table columns ---------- */
+.col-created {
+  width: 16%;
+}
+
+.col-target {
+  width: 26%;
+}
+
+.col-language {
+  width: 8%;
+}
+
+.col-deadline {
+  width: 11%;
+}
+
+.col-progress {
+  width: 18%;
+}
+
+.col-status {
+  width: 13%;
+}
+
+.col-actions {
+  width: 8%;
+  min-width: 5rem;
+}
+
+.data-table td.col-created,
+.data-table td.col-language,
+.data-table td.col-deadline,
+.data-table td.col-status,
+.data-table td.col-actions {
+  text-align: center;
+}
+
+.data-table td.col-created .cell-muted {
+  margin-inline: auto;
+  max-width: 100%;
+}
+
+.data-table td.col-actions .row-actions {
+  justify-content: center;
+}
+
+/* ---------- Cells ---------- */
+.cell-date {
+  display: block;
+}
+
+.target-text {
+  display: block;
+  margin-block-start: 0.25rem;
+  overflow-wrap: anywhere;
+}
+
+.progress-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.progress-count {
+  font-size: var(--vt-fs-md);
+  font-weight: 600;
+}
+
+.mini-track {
+  height: clamp(0.3rem, 0.8vw, 0.4rem);
+  border-radius: 100vmax;
+  background: var(--vt-canvas);
+  overflow: hidden;
+}
+
+.mini-fill {
+  height: 100%;
+  border-radius: inherit;
+  background: var(--vt-red);
+  transition: width 0.4s ease;
+}
+
+.mini-fill.is-running {
+  animation: mini-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes mini-pulse {
+  50% {
+    opacity: 0.55;
+  }
+}
+
+.failed-count {
+  font-size: var(--vt-fs-sm);
+  font-weight: 700;
+  color: var(--vt-red-dark);
+}
+
+/* ---------- Status ---------- */
+.status-badge.is-processing {
+  background: rgba(21, 101, 192, 0.12);
+  color: var(--vt-info, #1565c0);
+}
+
+.status-badge.is-warning {
+  background: rgba(237, 108, 2, 0.12);
+  color: var(--vt-warning);
+}
+
+/* ---------- iPad and phone ---------- */
+@media (max-width: 64rem) {
+  .data-card .progress-cell {
+    margin-block: calc(var(--vt-gap) * 0.25);
+  }
+}
+
+@media (max-width: 40rem) {
+  .status-filter {
+    flex-basis: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mini-fill.is-running {
+    animation: none;
+  }
+}

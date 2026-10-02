@@ -27,6 +27,12 @@ export interface BatchPageQuery {
     size: number;
 }
 
+export interface BatchListQuery {
+    status?: BatchRequestStatus;
+    page: number;
+    size: number;
+}
+
 export interface PreviewEmployee {
     fullName: string;
     departmentName: string | null;

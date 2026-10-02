@@ -4,11 +4,12 @@ import { MatPaginatorModule, PageEvent } from "@angular/material/paginator";
 import { ActivatedRoute, Router } from "@angular/router";
 import { BatchRequestService } from "../../../services/batch-request.service";
 import { ToastService } from "../../../services/toast.service";
-import { BATCH_STATUS_LABELS, BATCH_TARGET_TYPE_LABELS, BatchRequestStatus, BatchRouteParam, BatchTargetType } from "../../../enums/batch-request.enum";
+import { BATCH_STATUS_LABELS, BATCH_TARGET_TYPE_LABELS, BatchRequestStatus, BatchRouteParam } from "../../../enums/batch-request.enum";
 import { CV_LANGUAGE_LABELS } from "../../../enums/cv-language.enum";
 import { BatchFailedItemResponse, BatchRequestResponse } from "../../../dtos/batch-request.dto";
 import { BatchPageState } from "../../../models/batch-request.model";
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
+import { batchPercent, batchTargetText } from "../../../utils/batch-progress-util";
 import { AppRoute } from "../../../enums/app-route.enum";
 
 /*
@@ -33,7 +34,6 @@ export class BatchDetailComponent implements OnInit {
     private static readonly SLOW_AFTER_MS = 5 * 60 * 1000;
     private static readonly DEFAULT_PAGE_SIZE = 10;
     private static readonly SHORT_ID_LENGTH = 8;
-    private static readonly FULL_PERCENT = 100;
 
     private readonly route = inject(ActivatedRoute);
     private readonly router = inject(Router);
@@ -46,6 +46,7 @@ export class BatchDetailComponent implements OnInit {
     readonly targetTypeLabels = BATCH_TARGET_TYPE_LABELS;
     readonly languageLabels = CV_LANGUAGE_LABELS;
     readonly status = BatchRequestStatus;
+    readonly targetText = batchTargetText;
 
     readonly batch = signal<BatchRequestResponse | null>(null);
     readonly loading = signal(true);
@@ -64,13 +65,7 @@ export class BatchDetailComponent implements OnInit {
     // Plan: the bar show 100% once the batch is no longer PROCESSING
     readonly percent = computed(() => {
         const batch = this.batch();
-        if (!batch || batch.status !== BatchRequestStatus.Processing || !batch.totalCount) {
-            return BatchDetailComponent.FULL_PERCENT;
-        }
-        return Math.min(
-            BatchDetailComponent.FULL_PERCENT,
-            Math.round((batch.processedCount / batch.totalCount) * BatchDetailComponent.FULL_PERCENT),
-        );
+        return batch ? batchPercent(batch) : 0;
     });
 
     // Plan: only when not PROCESSING and something failed
@@ -128,14 +123,8 @@ export class BatchDetailComponent implements OnInit {
         });
     }
 
-    goToRequests(): void {
-        void this.router.navigate(['/' + AppRoute.UpdateRequests]);
-    }
-
-    targetText(batch: BatchRequestResponse): string {
-        return batch.targetType === BatchTargetType.Department
-            ? `${batch.targetLabel}, sub-departments included`
-            : batch.targetLabel;
+    goToList(): void {
+        void this.router.navigate(['/' + AppRoute.BatchRequests]);
     }
 
     // ---------- Private helpers ----------

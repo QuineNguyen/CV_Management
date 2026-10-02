@@ -1,0 +1,192 @@
+<section class="page">
+
+  <!-- Toolbar -->
+  <header class="page-toolbar">
+    <div class="page-heading">
+      <h1 class="page-title">Batch Requests</h1>
+      <p class="page-subtitle">{{ pageState().total }} batch(es), newest first</p>
+    </div>
+    <div class="page-toolbar-actions">
+      <button type="button" class="btn btn-primary" (click)="openCreate()">
+        <span aria-hidden="true">＋</span> New Batch
+      </button>
+    </div>
+  </header>
+
+  <!-- Filters -->
+  <div class="page-filters">
+    <div class="field custom-select-wrap status-filter">
+      <span class="field-label" id="bl-status-label">Status</span>
+      <button type="button" class="field-input custom-select-trigger" [class.is-open]="filterOpen()"
+              (click)="toggleFilter($event)" aria-haspopup="listbox" [attr.aria-expanded]="filterOpen()"
+              aria-labelledby="bl-status-label">
+        <span class="custom-select-label">{{ selectedStatusLabel() }}</span>
+      </button>
+
+      @if (filterOpen()) {
+        <div class="custom-select-panel" (click)="$event.stopPropagation()">
+          <ul class="custom-select-list" role="listbox">
+            <li role="option" [attr.aria-selected]="statusFilter() === null">
+              <button type="button" class="custom-select-option" [class.is-selected]="statusFilter() === null"
+                      (click)="selectStatus(null)">All statuses</button>
+            </li>
+            @for (option of statusOptions; track option) {
+              <li role="option" [attr.aria-selected]="statusFilter() === option">
+                <button type="button" class="custom-select-option" [class.is-selected]="statusFilter() === option"
+                        (click)="selectStatus(option)">{{ statusLabels[option] }}</button>
+              </li>
+            }
+          </ul>
+        </div>
+      }
+    </div>
+  </div>
+
+  <!-- Body -->
+  @if (loading()) {
+    <div class="skeleton-stack" aria-busy="true">
+      @for (row of [1, 2, 3, 4]; track row) {
+        <div class="skeleton-row"></div>
+      }
+    </div>
+  } @else if (isEmpty()) {
+    <div class="empty-state">
+      <p class="empty-state-title">No batch request found</p>
+      <p class="empty-state-hint">
+        @if (statusFilter()) {
+          No batch matches this status
+        } @else {
+          A batch sends one update request to every employee of a department, a team or a hand-picked list
+        }
+      </p>
+      <button type="button" class="btn btn-primary" (click)="openCreate()">New Batch</button>
+    </div>
+  } @else {
+
+    <!-- Table: laptop and desktop -->
+    <div class="data-table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th scope="col" class="col-created">Created</th>
+            <th scope="col" class="col-target">Recipients</th>
+            <th scope="col" class="col-language">Language</th>
+            <th scope="col" class="col-deadline">Deadline</th>
+            <th scope="col" class="col-progress">Progress</th>
+            <th scope="col" class="col-status">Status</th>
+            <th scope="col" class="col-actions">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (batch of batches(); track batch.id) {
+            <tr>
+              <td class="col-created">
+                <span class="cell-date">{{ batch.createdAt | date:'dd/MM/yyyy HH:mm' }}</span>
+                <span class="cell-muted">by {{ batch.createdByName ?? '—' }}</span>
+              </td>
+              <td class="col-target">
+                <span class="code-chip">{{ targetTypeLabels[batch.targetType] }}</span>
+                <span class="target-text">{{ targetText(batch) }}</span>
+              </td>
+              <td class="col-language">
+                <span class="code-chip is-primary">{{ batch.language }}</span>
+              </td>
+              <td class="col-deadline">{{ batch.deadline | date:'dd/MM/yyyy' }}</td>
+              <td class="col-progress">
+                <div class="progress-cell">
+                  <span class="progress-count">{{ batch.processedCount }}/{{ batch.totalCount }}</span>
+                  <div class="mini-track" aria-hidden="true">
+                    <div class="mini-fill" [class.is-running]="batch.status === status.Processing"
+                         [style.width.%]="percent(batch)"></div>
+                  </div>
+                  @if (batch.errorCount > 0) {
+                    <span class="failed-count">{{ batch.errorCount }} failed</span>
+                  }
+                </div>
+              </td>
+              <td class="col-status">
+                <span class="status-badge"
+                      [class.is-processing]="batch.status === status.Processing"
+                      [class.is-active]="batch.status === status.Completed"
+                      [class.is-warning]="batch.status === status.CompletedWithErrors">
+                  {{ statusLabels[batch.status] }}
+                </span>
+              </td>
+              <td class="col-actions">
+                <div class="row-actions">
+                  <button type="button" class="icon-btn" matTooltip="View progress" aria-label="View progress"
+                          (click)="openDetail(batch)">
+                    <span class="material-symbols-outlined" aria-hidden="true">visibility</span>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Cards: iPad and phone -->
+    <ul class="data-cards">
+      @for (batch of batches(); track batch.id) {
+        <li class="data-card">
+          <div class="data-card-head">
+            <div class="data-card-text">
+              <p class="data-card-title">{{ targetTypeLabels[batch.targetType] }} · {{ targetText(batch) }}</p>
+              <p class="data-card-line">
+                {{ batch.createdAt | date:'dd/MM/yyyy HH:mm' }} by {{ batch.createdByName ?? '—' }}
+              </p>
+            </div>
+            <div class="row-actions">
+              <button type="button" class="icon-btn" aria-label="View progress" (click)="openDetail(batch)">
+                <span class="material-symbols-outlined" aria-hidden="true">visibility</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="progress-cell">
+            <span class="progress-count">{{ batch.processedCount }}/{{ batch.totalCount }}</span>
+            <div class="mini-track" aria-hidden="true">
+              <div class="mini-fill" [class.is-running]="batch.status === status.Processing"
+                   [style.width.%]="percent(batch)"></div>
+            </div>
+            @if (batch.errorCount > 0) {
+              <span class="failed-count">{{ batch.errorCount }} failed</span>
+            }
+          </div>
+
+          <dl class="data-card-facts">
+            <div>
+              <dt>Language</dt>
+              <dd>{{ batch.language }}</dd>
+            </div>
+            <div>
+              <dt>Deadline</dt>
+              <dd>{{ batch.deadline | date:'dd/MM/yyyy' }}</dd>
+            </div>
+            <div>
+              <dt>Status</dt>
+              <dd>
+                <span class="status-badge"
+                      [class.is-processing]="batch.status === status.Processing"
+                      [class.is-active]="batch.status === status.Completed"
+                      [class.is-warning]="batch.status === status.CompletedWithErrors">
+                  {{ statusLabels[batch.status] }}
+                </span>
+              </dd>
+            </div>
+          </dl>
+        </li>
+      }
+    </ul>
+
+    <mat-paginator
+      class="page-paginator"
+      [length]="pageState().total"
+      [pageIndex]="pageState().index"
+      [pageSize]="pageState().size"
+      [pageSizeOptions]="pageSizeOptions"
+      showFirstLastButtons
+      (page)="onPageChange($event)" />
+  }
+</section>

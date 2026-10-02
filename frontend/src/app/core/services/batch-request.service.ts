@@ -1,7 +1,7 @@
 import { HttpClient, HttpContext, HttpParams } from "@angular/common/http";
 import { inject, Injectable } from "@angular/core";
 import { environment } from "../../../environments/environment";
-import { BatchFailedItemResponse, BatchPageQuery, BatchPreviewQuery, BatchPreviewRequest, BatchPreviewResponse, BatchRequestResponse, CreateBatchRequest } from "../dtos/batch-request.dto";
+import { BatchFailedItemResponse, BatchListQuery, BatchPageQuery, BatchPreviewQuery, BatchPreviewRequest, BatchPreviewResponse, BatchRequestResponse, CreateBatchRequest } from "../dtos/batch-request.dto";
 import { Observable } from "rxjs";
 import { ApiEndpoint } from "../enums/api-endpoint.enum";
 import { SKIP_ERROR_TOAST } from "../interceptors/skip-error-toast.token";
@@ -48,5 +48,17 @@ export class BatchRequestService {
         return this.http.post<BatchRequestResponse>(
             this.url(`${ApiEndpoint.BatchRequests}/${id}${ApiEndpoint.BatchResendFailed}`), null,
         );
+    }
+
+    // silent: background refresh while a batch on the page is still processing
+    list(query: BatchListQuery, silent = false): Observable<PagedResponse<BatchRequestResponse>> {
+        let params = new HttpParams()
+            .set('page', query.page)
+            .set('size', query.size);
+        if (query.status) {
+            params = params.set('status', query.status);
+        }
+        const context = new HttpContext().set(SKIP_ERROR_TOAST, silent);
+        return this.http.get<PagedResponse<BatchRequestResponse>>(this.url(ApiEndpoint.BatchRequests), { params, context });
     }
 }

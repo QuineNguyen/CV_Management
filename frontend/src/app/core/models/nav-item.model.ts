@@ -11,8 +11,6 @@ export interface NavLink {
   route: AppRoute;
   roles?: UserRole[];
   showsPendingCount?: boolean;
-  // Active only on the exact route, not on routes nested under it
-  exact?: boolean;
 }
 
 // A heading that opens and closes; it is never a page of its own

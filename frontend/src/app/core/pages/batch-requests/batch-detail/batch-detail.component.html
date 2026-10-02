@@ -11,7 +11,7 @@
       }
     </div>
     <div class="page-toolbar-actions">
-      <button type="button" class="btn btn-ghost" (click)="goToRequests()">Update requests</button>
+      <button type="button" class="btn btn-ghost" (click)="goToList()">Back</button>
       <button type="button" class="btn btn-ghost" (click)="refresh()" [disabled]="loading()">Refresh</button>
     </div>
   </header>
@@ -187,7 +187,7 @@
     <div class="empty-state">
       <p class="empty-state-title">Batch request not found</p>
       <p class="empty-state-hint">The link may be incomplete, or this batch is outside your access</p>
-      <button type="button" class="btn btn-primary" (click)="goToRequests()">Back to update requests</button>
+      <button type="button" class="btn btn-primary" (click)="goToList()">Back to all batches</button>
     </div>
   }
 </section>

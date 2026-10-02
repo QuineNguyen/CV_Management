@@ -106,7 +106,7 @@ export class ShellComponent {
       icon: NavIconEnum.RequestsGroup,
       children: [
         { label: 'Update Requests', icon: NavIconEnum.UpdateRequests, route: AppRoute.UpdateRequests },
-        { label: 'Batch Request', icon: NavIconEnum.BatchRequest, route: AppRoute.BatchCreate, roles: [UserRole.Admin, UserRole.HR] },
+        { label: 'Batch Requests', icon: NavIconEnum.BatchRequest, route: AppRoute.BatchRequests, roles: [UserRole.Admin, UserRole.HR] },
         { label: 'Profile Requests', icon: NavIconEnum.PendingActions, route: AppRoute.ProfileUpdateRequests, roles: [UserRole.Admin, UserRole.HR], showsPendingCount: true },
       ],
     },

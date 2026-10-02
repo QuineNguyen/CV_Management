@@ -146,6 +146,14 @@ export const routes: Routes = [
             .then(m => m.NotificationsComponent),
       },
       {
+        path: AppRoute.BatchRequests,
+        canActivate: [roleGuard(UserRole.Admin, UserRole.HR)],
+        title: 'Batch Requests',
+        loadComponent: () =>
+          import('./core/pages/batch-requests/batch-list/batch-list.component')
+            .then(m => m.BatchListComponent),
+      },
+      {
         path: AppRoute.BatchCreate,
         canActivate: [roleGuard(UserRole.Admin, UserRole.HR)],
         title: 'Batch Update Request',
@@ -154,7 +162,7 @@ export const routes: Routes = [
             .then(m => m.BatchCreateComponent),
       },
       {
-        path: `${AppRoute.BatchDetail}/:${BatchRouteParam.Id}`,
+        path: `${AppRoute.BatchRequests}/:${BatchRouteParam.Id}`,
         canActivate: [roleGuard(UserRole.Admin, UserRole.HR)],
         title: 'Batch Request Detail',
         loadComponent: () =>
