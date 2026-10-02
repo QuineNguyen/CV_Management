@@ -294,7 +294,7 @@ export class BatchCreateComponent implements OnInit {
             next: batch => {
                 this.creating.set(false);
                 this.toast.success(`Batch created - sending ${batch.totalCount} request(s)`);
-                void this.router.navigate(['/' + AppRoute.BatchDetail, batch.id]);
+                void this.router.navigate(['/' + AppRoute.BatchRequests, batch.id]);
             },
             error: (error: HttpErrorResponse) => {
                 this.creating.set(false);
@@ -307,7 +307,7 @@ export class BatchCreateComponent implements OnInit {
     }
 
     cancel(): void {
-        void this.router.navigate(['/' + AppRoute.UpdateRequests]);
+        void this.router.navigate(['/' + AppRoute.BatchRequests]);
     }
 
     @HostListener('document:click')

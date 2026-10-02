@@ -20,6 +20,6 @@ export enum AppRoute {
     PendingDrafts = 'approvals/pending',
     Notifications = 'notifications',
     UpdateRequests = 'update-requests',
-    BatchCreate = 'update-request/batch/create',
-    BatchDetail = 'batch-requests',
+    BatchRequests = 'batch-requests',
+    BatchCreate = 'batch-requests/new',
 }

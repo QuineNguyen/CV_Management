@@ -2,6 +2,8 @@ package com.training.cvmanagementbe.repository;
 
 import com.training.cvmanagementbe.entity.models.BatchRequest;
 import com.training.cvmanagementbe.enums.cvs.BatchRequestStatus;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -58,4 +60,6 @@ public interface BatchRequestRepository extends JpaRepository<BatchRequest, UUID
     int reopenForResend(@Param("id") UUID id,
                         @Param("requeued") int requeued,
                         @Param("processing") BatchRequestStatus processing);
+
+    Page<BatchRequest> findByStatus(BatchRequestStatus status, Pageable pageable);
 }

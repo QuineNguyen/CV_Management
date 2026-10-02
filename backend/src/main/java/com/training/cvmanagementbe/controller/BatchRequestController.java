@@ -6,12 +6,15 @@ import com.training.cvmanagementbe.constant.PageDefaults;
 import com.training.cvmanagementbe.dto.response.configs.PagedResponse;
 import com.training.cvmanagementbe.dto.response.cvs.BatchFailedItemResponse;
 import com.training.cvmanagementbe.dto.response.cvs.BatchRequestResponse;
+import com.training.cvmanagementbe.enums.cvs.BatchRequestSortField;
+import com.training.cvmanagementbe.enums.cvs.BatchRequestStatus;
 import com.training.cvmanagementbe.service.BatchRequestService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -51,5 +54,24 @@ public class BatchRequestController {
     @Operation(summary = "Queue the failed emails again; creates no new request")
     public ResponseEntity<BatchRequestResponse> resendFailed(@PathVariable UUID id) {
         return ResponseEntity.ok(batchRequestService.resendFailed(id));
+    }
+
+    @GetMapping
+    @PreAuthorize(AuthorityExpression.ADMIN_OR_HR)
+    @Operation(summary = "List batches, newest first, optionally by status")
+    public ResponseEntity<PagedResponse<BatchRequestResponse>> list(
+            @RequestParam(required = false)BatchRequestStatus status,
+            @RequestParam(defaultValue = PageDefaults.PAGE) int page,
+            @RequestParam(defaultValue = PageDefaults.SIZE) int size
+    ) {
+        // Fixed order: the newest batch is the one being watched
+        Pageable pageable = PageRequest.of(
+                PageDefaults.clampPage(page),
+                PageDefaults.clampSize(size),
+                Sort.by(Sort.Direction.DESC,
+                        BatchRequestSortField.CREATED_AT.getProperty(),
+                        BatchRequestSortField.ID.getProperty())
+        );
+        return ResponseEntity.ok(batchRequestService.list(status, pageable));
     }
 }

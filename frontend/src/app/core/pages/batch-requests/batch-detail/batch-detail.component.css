@@ -215,6 +215,9 @@
   width: 16%;
 }
 
+.data-table td.col-employee,
+.data-table td.col-email,
+.data-table td.col-profile,
 .data-table td.col-delivery {
   text-align: center;
 }
