@@ -25,7 +25,9 @@ public enum NotificationEventType {
     CV_UPDATE_REQUEST_CANCELLED(EmailTemplate.CV_UPDATE_REQUESTED),
     PROFILE_UPDATE_SUBMITTED(EmailTemplate.PROFILE_UPDATE),
     PROFILE_UPDATE_DECIDED(EmailTemplate.PROFILE_UPDATE),
-    PASSWORD_RESET(EmailTemplate.PASSWORD_RESET);
+    PASSWORD_RESET(EmailTemplate.PASSWORD_RESET),
+    ACCOUNT_CREATED(EmailTemplate.ACCOUNT_CREATED),
+    TEAM_HANDOVER(EmailTemplate.TEAM_HANDOVER);
 
     private final EmailTemplate template;
 }

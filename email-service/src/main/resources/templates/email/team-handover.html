@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en"
+      th:replace="~{email/base-layout :: layout(~{::content})}">
+<body>
+<div th:fragment="content">
+    <p style="margin:0 0 12px;"
+       th:text="${teamNames.size() == 1} ? 'You are now the Tech Lead of the team below.' : 'You are now the Tech Lead of the teams below.'">
+        You are now the Tech Lead of the teams below.
+    </p>
+
+    <!-- Handover details -->
+    <table role="presentation" class="facts">
+        <tr>
+            <td class="label" th:text="${teamNames.size() == 1} ? 'Team' : 'Teams'">Teams</td>
+            <td class="value">
+                <div th:each="teamName : ${teamNames}" th:text="${teamName}">Team</div>
+            </td>
+        </tr>
+        <tr>
+            <td class="label">Previous Tech Lead</td>
+            <td class="value" th:text="${previousTechLeadName}">Previous lead</td>
+        </tr>
+        <tr>
+            <td class="label">Deactivated by</td>
+            <td class="value" th:text="${actorName}">Admin</td>
+        </tr>
+    </table>
+
+    <p class="note" style="margin:0;">
+        From now on, CVs these teams submit for technical review are assigned to you.
+        You were added as a member of any of these teams you did not already belong to.
+    </p>
+</div>
+</body>
+</html>

@@ -56,6 +56,7 @@ public class NotificationListener {
     private final ProfileUpdateRequestRepository profileUpdateRequestRepository;
     private final UpdateRequestRepository updateRequestRepository;
     private final UpdateRequestNotifier updateRequestNotifier;
+    private final TeamRepository teamRepository;
 
     // ---------- Update requests ----------
 
@@ -377,6 +378,67 @@ public class NotificationListener {
                 vars()
                         .with(ACTOR_NAME, actor)
                         .with(TEMPORARY_PASSWORD, event.temporaryPassword())
+                        .build()
+        ));
+    }
+
+    // Same rule as a reset: Sign-in details go to the email only, never into the stored in-app row.
+    @Async
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void onAccountCreated(AccountCreatedEvent event) {
+        Optional<User> found = userRepository.findById(event.userId());
+        if (found.isEmpty()) {
+            log.warn("User {} is gone; account notification skipped", event.userId());
+            return;
+        }
+        User user = found.get();
+        String actor = nameOf(event.actorId());
+
+        dispatcher.dispatch(new NotificationCommand(
+                user.getId(), event.actorId(), NotificationEventType.ACCOUNT_CREATED,
+                "Welcome to CV Management. %s created your account and sent your sign-in details to your email"
+                        .formatted(actor),
+                NotificationLink.CHANGE_PASSWORD.path(),
+                "Your account has been created",
+                vars()
+                        .with(ACTOR_NAME, actor)
+                        .with(USERNAME, user.getUsername())
+                        .with(TEMPORARY_PASSWORD, event.temporaryPassword())
+                        .build()
+        ));
+    }
+
+    // ---------- Organization ----------
+
+    /*
+     * The replacement Tech Lead only: HR has nothing to act on when a team changes lead.
+     * One event per replacement, so several teams arrive as a single notification.
+     */
+    @Async
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void onTeamHandover(TeamHandoverEvent event) {
+        List<String> teamNames = teamRepository.findByIdIn(Set.copyOf(event.teamIds())).stream()
+                .map(Team::getName)
+                .sorted(String.CASE_INSENSITIVE_ORDER)
+                .toList();
+        if (teamNames.isEmpty()) {
+            log.warn("Teams {} are gone; handover notification skipped", event.teamIds());
+            return;
+        }
+
+        String actor = nameOf(event.actorId());
+        String previous = nameOf(event.previousTechLeadId());
+        String teamList = String.join(", ", teamNames);
+
+        dispatcher.dispatch(new NotificationCommand(
+                event.replacementTechLeadId(), event.actorId(), NotificationEventType.TEAM_HANDOVER,
+                "%s deactivated %s. You are now the Tech Lead of %s".formatted(actor, previous, teamList),
+                NotificationLink.APPROVAL_QUEUE.path(),
+                "You are now the Tech Lead of %s".formatted(teamList),
+                vars()
+                        .with(ACTOR_NAME, actor)
+                        .with(PREVIOUS_TECH_LEAD_NAME, previous)
+                        .with(TEAM_NAMES, teamNames)
                         .build()
         ));
     }

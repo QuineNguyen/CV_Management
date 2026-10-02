@@ -15,7 +15,9 @@ public enum EmailTemplate {
     CV_LIFECYCLE("cv-lifecycle"),
     CV_UPDATE_REQUESTED("cv-update-requested"),
     PROFILE_UPDATE("profile-update"),
-    PASSWORD_RESET("password-reset");
+    PASSWORD_RESET("password-reset"),
+    ACCOUNT_CREATED("account-created"),
+    TEAM_HANDOVER("team-handover");
 
     // File name under templates/email/ in email-service, without extension
     private final String fileName;

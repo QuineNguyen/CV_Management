@@ -30,7 +30,10 @@ public enum EmailTemplateVar {
     DEADLINE("deadline"),
     NOTE_COUNT("noteCount"),
     CV_EXISTS("cvExists"),
-    REQUEST_CANCELLED("requestCancelled");
+    REQUEST_CANCELLED("requestCancelled"),
+    USERNAME("username"),
+    TEAM_NAMES("teamNames"),
+    PREVIOUS_TECH_LEAD_NAME("previousTechLeadName");
 
     private final String key;
 }
