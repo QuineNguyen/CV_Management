@@ -17,12 +17,14 @@ import com.training.cvmanagementbe.repository.TeamMemberRepository;
 import com.training.cvmanagementbe.repository.TeamRepository;
 import com.training.cvmanagementbe.repository.UserRepository;
 import com.training.cvmanagementbe.service.TeamService;
+import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -38,6 +40,7 @@ public class TeamServiceImpl implements TeamService {
     private final TeamMemberRepository teamMemberRepository;
     private final UserRepository userRepository;
     private final AuditLogger auditLogger;
+    private final EntityManager entityManager;
 
     @Override
     public PagedResponse<TeamResponse> search(String keyword, Pageable pageable) {
@@ -89,7 +92,7 @@ public class TeamServiceImpl implements TeamService {
                 ? request.displayOrder()
                 : nextDisplayOrder());
 
-        Team saved = teamRepository.save(team);
+        Team saved = persist(team);
 
         // A tech lead always belongs to the team they lead; the id only exists after save.
         ensureTechLeadMembership(saved.getId(), saved.getTechLeadId());
@@ -103,6 +106,7 @@ public class TeamServiceImpl implements TeamService {
     @Transactional
     public TeamResponse update(UUID id, TeamRequest request) {
         Team team = requireTeam(id);
+        verifyCas(id, request.updatedAt());
 
         validateCodeAvailable(request.code(), id);
         requireValidTechLead(request.techLeadId());
@@ -116,7 +120,7 @@ public class TeamServiceImpl implements TeamService {
             team.setDisplayOrder(request.displayOrder());
         }
 
-        Team saved = teamRepository.save(team);
+        Team saved = persist(team);
 
         // Called unconditionally: the existence check is cheaper than tracking old vs new
         ensureTechLeadMembership(saved.getId(), saved.getTechLeadId());
@@ -177,6 +181,16 @@ public class TeamServiceImpl implements TeamService {
     }
 
     // ---------- Validation ----------
+
+    /*
+     * Rejects the write when the row changed since the client read it.
+     * A null token comes from callers without CAS support and is let through.
+     */
+    private void verifyCas(UUID id, LocalDateTime clientUpdatedAt) {
+        if (clientUpdatedAt != null && !teamRepository.existsByIdAndUpdatedAt(id, clientUpdatedAt)) {
+            throw new ApiException.ConflictException(ErrorCode.STALE_STATE);
+        }
+    }
 
     private void validateCodeAvailable(String code, UUID selfId) {
         String normalized = normalizeCode(code);
@@ -248,6 +262,16 @@ public class TeamServiceImpl implements TeamService {
     }
 
     // ---------- Private helpers ----------
+
+    /*
+     * updatedAt is stamped at flush and DATETIME keeps whole seconds, so the in-memory value
+     * differs from the stored one. Re-reading returns the exact CAS token the next update must send.
+     */
+    private Team persist(Team team) {
+        Team saved = teamRepository.saveAndFlush(team);
+        entityManager.refresh(saved);
+        return saved;
+    }
 
     /*
      * Ensures the tech lead is a member of the given team.
@@ -345,7 +369,8 @@ public class TeamServiceImpl implements TeamService {
                 team.getTechLeadId(),
                 techLead == null ? null : techLead.getFullName(),
                 team.getDisplayOrder(),
-                memberCount
+                memberCount,
+                team.getUpdatedAt()
         );
     }
 

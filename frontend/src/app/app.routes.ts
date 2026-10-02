@@ -29,16 +29,16 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./core/layout/shell.component').then((m) => m.ShellComponent),
     children: [
-      { path: '', pathMatch: 'full', redirectTo: 'home' },
+      { path: '', pathMatch: 'full', redirectTo: AppRoute.Home },
       {
-        path: 'home',
+        path: AppRoute.Home,
         title: 'Home',
         loadComponent: () =>
           import('./core/pages/home/home.component').then((m) => m.HomeComponent),
       },
       {
         path: AppRoute.Departments,
-        canActivate: [roleGuard(UserRole.Admin)],
+        canActivate: [roleGuard(UserRole.Admin, UserRole.HR)],
         title: 'Departments',
         loadComponent: () =>
           import('./core/pages/departments/departments.component')
@@ -46,7 +46,7 @@ export const routes: Routes = [
       },
       {
         path: AppRoute.Teams,
-        canActivate: [roleGuard(UserRole.Admin)],
+        canActivate: [roleGuard(UserRole.Admin, UserRole.HR)],
         title: 'Teams',
         loadComponent: () =>
           import('./core/pages/teams/teams.component')

@@ -12,6 +12,7 @@ export interface TeamResponse {
     techLeadFullName: string | null;
     displayOrder: number;
     memberCount: number;
+    updatedAt: string;
 }
 
 export interface TeamRequest {
@@ -19,6 +20,7 @@ export interface TeamRequest {
     name: string;
     description: string | null;
     techLeadId: string;
+    updatedAt?: string;
 }
 
 export interface TeamMemberResponse {

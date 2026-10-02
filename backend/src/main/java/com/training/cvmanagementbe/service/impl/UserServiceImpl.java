@@ -529,7 +529,7 @@ public class UserServiceImpl implements UserService {
         List<TeamResponse> led = ledTeams.stream()
                 .map(team -> new TeamResponse(team.getId(), team.getCode(), team.getName(),
                         team.getDescription(), team.getTechLeadId(), null,
-                        team.getDisplayOrder(), 0L))
+                        team.getDisplayOrder(), 0L, team.getUpdatedAt()))
                 .toList();
 
         return new UserResponse(response.id(), response.fullName(), response.email(),

@@ -27,14 +27,15 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping(ApiPath.TEAMS)
-@PreAuthorize(AuthorityExpression.ADMIN)
 @RequiredArgsConstructor
-@Tag(name = "Teams", description = "Team management (Admin only)")
+@Tag(name = "Teams", description = "Team management (read: every role, write: Admin and HR)")
 public class TeamController {
 
     private final TeamService teamService;
 
+    // Readable by every role: The batch request page needs the team list for HR
     @GetMapping
+    @PreAuthorize(AuthorityExpression.DIRECTORY_READER)
     @Operation(summary = "List teams with pagination and keyword search")
     public ResponseEntity<PagedResponse<TeamResponse>> search(
             @RequestParam(required = false) String keyword,
@@ -50,12 +51,14 @@ public class TeamController {
     }
 
     @GetMapping(ApiPath.BY_ID)
+    @PreAuthorize(AuthorityExpression.DIRECTORY_READER)
     @Operation(summary = "Get a team by id")
     public ResponseEntity<TeamResponse> getById(@PathVariable UUID id) {
         return ResponseEntity.ok(teamService.getById(id));
     }
 
     @PostMapping
+    @PreAuthorize(AuthorityExpression.ADMIN_OR_HR)
     @Operation(summary = "Create a team")
     public ResponseEntity<TeamResponse> create(@Valid @RequestBody TeamRequest request) {
         TeamResponse created = teamService.create(request);
@@ -65,26 +68,30 @@ public class TeamController {
     }
 
     @PutMapping(ApiPath.BY_ID)
-    @Operation(summary = "Update a team")
+    @PreAuthorize(AuthorityExpression.ADMIN_OR_HR)
+    @Operation(summary = "Update a team (compare-and-set on updatedAt)")
     public ResponseEntity<TeamResponse> update(@PathVariable UUID id,
                                                @Valid @RequestBody TeamRequest request) {
         return ResponseEntity.ok(teamService.update(id, request));
     }
 
     @DeleteMapping(ApiPath.BY_ID)
-    @Operation(summary = "Delete an empty team (no member, no linked CV profile")
+    @PreAuthorize(AuthorityExpression.ADMIN_OR_HR)
+    @Operation(summary = "Delete a team that no member or active CV profile depends on")
     public ResponseEntity<ApiResponse<Void>> delete(@PathVariable UUID id) {
         teamService.delete(id);
         return ResponseEntity.ok(ApiResponse.success());
     }
 
     @GetMapping(ApiPath.MEMBERS)
+    @PreAuthorize(AuthorityExpression.ADMIN_OR_HR)
     @Operation(summary = "List members of a team")
     public ResponseEntity<List<TeamMemberResponse>> getMembers(@PathVariable UUID id) {
         return ResponseEntity.ok(teamService.getMembers(id));
     }
 
     @PostMapping(ApiPath.MEMBER_BY_USER)
+    @PreAuthorize(AuthorityExpression.ADMIN_OR_HR)
     @Operation(summary = "Add an active user to the team")
     public ResponseEntity<ApiResponse<Void>> addMember(@PathVariable UUID id, @PathVariable UUID userId) {
         teamService.addMember(id, userId);
@@ -92,6 +99,7 @@ public class TeamController {
     }
 
     @DeleteMapping(ApiPath.MEMBER_BY_USER)
+    @PreAuthorize(AuthorityExpression.ADMIN_OR_HR)
     @Operation(summary = "Remove a member from the team")
     public ResponseEntity<ApiResponse<Void>> removeMember(@PathVariable UUID id, @PathVariable UUID userId) {
         teamService.removeMember(id, userId);

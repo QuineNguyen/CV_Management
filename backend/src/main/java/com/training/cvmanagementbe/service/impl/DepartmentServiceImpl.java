@@ -13,12 +13,14 @@ import com.training.cvmanagementbe.exception.ApiException;
 import com.training.cvmanagementbe.repository.DepartmentRepository;
 import com.training.cvmanagementbe.repository.UserRepository;
 import com.training.cvmanagementbe.service.DepartmentService;
+import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -39,6 +41,7 @@ public class DepartmentServiceImpl implements DepartmentService {
     private final DepartmentRepository departmentRepository;
     private final UserRepository userRepository;
     private final AuditLogger auditLogger;
+    private final EntityManager entityManager;
 
     @Override
     public PagedResponse<DepartmentResponse> getTree(Pageable pageable) {
@@ -89,9 +92,9 @@ public class DepartmentServiceImpl implements DepartmentService {
         applyRequest(department, request);
         department.setDisplayOrder(nextDisplayOrder(parentId));
 
-        Department saved = departmentRepository.save(department);
+        Department saved = persist(department);
         auditLogger.record(Action.CREATE_DEPARTMENT, TargetType.DEPARTMENT,
-                saved.getId(), null, toFlatResponse(department));
+                saved.getId(), null, toFlatResponse(saved));
         return toFlatResponse(saved);
     }
 
@@ -99,11 +102,14 @@ public class DepartmentServiceImpl implements DepartmentService {
     @Transactional
     public DepartmentResponse update(UUID id, DepartmentRequest request) {
         Department department = requireDepartment(id);
-        UUID newParentId = request.parentDepartmentId();
+        verifyCas(id, request.updatedAt());
 
+        UUID newParentId = request.parentDepartmentId();
         requireParentExists(newParentId);
         validateNoCircularReference(id, newParentId);
 
+        // Snapshot before mutating so the audit entry keeps both sides
+        DepartmentResponse before = toFlatResponse(department);
         boolean parentChanged = !Objects.equals(department.getParentDepartmentId(), newParentId);
         applyRequest(department, request);
 
@@ -112,9 +118,9 @@ public class DepartmentServiceImpl implements DepartmentService {
             department.setDisplayOrder(nextDisplayOrder(newParentId));
         }
 
-        Department saved = departmentRepository.save(department);
+        Department saved = persist(department);
         auditLogger.record(Action.UPDATE_DEPARTMENT, TargetType.DEPARTMENT,
-                saved.getId(), toFlatResponse(department), toFlatResponse(saved));
+                saved.getId(), before, toFlatResponse(saved));
         return toFlatResponse(saved);
     }
 
@@ -133,6 +139,8 @@ public class DepartmentServiceImpl implements DepartmentService {
     @Transactional
     public void move(UUID id, MoveDepartmentRequest request) {
         Department moving = requireDepartment(id);
+        verifyCas(id, request.updatedAt());
+
         UUID targetParentId = request.parentDepartmentId();
 
         requireParentExists(targetParentId);
@@ -159,6 +167,16 @@ public class DepartmentServiceImpl implements DepartmentService {
     }
 
     // ---------- Validation ----------
+
+    /*
+     * Rejects the write when the row changed since the client read it.
+     * A null token comes from callers without CAS support and is let through.
+     */
+    private void verifyCas(UUID id, LocalDateTime clientUpdatedAt) {
+        if (clientUpdatedAt != null && !departmentRepository.existsByIdAndUpdatedAt(id, clientUpdatedAt)) {
+            throw new ApiException.ConflictException(ErrorCode.STALE_STATE);
+        }
+    }
 
     // Walks up from newParentId; hitting movingId means the move closes a loop
     private void validateNoCircularReference(UUID movingId, UUID newParentId) {
@@ -209,6 +227,16 @@ public class DepartmentServiceImpl implements DepartmentService {
 
 
     // ---------- Private helpers ----------
+
+    /*
+     * updatedAt is stamped at flush and DATETIME keeps whole seconds, so the in-memory value
+     * differs from the stored one. Re-reading returns the exact CAS token the next update must send.
+     */
+    private Department persist(Department department) {
+        Department saved = departmentRepository.saveAndFlush(department);
+        entityManager.refresh(saved);
+        return saved;
+    }
 
     private Map<UUID, List<Department>> groupByParent(List<Department> all) {
         return all.stream().collect(Collectors.groupingBy(
@@ -298,6 +326,7 @@ public class DepartmentServiceImpl implements DepartmentService {
                 department.getName(),
                 department.getParentDepartmentId(),
                 department.getDisplayOrder(),
+                department.getUpdatedAt(),
                 children
         );
     }
