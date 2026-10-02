@@ -163,18 +163,6 @@
   z-index: 60;
 }
 
-.picker-option-text {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-}
-
-.picker-option-check {
-  flex: 0 0 auto;
-  margin-inline-start: auto;
-  color: var(--vt-red);
-}
-
 .selected-head {
   display: flex;
   align-items: center;

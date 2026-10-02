@@ -11,6 +11,7 @@ export enum BatchRequestStatus {
 }
 
 export enum BatchExclusionReason {
+    SelfRequest = 'SELF_REQUEST',
     AlreadyPending = 'ALREADY_PENDING',
     DuplicateInBatch = 'DUPLICATE_IN_BATCH',
 }
@@ -69,6 +70,7 @@ export const BATCH_STATUS_LABELS: Record<BatchRequestStatus, string> = {
 };
 
 export const BATCH_EXCLUSION_LABELS: Record<BatchExclusionReason, string> = {
+    [BatchExclusionReason.SelfRequest]: 'You cannot send a request to yourself',
     [BatchExclusionReason.AlreadyPending]: 'Already has a pending request',
     [BatchExclusionReason.DuplicateInBatch]: 'Duplicate in the list',
 };
