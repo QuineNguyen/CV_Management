@@ -135,4 +135,7 @@ public interface UpdateRequestRepository extends JpaRepository<UpdateRequest, UU
     @Modifying
     @Query("UPDATE UpdateRequest r SET r.notificationFailed = false WHERE r.id = :id AND r.notificationFailed = true")
     int clearNotificationFailed(@Param("id") UUID id);
+
+    // Reminder scan: every PENDING request, overdue ones included
+    List<UpdateRequest> findByStatusOrderByDeadlineAsc(RequestStatus status);
 }

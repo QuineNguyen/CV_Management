@@ -20,6 +20,9 @@ public enum NotificationLink {
     // Route to the approval queue listing all pending approval tasks.
     APPROVAL_QUEUE("approvals/queue"),
 
+    // Admin oversight list of drafts under review
+    PENDING_DRAFTS("approvals/pending"),
+
     /*
      * Route to view the details of a published CV.
      * Pattern expects cvId. Example: cvs/456

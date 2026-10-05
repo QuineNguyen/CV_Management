@@ -33,7 +33,14 @@ public enum EmailTemplateVar {
     REQUEST_CANCELLED("requestCancelled"),
     USERNAME("username"),
     TEAM_NAMES("teamNames"),
-    PREVIOUS_TECH_LEAD_NAME("previousTechLeadName");
+    PREVIOUS_TECH_LEAD_NAME("previousTechLeadName"),
+    ESCALATION_LEVEL("escalationLevel"),
+    DAY_COUNT("dayCount"),
+    ASSIGNED_AT("assignedAt"),
+    DUE_AT("dueAt"),
+    OVERDUE_TEXT("overdueText"),
+    OVERDUE_COUNT("overdueCount"),
+    DIGEST_ROWS("digestRows");
 
     private final String key;
 }

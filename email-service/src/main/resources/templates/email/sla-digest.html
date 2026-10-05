@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en"
+      th:replace="~{email/base-layout :: layout(~{::content})}">
+<body>
+<div th:fragment="content">
+    <p style="margin:0 0 8px;">
+        <strong style="color:#ee0033;" th:text="${overdueCount}">2</strong>
+        approval assignment(s) are past their deadline.
+    </p>
+    <p class="note" style="margin:0 0 16px;">
+        Longest overdue first. Only an Admin can reassign a review.
+    </p>
+
+    <!-- ---------- Rows: stacked, not columns, so phones stay readable ---------- -->
+    <!-- Inline px: email clients ignore rem/clamp -->
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
+           style="width:100%;border-collapse:collapse;">
+        <tr th:each="row : ${digestRows}">
+            <td style="padding:12px 0;border-top:1px solid #e0e0e0;font-size:14px;line-height:1.5;">
+                <a th:href="${row.cvUrl}" th:text="|${row.ownerName} - ${row.cvLabel}|"
+                   style="color:#ee0033;font-weight:bold;text-decoration:none;">Nguyen Van A - Software Developer (EN)</a><br>
+                <span style="color:#5a5a5a;" th:text="|Awaiting ${row.levelLabel} by ${row.reviewerName}|">
+                    Awaiting technical review by Tran Thi B</span><br>
+                <span style="color:#ed6c02;font-weight:bold;" th:text="|Overdue by ${row.overdueText}|">Overdue by 3 days</span>
+                <span style="color:#5a5a5a;" th:text="|(due ${row.dueAt})|">(due 12/06/2026 at 14:00)</span>
+            </td>
+        </tr>
+    </table>
+</div>
+</body>
+</html>

@@ -15,6 +15,9 @@ export enum NotificationEventType {
     PasswordReset = 'PASSWORD_RESET',
     AccountCreated = 'ACCOUNT_CREATED',
     TeamHandover = 'TEAM_HANDOVER',
+    ReminderUpdateRequest = 'REMINDER_UPDATE_REQUEST',
+    ReminderApprovalAssignment = 'REMINDER_APPROVAL_ASSIGNMENT',
+    SlaDigest = 'SLA_DIGEST',
 }
 
 export const NOTIFICATION_TYPE_LABELS: Record<NotificationEventType, string> = {
@@ -34,6 +37,9 @@ export const NOTIFICATION_TYPE_LABELS: Record<NotificationEventType, string> = {
     [NotificationEventType.PasswordReset]: 'Security',
     [NotificationEventType.AccountCreated]: 'Account created',
     [NotificationEventType.TeamHandover]: 'Team handover',
+    [NotificationEventType.ReminderUpdateRequest]: 'Update request reminder',
+    [NotificationEventType.ReminderApprovalAssignment]: 'Approval reminder',
+    [NotificationEventType.SlaDigest]: 'SLA digest',
 };
 
 // Material Symbols name per type
@@ -54,6 +60,9 @@ export const NOTIFICATION_TYPE_ICONS: Record<NotificationEventType, string> = {
     [NotificationEventType.PasswordReset]: 'lock_reset',
     [NotificationEventType.AccountCreated]: 'person_add',
     [NotificationEventType.TeamHandover]: 'groups',
+    [NotificationEventType.ReminderUpdateRequest]: 'event_upcoming',
+    [NotificationEventType.ReminderApprovalAssignment]: 'pending_actions',
+    [NotificationEventType.SlaDigest]: 'summarize',
 };
 
 export enum NotificationFilter {

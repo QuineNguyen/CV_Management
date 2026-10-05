@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en"
+      th:replace="~{email/base-layout :: layout(~{::content})}">
+<body>
+<div th:fragment="content">
+    <!-- ---------- Headline, by EscalationLevel constant ---------- -->
+    <p style="margin:0 0 16px;" th:switch="${escalationLevel}">
+        <span th:case="'APPROACHING'">
+            Your CV update request is due in <strong th:text="|${dayCount} day(s)|">2 day(s)</strong>.
+        </span>
+        <span th:case="'LAST_DAY'">
+            <strong style="color:#ed6c02;">Today is the last day</strong> to complete your CV update request.
+        </span>
+        <span th:case="*">
+            Your CV update request is
+            <strong style="color:#ee0033;" th:text="|${dayCount} day(s) overdue|">2 day(s) overdue</strong>.
+            Please complete it as soon as possible.
+        </span>
+    </p>
+
+    <table class="facts" role="presentation">
+        <tr>
+            <td class="label">Profile</td>
+            <td class="value" th:text="${profileName} ?: 'A new profile you create'">Software Developer</td>
+        </tr>
+        <tr>
+            <td class="label">Language</td>
+            <td class="value" th:text="${language}">EN</td>
+        </tr>
+        <tr>
+            <td class="label">Deadline</td>
+            <td class="value" th:text="|${deadline} at 23:59|">31/12/2026 at 23:59</td>
+        </tr>
+    </table>
+
+    <!-- Tells several pending requests apart -->
+    <div class="reason">
+        <span class="reason-label">Reason</span>
+        <span class="reason-text" th:text="${reason}">Update your skills for project X</span>
+    </div>
+
+    <!-- Same hints as the request email, matching the screen the button opens -->
+    <p class="note" th:if="${!cvExists and profileName != null}">
+        This profile has no CV in this language yet. The button opens the create screen with the
+        profile and language already selected.
+    </p>
+    <p class="note" th:if="${!cvExists and profileName == null}">
+        Create a new competency profile for this CV, then create the CV in this language.
+    </p>
+    <p class="note">You receive at most one reminder a day until the request is completed or cancelled.</p>
+</div>
+</body>
+</html>

@@ -1,10 +1,10 @@
 package com.training.cvmanagementbe.service.impl;
 
+import com.training.cvmanagementbe.common.TemplateVars;
 import com.training.cvmanagementbe.entity.models.CvProfile;
 import com.training.cvmanagementbe.entity.models.UpdateRequest;
 import com.training.cvmanagementbe.entity.models.User;
 import com.training.cvmanagementbe.enums.notifications.DispatchOutcome;
-import com.training.cvmanagementbe.enums.notifications.EmailTemplateVar;
 import com.training.cvmanagementbe.enums.notifications.NotificationEventType;
 import com.training.cvmanagementbe.enums.notifications.NotificationLink;
 import com.training.cvmanagementbe.record.events.DispatchOptions;
@@ -15,8 +15,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.time.format.DateTimeFormatter;
-import java.util.LinkedHashMap;
-import java.util.Map;
 import java.util.UUID;
 
 import static com.training.cvmanagementbe.enums.notifications.EmailTemplateVar.*;
@@ -62,28 +60,30 @@ public class UpdateRequestNotifier {
         String deadline = DEADLINE_FORMAT.format(request.getDeadline());
         int noteCount = anchoredNoteCodec.read(request.getAnchoredNotes()).size();
 
-        Map<String, Object> vars = new LinkedHashMap<>();
-        put(vars, ACTOR_NAME, requester);
-        put(vars, PROFILE_NAME, profileName);
-        put(vars, LANGUAGE, language);
-        put(vars, REASON, request.getReason());
-        put(vars, DEADLINE, deadline);
-        put(vars, NOTE_COUNT, noteCount);
-        put(vars, CV_EXISTS, request.getCvId() != null);
-        put(vars, REQUEST_CANCELLED, false);
-
         return new NotificationCommand(
                 request.getEmployeeId(), request.getCreatedBy(), NotificationEventType.CV_UPDATE_REQUESTED,
                 withNotes(withReason("%s asked you to %s %s by %s"
                         .formatted(requester, action, target, deadline), request.getReason()), noteCount),
                 linkOf(request),
                 "CV update requested - due %s".formatted(deadline),
-                vars
+                new TemplateVars()
+                        .with(ACTOR_NAME, requester)
+                        .with(PROFILE_NAME, profileName)
+                        .with(LANGUAGE, language)
+                        .with(REASON, request.getReason())
+                        .with(DEADLINE, deadline)
+                        .with(NOTE_COUNT, noteCount)
+                        .with(CV_EXISTS, request.getCvId() != null)
+                        .with(REQUEST_CANCELLED, false)
+                        .build()
         );
     }
 
-    // Existing CV: Edit it. No CV yet: The creation screen, preselected as far as the request knows
-    private static String linkOf(UpdateRequest request) {
+    /*
+     * Existing CV: Edit it. No CV yet: The creation screen, preselected as far as the request knows.
+     * Shared with the reminder job, so the request email and every reminder open the same screen.
+     */
+    public static String linkOf(UpdateRequest request) {
         String language = request.getLanguage().name();
         if (request.getCvId() != null) {
             return NotificationLink.CV_EDIT.path(request.getCvId());
@@ -111,9 +111,5 @@ public class UpdateRequestNotifier {
 
     private static String withNotes(String sentence, int noteCount) {
         return noteCount == 0 ? sentence : "%s. %d feedback note(s) attached".formatted(sentence, noteCount);
-    }
-
-    private static void put(Map<String, Object> vars, EmailTemplateVar key, Object value) {
-        vars.put(key.getKey(), value);
     }
 }

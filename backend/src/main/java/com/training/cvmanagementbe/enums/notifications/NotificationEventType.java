@@ -27,7 +27,10 @@ public enum NotificationEventType {
     PROFILE_UPDATE_DECIDED(EmailTemplate.PROFILE_UPDATE),
     PASSWORD_RESET(EmailTemplate.PASSWORD_RESET),
     ACCOUNT_CREATED(EmailTemplate.ACCOUNT_CREATED),
-    TEAM_HANDOVER(EmailTemplate.TEAM_HANDOVER);
+    TEAM_HANDOVER(EmailTemplate.TEAM_HANDOVER),
+    REMINDER_UPDATE_REQUEST(EmailTemplate.REMINDER_UPDATE_REQUEST),
+    REMINDER_APPROVAL_ASSIGNMENT(EmailTemplate.REMINDER_APPROVAL_ASSIGNMENT),
+    SLA_DIGEST(EmailTemplate.SLA_DIGEST);
 
     private final EmailTemplate template;
 }

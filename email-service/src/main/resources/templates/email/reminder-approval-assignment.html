@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en"
+      th:replace="~{email/base-layout :: layout(~{::content})}">
+<body>
+<div th:fragment="content">
+    <p style="margin:0 0 16px;">
+        Your <span th:text="${levelLabel}">technical review</span> of this CV is
+        <strong style="color:#ee0033;" th:text="|${overdueText} overdue|">2 days overdue</strong>.
+    </p>
+
+    <table class="facts" role="presentation">
+        <tr>
+            <td class="label">CV owner</td>
+            <td class="value" th:text="${employeeName}">Nguyen Van A</td>
+        </tr>
+        <tr>
+            <td class="label">Profile</td>
+            <td class="value" th:text="${profileName}">Software Developer</td>
+        </tr>
+        <tr>
+            <td class="label">Language</td>
+            <td class="value" th:text="${language}">EN</td>
+        </tr>
+        <tr>
+            <td class="label">Assigned</td>
+            <td class="value" th:text="${assignedAt}">09/06/2026 at 14:00</td>
+        </tr>
+        <tr>
+            <td class="label">Due</td>
+            <td class="value" style="color:#ee0033;" th:text="${dueAt}">12/06/2026 at 14:00</td>
+        </tr>
+    </table>
+
+    <!-- Reassigning is Admin-only [QĐ-37] -->
+    <p class="note">
+        Please approve or reject the draft. If you cannot review it, ask an Admin to reassign it.
+    </p>
+</div>
+</body>
+</html>
