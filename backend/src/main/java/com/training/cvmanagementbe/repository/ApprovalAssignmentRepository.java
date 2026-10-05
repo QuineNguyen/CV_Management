@@ -113,4 +113,7 @@ public interface ApprovalAssignmentRepository extends JpaRepository<ApprovalAssi
 
     // One query for a whole page of the oversight list.
     List<ApprovalAssignment> findByDraftIdInAndStatus(Collection<UUID> draftIds, AssignmentStatus status);
+
+    // Open assignments past their SLA, oldest deadline first
+    List<ApprovalAssignment> findByStatusAndDueAtBeforeOrderByDueAtAsc(AssignmentStatus status, LocalDateTime now);
 }

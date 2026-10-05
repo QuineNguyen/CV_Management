@@ -20,7 +20,10 @@ public enum EmailTemplate {
     PROFILE_UPDATE("profile-update"),
     PASSWORD_RESET("password-reset"),
     ACCOUNT_CREATED("account-created"),
-    TEAM_HANDOVER("team-handover");
+    TEAM_HANDOVER("team-handover"),
+    REMINDER_UPDATE_REQUEST("reminder-update-request"),
+    REMINDER_APPROVAL_ASSIGNMENT("reminder-approval-assignment"),
+    SLA_DIGEST("sla-digest");
 
     private static final String FOLDER = "email/";
 

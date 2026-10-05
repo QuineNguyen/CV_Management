@@ -5,6 +5,7 @@ import com.training.cvmanagementbe.dto.request.approvals.*;
 import com.training.cvmanagementbe.enums.approvals.*;
 import com.training.cvmanagementbe.enums.configs.Action;
 import com.training.cvmanagementbe.enums.configs.ErrorCode;
+import com.training.cvmanagementbe.enums.configs.SystemConfigKey;
 import com.training.cvmanagementbe.enums.configs.TargetType;
 import com.training.cvmanagementbe.enums.cvs.CvSectionKey;
 import com.training.cvmanagementbe.enums.cvs.DraftStatus;
@@ -21,6 +22,7 @@ import com.training.cvmanagementbe.record.cvs.CvContent;
 import com.training.cvmanagementbe.record.cvs.PublishCommand;
 import com.training.cvmanagementbe.repository.*;
 import com.training.cvmanagementbe.service.ApprovalService;
+import com.training.cvmanagementbe.service.SystemConfigService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
@@ -28,6 +30,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Clock;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.*;
@@ -87,9 +90,6 @@ public class ApprovalServiceImpl implements ApprovalService {
             CvSectionKey.EXPERIENCE
     );
 
-    // TODO [Phase-5]: read from system_configs once the configuration table exists.
-    private static final Duration DEFAULT_SLA = Duration.ofDays(3);
-
     private final CvDraftRepository cvDraftRepository;
     private final CvRepository cvRepository;
     private final CvProfileRepository cvProfileRepository;
@@ -103,6 +103,9 @@ public class ApprovalServiceImpl implements ApprovalService {
     private final AvatarUrlResolver avatarUrlResolver;
     private final AuditLogger auditLogger;
     private final ApplicationEventPublisher eventPublisher;
+    private final SystemConfigService systemConfigService;
+    // Same zone-pinned clock as the reminder job, so due_at and "overdue" agree
+    private final Clock clock;
 
     // ---------- Submit ----------
 
@@ -182,7 +185,7 @@ public class ApprovalServiceImpl implements ApprovalService {
 
         DraftStatus nextStatus = level1.skipped() ? DraftStatus.PENDING_HR : DraftStatus.PENDING_TECH_LEAD;
         int nextRound = previousRound + 1;
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now(clock);
 
         // The gate. Everything below only runs because this matched exactly one row.
         int updated = cvDraftRepository.markSubmitted(draftId, nextStatus, nextRound, now, acceptedStatuses);
@@ -259,7 +262,7 @@ public class ApprovalServiceImpl implements ApprovalService {
         List<ApprovalDecision> decisions = decisionRepository.findByDraftIdOrderByDecidedAtAsc(draftId);
 
         Map<UUID, String> names = loadUserNames(collectUserIds(assignment, decisions, profile));
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now(clock);
 
         return new DraftReviewResponse(
                 toResponse(draft, codec.read(draft.getContentJson())),
@@ -309,7 +312,7 @@ public class ApprovalServiceImpl implements ApprovalService {
         // there is no HR to keep and the normal pipeline runs.
         UUID previousHr = previousAssigneeOf(draft.getId(), ApprovalLevel.LEVEL_2, assignment.getReviewRound() - 1);
         ResolverResult level2 = approverResolver.resolveLevel2(draft.getOwnerId(), previousHr);
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now(clock);
 
         transitionDraft(draft.getId(), DraftStatus.PENDING_TECH_LEAD, DraftStatus.PENDING_HR, approverId, now);
         recordDecision(assignment, approverId, DecisionResult.APPROVED, null, now);
@@ -333,7 +336,7 @@ public class ApprovalServiceImpl implements ApprovalService {
      */
     private DraftApproveResponse approveFormatReviewAndPublish(CvDraft draft, ApprovalAssignment assignment,
                                                                UUID approverId) {
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now(clock);
         int reviewRound = assignment.getReviewRound();
 
         // Read everything from the draft first: the CAS clears the persistence context.
@@ -398,7 +401,7 @@ public class ApprovalServiceImpl implements ApprovalService {
         UUID ownerId = draft.getOwnerId();
         int reviewRound = assignment.getReviewRound();
         String reason = request.reason().trim();
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now(clock);
 
         List<InlineComment> comments = request.commentsOrEmpty().stream()
                 .map(comment -> toRootComment(draftId, reviewRound, rejecterId, comment, content, now))
@@ -469,7 +472,7 @@ public class ApprovalServiceImpl implements ApprovalService {
                 .content(request.content().trim())
                 .status(InlineCommentStatus.OPEN)
                 .parentCommentId(root.getId())
-                .createdAt(LocalDateTime.now())
+                .createdAt(LocalDateTime.now(clock))
                 .build());
 
         String authorName = userRepository.findById(actorId).map(User::getFullName).orElse(null);
@@ -525,7 +528,7 @@ public class ApprovalServiceImpl implements ApprovalService {
                 .map(ApprovalAssignment::getAssigneeId)
                 .orElse(null);
 
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now(clock);
 
         int updated = cvDraftRepository.cancelDraft(
                 draftId, DraftStatus.CANCELLED, reason, actorId, now, allowed
@@ -640,7 +643,7 @@ public class ApprovalServiceImpl implements ApprovalService {
         int reviewRound = assignment.getReviewRound();
         String reason = request.reason().trim();
 
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now(clock);
 
         /*
          * Close first, insert second: uk_approval_assignments_assigned allows exactly one open row
@@ -663,7 +666,7 @@ public class ApprovalServiceImpl implements ApprovalService {
                 .status(AssignmentStatus.ASSIGNED)
                 .reason(AssignmentReason.ADMIN_REASSIGNED.format(adminName, reason))
                 .assignedAt(now)
-                .dueAt(now.plus(DEFAULT_SLA))
+                .dueAt(slaDeadline(now))
                 .build());
 
         auditLogger.record(Action.REASSIGN_APPROVER, TargetType.APPROVAL_ASSIGNMENT, oldAssignmentId,
@@ -831,7 +834,7 @@ public class ApprovalServiceImpl implements ApprovalService {
                 .status(AssignmentStatus.ASSIGNED)
                 .reason(reason)
                 .assignedAt(now)
-                .dueAt(now.plus(DEFAULT_SLA))
+                .dueAt(slaDeadline(now))
                 .build();
 
         ApprovalAssignment saved = assignmentRepository.save(assignment);
@@ -955,7 +958,7 @@ public class ApprovalServiceImpl implements ApprovalService {
                 idsOf(profilesById.values(), CvProfile::getEmployeeId)
         );
 
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now(clock);
 
         return assignments.stream().map(assignment -> {
             CvDraft draft = draftsById.get(assignment.getDraftId());
@@ -1087,7 +1090,7 @@ public class ApprovalServiceImpl implements ApprovalService {
         userIds.addAll(idsOf(assignmentsByDraft.values(), ApprovalAssignment::getAssigneeId));
         Map<UUID, String> names = loadUserNames(userIds);
 
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now(clock);
 
         return drafts.stream().map(draft -> {
             Cv cv = cvsById.get(draft.getCvId());
@@ -1184,5 +1187,10 @@ public class ApprovalServiceImpl implements ApprovalService {
     // Blank and null mean the same thing here: no reason was given.
     private String normalise(String text) {
         return text == null || text.isBlank() ? null : text.trim();
+    }
+
+    // Read when the assignment opens: A changed SLA never moves an existing due_at
+    private LocalDateTime slaDeadline(LocalDateTime assignedAt) {
+        return assignedAt.plusDays(systemConfigService.getInt(SystemConfigKey.APPROVAL_SLA_DAYS));
     }
 }

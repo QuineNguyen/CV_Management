@@ -1,5 +1,6 @@
 package com.training.cvmanagementbe.service.impl;
 
+import com.training.cvmanagementbe.common.TemplateVars;
 import com.training.cvmanagementbe.entity.models.*;
 import com.training.cvmanagementbe.enums.approvals.ApprovalLevel;
 import com.training.cvmanagementbe.enums.approvals.DecisionResult;
@@ -601,21 +602,6 @@ public class NotificationListener {
 
         String label() {
             return "%s (%s)".formatted(profileName, language);
-        }
-    }
-
-    // Keyed by EmailTemplateVar, so a template variable is never a loose string.
-    private static final class TemplateVars {
-
-        private final Map<String, Object> values = new LinkedHashMap<>();
-
-        TemplateVars with(EmailTemplateVar key, Object value) {
-            values.put(key.getKey(), value);
-            return this;
-        }
-
-        Map<String, Object> build() {
-            return values;
         }
     }
 }
