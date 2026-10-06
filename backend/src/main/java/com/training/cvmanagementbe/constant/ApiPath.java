@@ -32,6 +32,7 @@ public final class ApiPath {
     public static final String RESTORE = "/{id}/restore";
     public static final String DELETED = "/deleted";
     public static final String VERSIONS = "/{id}/versions";
+    public static final String VERSION_DIFF = "/{id}/versions/diff";
 
     // Images
     public static final String IMAGES = "/images";

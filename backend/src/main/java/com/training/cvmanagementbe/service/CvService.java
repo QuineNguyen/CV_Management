@@ -45,7 +45,14 @@ public interface CvService {
 
     PagedResponse<CvResponse> listDeleted(Pageable pageable);
 
-    List<CvVersionSummary> listVersions(UUID cvId);
+    // Version timeline, paged; each row carries its predecessor id for "compare with previous".
+    PagedResponse<CvVersionHistoryItem> listVersions(UUID cvId, Pageable pageable);
+
+    /*
+     * Compares two published versions of one CV (section -> item -> field).
+     * Without fromVersionId, the "to" version is compared with an empty CV.
+     */
+    VersionDiffResponse diffVersions(UUID cvId, UUID fromVersionId, UUID toVersionId);
 
     List<PendingNoteResponse> getPendingNotes(UUID cvId);
 }

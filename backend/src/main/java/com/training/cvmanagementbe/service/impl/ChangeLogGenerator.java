@@ -2,6 +2,7 @@ package com.training.cvmanagementbe.service.impl;
 
 import com.training.cvmanagementbe.entity.models.ChangeLogEntry;
 import com.training.cvmanagementbe.enums.cvs.ChangeType;
+import com.training.cvmanagementbe.enums.cvs.CvDiffField;
 import com.training.cvmanagementbe.enums.cvs.CvSectionKey;
 import com.training.cvmanagementbe.record.cvs.CvContent;
 import com.training.cvmanagementbe.record.cvs.RepeatedEntry;
@@ -22,7 +23,8 @@ import java.util.*;
 @RequiredArgsConstructor
 public class ChangeLogGenerator {
 
-    private static final String AVATAR_FIELD = "avatar_image_id";
+    // Shared with the read-time diff, so both name the avatar field the same way.
+    private static final String AVATAR_FIELD = CvDiffField.AVATAR_IMAGE_ID.getKey();
 
     private final CvContentCodec codec;
 
