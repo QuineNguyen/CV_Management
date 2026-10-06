@@ -1,0 +1,217 @@
+@if (loading()) {
+  <section class="page">
+    <div class="skeleton-stack" aria-busy="true">
+      @for (row of [1, 2, 3]; track row) {
+        <div class="skeleton-row"></div>
+      }
+    </div>
+  </section>
+} @else if (detail(); as detail) {
+  <section class="page">
+
+    <header class="page-toolbar">
+      <div>
+        <h1 class="page-title">Version history</h1>
+        <p class="page-subtitle">
+          <span class="code-chip is-primary">{{ detail.cv.language }}</span>
+          {{ languageLabels[detail.cv.language] }} CV of {{ detail.cv.employeeName ?? '—' }},
+          profile {{ detail.cv.profileName ?? '—' }}
+        </p>
+      </div>
+
+      <div class="page-toolbar-actions">
+        <button type="button" class="btn btn-ghost" (click)="backToCv()">Back to CV</button>
+        <button type="button" class="btn btn-primary" [disabled]="!pickLimitReached()" (click)="compareSelected()">
+          Compare selected
+        </button>
+      </div>
+    </header>
+
+    <!-- The open draft sits above the timeline: it is not a version until it is published -->
+    @if (detail.openDraft; as draft) {
+      <div class="history-draft" role="status">
+        <span class="status-badge is-draft">Draft</span>
+        <p class="history-draft-text">
+          <strong>{{ draftStatusLabels[draft.status] }}</strong>, review round {{ draft.reviewRound }}.
+          It joins this history once it is published
+        </p>
+      </div>
+    }
+
+    <!-- Picks stay visible on every page -->
+    <div class="history-picks" aria-live="polite">
+      @if (sortedPicks().length) {
+        <span class="history-picks-label">Comparing</span>
+        @for (pick of sortedPicks(); track pick.id) {
+          <button type="button" class="pick-chip" (click)="unpick(pick.id)"
+                  [attr.aria-label]="'Remove v' + pick.versionNumber + ' from the comparison'">
+            v{{ pick.versionNumber }} <span aria-hidden="true">✕</span>
+          </button>
+        }
+        @if (!pickLimitReached()) {
+          <span class="history-picks-hint">Tick one more version</span>
+        }
+      } @else {
+        <span class="history-picks-hint">
+          Tick two versions to compare them, or use ⇄ on a row to see what that version changed
+        </span>
+      }
+    </div>
+
+    @if (versionsLoading()) {
+      <div class="skeleton-stack" aria-busy="true">
+        @for (row of [1, 2, 3]; track row) {
+          <div class="skeleton-row"></div>
+        }
+      </div>
+    } @else if (!versions().length) {
+      <div class="empty-state">
+        <p class="empty-state-title">No published version yet</p>
+        <p class="empty-state-hint">
+          A version appears here when a draft is approved or the owner publishes directly.
+          Until then there is nothing to compare
+        </p>
+      </div>
+    } @else {
+
+      <!-- Table: desktop -->
+      <div class="data-table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th scope="col" class="col-pick"><span class="sr-only">Select</span></th>
+              <th scope="col" class="col-version">Version</th>
+              <th scope="col" class="col-published">Published</th>
+              <th scope="col" class="col-author">Author</th>
+              <th scope="col" class="col-reviewers">Reviewers</th>
+              <th scope="col" class="col-source">Source</th>
+              <th scope="col" class="col-actions">Compare</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (version of versions(); track version.id) {
+              <tr [class.is-picked]="isPicked(version.id)">
+                <td class="col-pick">
+                  <input type="checkbox" class="pick-box"
+                         [checked]="isPicked(version.id)"
+                         [disabled]="!canPick(version.id)"
+                         (change)="togglePick(version)"
+                         [attr.aria-label]="'Select v' + version.versionNumber" />
+                </td>
+                <td class="col-version">
+                  <span class="version-tag">v{{ version.versionNumber }}</span>
+                  @if (version.versionNumber === currentVersionNumber()) {
+                    <span class="status-badge is-active">Current</span>
+                  }
+                </td>
+                <td class="col-published">
+                  <span class="cell-date">{{ version.publishedAt | date:'dd/MM/yyyy HH:mm' }}</span>
+                </td>
+                <td class="col-author">
+                  <span class="cell-strong">{{ version.authoredByName ?? '—' }}</span>
+                  @if (version.rollbackSourceVersionNumber; as source) {
+                    <span class="cell-muted">Inherited from v{{ source }}</span>
+                  }
+                </td>
+                <td class="col-reviewers">
+                  <span class="reviewer-line">
+                    <span class="reviewer-level">L1</span>{{ version.level1ApproverName ?? '—' }}
+                  </span>
+                  <span class="reviewer-line">
+                    <span class="reviewer-level">L2</span>{{ version.level2ApproverName ?? '—' }}
+                  </span>
+                </td>
+                <td class="col-source">
+                  <span class="status-badge">{{ sourceLabels[version.source] }}</span>
+                  @if (version.rollbackSourceVersionNumber; as source) {
+                    <span class="cell-muted">Content of v{{ source }}</span>
+                  }
+                </td>
+                <td class="col-actions">
+                  <div class="row-actions">
+                    <button type="button" class="icon-btn"
+                            [matTooltip]="compareTooltip(version)"
+                            [attr.aria-label]="compareTooltip(version)"
+                            (click)="compareWithPrevious(version)">⇄</button>
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Cards: iPad and phone -->
+      <ul class="data-cards">
+        @for (version of versions(); track version.id) {
+          <li class="data-card" [class.is-picked]="isPicked(version.id)">
+            <div class="data-card-head">
+              <label class="card-pick">
+                <input type="checkbox" class="pick-box"
+                       [checked]="isPicked(version.id)"
+                       [disabled]="!canPick(version.id)"
+                       (change)="togglePick(version)" />
+                <span class="version-tag">v{{ version.versionNumber }}</span>
+                @if (version.versionNumber === currentVersionNumber()) {
+                  <span class="status-badge is-active">Current</span>
+                }
+              </label>
+
+              <div class="row-actions">
+                <button type="button" class="icon-btn"
+                        [matTooltip]="compareTooltip(version)"
+                        [attr.aria-label]="compareTooltip(version)"
+                        (click)="compareWithPrevious(version)">⇄</button>
+              </div>
+            </div>
+
+            <dl class="data-card-facts">
+              <div>
+                <dt>Published</dt>
+                <dd>{{ version.publishedAt | date:'dd/MM/yyyy HH:mm' }}</dd>
+              </div>
+              <div>
+                <dt>Source</dt>
+                <dd>
+                  {{ sourceLabels[version.source] }}
+                  @if (version.rollbackSourceVersionNumber; as source) {
+                    <span class="cell-muted">Content of v{{ source }}</span>
+                  }
+                </dd>
+              </div>
+              <div>
+                <dt>Author</dt>
+                <dd>
+                  {{ version.authoredByName ?? '—' }}
+                  @if (version.rollbackSourceVersionNumber; as source) {
+                    <span class="cell-muted">Inherited from v{{ source }}</span>
+                  }
+                </dd>
+              </div>
+              <div>
+                <dt>Reviewers</dt>
+                <dd>
+                  <span class="reviewer-line">
+                    <span class="reviewer-level">L1</span>{{ version.level1ApproverName ?? '—' }}
+                  </span>
+                  <span class="reviewer-line">
+                    <span class="reviewer-level">L2</span>{{ version.level2ApproverName ?? '—' }}
+                  </span>
+                </dd>
+              </div>
+            </dl>
+          </li>
+        }
+      </ul>
+
+      <mat-paginator
+        class="page-paginator"
+        [length]="pageState().total"
+        [pageIndex]="pageState().index"
+        [pageSize]="pageState().size"
+        [pageSizeOptions]="pageSizeOptions"
+        showFirstLastButtons
+        (page)="onPageChange($event)" />
+    }
+  </section>
+}

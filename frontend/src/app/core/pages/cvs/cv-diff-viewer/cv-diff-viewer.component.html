@@ -1,0 +1,301 @@
+@if (loading()) {
+  <section class="page">
+    <div class="skeleton-stack" aria-busy="true">
+      @for (row of [1, 2, 3]; track row) {
+        <div class="skeleton-row"></div>
+      }
+    </div>
+  </section>
+} @else if (detail(); as detail) {
+  <section class="page">
+
+    <header class="page-toolbar">
+      <div>
+        <h1 class="page-title">Compare versions</h1>
+        <p class="page-subtitle">
+          <span class="code-chip is-primary">{{ detail.cv.language }}</span>
+          {{ languageLabels[detail.cv.language] }} CV of {{ detail.cv.employeeName ?? '—' }},
+          profile {{ detail.cv.profileName ?? '—' }}
+        </p>
+      </div>
+      <div class="page-toolbar-actions">
+        <button type="button" class="btn btn-primary" (click)="backToHistory()">Version history</button>
+      </div>
+    </header>
+
+    @if (!options().length) {
+      <div class="empty-state">
+        <p class="empty-state-title">Nothing published yet</p>
+        <p class="empty-state-hint">
+          Versions appear once a draft is approved or the owner publishes directly. Come back after
+          the first one
+        </p>
+      </div>
+    } @else {
+
+      <!-- Pair picker -->
+      <div class="diff-picker-bar">
+        <ng-container *ngTemplateOutlet="picker; context: { $implicit: PickerSide.From, label: 'Older version' }"></ng-container>
+        <ng-container *ngTemplateOutlet="picker; context: { $implicit: PickerSide.To, label: 'Newer version' }"></ng-container>
+        <button type="button" class="btn btn-primary diff-compare-btn" [disabled]="!canCompare()" (click)="compare()">
+          Compare
+        </button>
+        @if (sameVersionPicked()) {
+          <p class="field-error diff-picker-error">Pick two different versions</p>
+        }
+      </div>
+
+      @if (diffLoading()) {
+        <div class="skeleton-stack" aria-busy="true">
+          @for (row of [1, 2, 3, 4]; track row) {
+            <div class="skeleton-row"></div>
+          }
+        </div>
+      } @else if (diff(); as diff) {
+
+        <!-- Overview (§8.2 step 4) -->
+        <div class="diff-summary">
+          <ul class="diff-stats" aria-label="Summary of changes">
+            <li class="diff-stat" [attr.data-change]="ChangeType.Added">
+              <span class="diff-stat-mark" aria-hidden="true">{{ changeMarks[ChangeType.Added] }}</span>
+              <strong>{{ diff.stats.added }}</strong> added
+            </li>
+            <li class="diff-stat" [attr.data-change]="ChangeType.Modified">
+              <span class="diff-stat-mark" aria-hidden="true">{{ changeMarks[ChangeType.Modified] }}</span>
+              <strong>{{ diff.stats.modified }}</strong> modified
+            </li>
+            <li class="diff-stat" [attr.data-change]="ChangeType.Removed">
+              <span class="diff-stat-mark" aria-hidden="true">{{ changeMarks[ChangeType.Removed] }}</span>
+              <strong>{{ diff.stats.removed }}</strong> removed
+            </li>
+          </ul>
+
+          <div class="view-toggle" role="group" aria-label="What to show">
+            @for (mode of viewModes; track mode) {
+              <button type="button" class="view-toggle-btn"
+                      [class.is-active]="viewMode() === mode"
+                      [attr.aria-pressed]="viewMode() === mode"
+                      (click)="setViewMode(mode)">{{ viewModeLabels[mode] }}</button>
+            }
+          </div>
+        </div>
+
+        @if (identical()) {
+          <div class="notice" role="status">
+            <strong>Same content.</strong> {{ fromName() }} and {{ toName() }} hold identical content.
+            @if (viewMode() === ViewMode.ChangesOnly) {
+              Switch to <strong>{{ viewModeLabels[ViewMode.FullCv] }}</strong> to read it
+            }
+          </div>
+        }
+
+        @if (sections().length) {
+          <!-- Column headers; on phones each cell names its own side instead -->
+          <div class="diff-columns" aria-hidden="true">
+            <div class="diff-column-head">
+              @if (diff.fromVersion; as side) {
+                <span class="diff-column-version">v{{ side.versionNumber }}</span>
+                <span class="diff-column-meta">
+                  {{ side.publishedAt | date:'dd/MM/yyyy HH:mm' }}, {{ sourceLabels[side.source] }}
+                </span>
+              } @else {
+                <span class="diff-column-version">Empty CV</span>
+                <span class="diff-column-meta">Before the first version</span>
+              }
+            </div>
+            <div class="diff-column-head">
+              <span class="diff-column-version">v{{ diff.toVersion.versionNumber }}</span>
+              <span class="diff-column-meta">
+                {{ diff.toVersion.publishedAt | date:'dd/MM/yyyy HH:mm' }}, {{ sourceLabels[diff.toVersion.source] }}
+              </span>
+            </div>
+            <div></div>
+          </div>
+        }
+
+        @for (section of sections(); track section.key) {
+          <section class="diff-section" [class.has-changes]="section.changeCount > 0"
+                   [class.is-expanded]="isOpen(sectionKeyOf(section), section.changeCount > 0)">
+            <button type="button" class="diff-section-head"
+                    [attr.aria-expanded]="isOpen(sectionKeyOf(section), section.changeCount > 0)"
+                    (click)="toggle(sectionKeyOf(section))">
+              <span class="diff-section-title">{{ section.label }}</span>
+              @if (section.changeCount; as count) {
+                <span class="status-badge is-changed">{{ count }} {{ count === 1 ? 'change' : 'changes' }}</span>
+              } @else {
+                <span class="status-badge">No changes</span>
+              }
+              <span class="diff-caret" [class.is-open]="isOpen(sectionKeyOf(section), section.changeCount > 0)" aria-hidden="true"></span>
+            </button>
+
+            <div class="diff-section-collapse" [class.is-expanded]="isOpen(sectionKeyOf(section), section.changeCount > 0)">
+              <div class="diff-section-collapse-inner">
+                <div class="diff-section-body">
+                  @if (!section.repeated) {
+                    <!-- SINGLE section: its fields, row by row -->
+                    <div class="diff-fields">
+                      @for (field of section.items[0].fields; track field.key) {
+                        <ng-container *ngTemplateOutlet="fieldRow; context: { $implicit: field }"></ng-container>
+                      }
+                    </div>
+                  } @else {
+                    <!-- REPEATED section: one block per entry, matched by item id -->
+                    @for (item of section.items; track item.id) {
+                      <article class="diff-item" [attr.data-change]="item.changeType"
+                               [class.is-expanded]="isOpen(itemKeyOf(section, item), item.changeType !== ChangeType.Unchanged)">
+                        <button type="button" class="diff-item-head"
+                                [attr.aria-expanded]="isOpen(itemKeyOf(section, item), item.changeType !== ChangeType.Unchanged)"
+                                (click)="toggle(itemKeyOf(section, item))">
+                          <span class="diff-cell is-old" [class.is-blank]="!item.oldHeading">
+                            <span class="diff-side-tag">{{ fromName() }}</span>
+                            @if (item.oldHeading; as heading) {
+                              <span class="diff-item-title">{{ heading.title }}</span>
+                              @if (heading.subtitle) {
+                                <span class="diff-item-subtitle">{{ heading.subtitle }}</span>
+                              }
+                            } @else {
+                              <span class="diff-none">Not in this version</span>
+                            }
+                          </span>
+                          <span class="diff-cell is-new" [class.is-blank]="!item.newHeading">
+                            <span class="diff-side-tag">{{ toName() }}</span>
+                            @if (item.newHeading; as heading) {
+                              <span class="diff-item-title">{{ heading.title }}</span>
+                              @if (heading.subtitle) {
+                                <span class="diff-item-subtitle">{{ heading.subtitle }}</span>
+                              }
+                            } @else {
+                              <span class="diff-none">Not in this version</span>
+                            }
+                          </span>
+                          <span class="diff-gutter">
+                            <span class="diff-chip" [attr.data-change]="item.changeType">{{ changeLabels[item.changeType] }}</span>
+                            <span class="diff-caret"
+                                  [class.is-open]="isOpen(itemKeyOf(section, item), item.changeType !== ChangeType.Unchanged)"
+                                  aria-hidden="true"></span>
+                          </span>
+                        </button>
+
+                        <div class="diff-item-collapse" [class.is-expanded]="isOpen(itemKeyOf(section, item), item.changeType !== ChangeType.Unchanged)">
+                          <div class="diff-item-collapse-inner">
+                            <div class="diff-fields diff-item-body">
+                              @for (field of item.fields; track field.key) {
+                                <ng-container *ngTemplateOutlet="fieldRow; context: { $implicit: field }"></ng-container>
+                              } @empty {
+                                <p class="diff-empty-note">No field filled in</p>
+                              }
+                            </div>
+                          </div>
+                        </div>
+                      </article>
+                    }
+                  }
+                </div>
+              </div>
+            </div>
+          </section>
+        }
+      } @else {
+        <div class="empty-state">
+          <p class="empty-state-title">No comparison to show</p>
+          <p class="empty-state-hint">Pick two versions above, then choose Compare</p>
+        </div>
+      }
+    }
+  </section>
+}
+
+<!-- One version picker, reused for both sides -->
+<ng-template #picker let-side let-label="label">
+  <div class="field custom-select-wrap diff-picker">
+    <span class="field-label">{{ label }}</span>
+    <button type="button" class="field-input custom-select-trigger"
+            [class.is-open]="openPicker() === side"
+            (click)="togglePicker(side, $event)"
+            aria-haspopup="listbox"
+            [attr.aria-expanded]="openPicker() === side">
+      <span class="custom-select-label">{{ pickerLabel(side) }}</span>
+    </button>
+
+    @if (openPicker() === side) {
+      <div class="custom-select-panel" (click)="$event.stopPropagation()">
+        <ul class="custom-select-list" role="listbox">
+          @if (side === PickerSide.From) {
+            <li role="option" [attr.aria-selected]="fromId() === null">
+              <button type="button" class="custom-select-option"
+                      [class.is-selected]="fromId() === null"
+                      (click)="choose(side, null)">Empty CV (before v1)</button>
+            </li>
+          }
+          @for (option of options(); track option.id) {
+            <li role="option" [attr.aria-selected]="selectedOf(side) === option.id">
+              <button type="button" class="custom-select-option"
+                      [class.is-selected]="selectedOf(side) === option.id"
+                      (click)="choose(side, option.id)">
+                v{{ option.versionNumber }}, {{ option.publishedAt | date:'dd/MM/yyyy' }}, {{ sourceLabels[option.source] }}
+              </button>
+            </li>
+          }
+          @if (hasMoreOptions()) {
+            <li>
+              <button type="button" class="custom-select-option diff-load-more"
+                      [disabled]="optionsLoading()"
+                      (click)="loadMoreOptions()">
+                {{ optionsLoading() ? 'Loading...' : 'Load older versions' }}
+              </button>
+            </li>
+          }
+        </ul>
+      </div>
+    }
+  </div>
+</ng-template>
+
+<!-- One field: old value left, new value right, change sign in the gutter -->
+<ng-template #fieldRow let-field>
+  <div class="diff-row" [attr.data-change]="field.changeType">
+    <div class="diff-cell is-old" [class.is-blank]="field.oldText === null">
+      <span class="diff-side-tag">{{ fromName() }}</span>
+      <span class="diff-label">{{ field.label }}</span>
+      @if (field.kind === ValueKind.Image) {
+        @if (field.oldText !== null && diff()?.fromVersion?.avatarUrl; as url) {
+          <img class="diff-avatar" [src]="url" alt="Photo in the older version" />
+        } @else {
+          <span class="diff-none">—</span>
+        }
+      } @else if (field.inline; as chunks) {
+        <span class="diff-text">@for (chunk of chunks; track $index) {@if (chunk.type === ChunkType.Equal) {<span>{{ chunk.text }}</span>} @else if (chunk.type === ChunkType.Delete) {<del class="diff-del">{{ chunk.text }}</del>}}</span>
+      } @else if (field.oldText !== null) {
+        <span class="diff-text">{{ field.oldText }}</span>
+      } @else {
+        <span class="diff-none">—</span>
+      }
+    </div>
+
+    <div class="diff-cell is-new" [class.is-blank]="field.newText === null">
+      <span class="diff-side-tag">{{ toName() }}</span>
+      <span class="diff-label">{{ field.label }}</span>
+      @if (field.kind === ValueKind.Image) {
+        @if (field.newText !== null && diff()?.toVersion?.avatarUrl; as url) {
+          <img class="diff-avatar" [src]="url" alt="Photo in the newer version" />
+        } @else {
+          <span class="diff-none">—</span>
+        }
+      } @else if (field.inline; as chunks) {
+        <span class="diff-text">@for (chunk of chunks; track $index) {@if (chunk.type === ChunkType.Equal) {<span>{{ chunk.text }}</span>} @else if (chunk.type === ChunkType.Insert) {<ins class="diff-ins">{{ chunk.text }}</ins>}}</span>
+      } @else if (field.newText !== null) {
+        <span class="diff-text">{{ field.newText }}</span>
+      } @else {
+        <span class="diff-none">—</span>
+      }
+    </div>
+
+    <div class="diff-gutter">
+      @if (field.changeType !== ChangeType.Unchanged) {
+        <span class="diff-mark" [attr.data-change]="field.changeType"
+              [matTooltip]="changeLabel(field.changeType)" aria-hidden="true">{{ changeMark(field.changeType) }}</span>
+        <span class="sr-only">{{ changeLabel(field.changeType) }}</span>
+      }
+    </div>
+  </div>
+</ng-template>

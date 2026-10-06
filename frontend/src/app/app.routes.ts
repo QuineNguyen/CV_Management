@@ -99,6 +99,20 @@ export const routes: Routes = [
             .then(m => m.CvEditComponent),
       },
       {
+        path: `${AppRoute.Cvs}/:id/history`,
+        title: 'Version History',
+        loadComponent: () =>
+          import('./core/pages/cvs/cv-version-history/cv-version-history.component')
+            .then(m => m.CvVersionHistoryComponent),
+      },
+      {
+        path: `${AppRoute.Cvs}/:id/diff`,
+        title: 'Compare Versions',
+        loadComponent: () =>
+          import('./core/pages/cvs/cv-diff-viewer/cv-diff-viewer.component')
+            .then(m => m.CvDiffViewerComponent),
+      },
+      {
         path: AppRoute.MyProfile,
         title: 'My Profile',
         loadComponent: () =>

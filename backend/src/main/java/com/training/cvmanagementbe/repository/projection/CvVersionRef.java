@@ -27,6 +27,4 @@ public interface CvVersionRef {
     UUID getLevel2ApproverId();
 
     UUID getRollbackSourceVersionId();
-
-    String getChangeSummary();
 }

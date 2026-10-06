@@ -3,4 +3,6 @@ export enum QueryParam {
     EmployeeId = 'employeeId',
     ProfileId = 'profileId',
     Language = 'language',
+    From = 'from',
+    To = 'to',
 }

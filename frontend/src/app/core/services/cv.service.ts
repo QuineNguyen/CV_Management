@@ -6,6 +6,7 @@ import { CvCreateRequest, CvDeleteRequest, CvDetailResponse, CvEditRequest, CvEd
 import { ApiEndpoint } from "../enums/api-endpoint.enum";
 import { PagedResponse } from "../dtos/page.dto";
 import { PendingNoteResponse } from "../dtos/update-request.dto";
+import { CvVersionHistoryItem, CvVersionQuery, VersionDiffResponse } from "../dtos/cv-version.dto";
 
 @Injectable({ providedIn: 'root' })
 export class CvService {
@@ -41,8 +42,31 @@ export class CvService {
         return this.http.get<CvDetailResponse>(this.url(`${ApiEndpoint.Cvs}/${id}`));
     }
 
-    listVersions(id: string): Observable<CvVersionSummary[]> {
-        return this.http.get<CvVersionSummary[]>(this.url(`${ApiEndpoint.Cvs}/${id}/versions`));
+    listVersions(id: string, query: CvVersionQuery): Observable<PagedResponse<CvVersionHistoryItem>> {
+        let params = new HttpParams()
+            .set('page', query.page)
+            .set('size', query.size);
+
+        if (query.sortBy) {
+            params = params.set('sortBy', query.sortBy);
+        }
+        if (query.direction) {
+            params = params.set('direction', query.direction);
+        }
+        return this.http.get<PagedResponse<CvVersionHistoryItem>>(
+            this.url(`${ApiEndpoint.Cvs}/${id}/versions`), { params }
+        );
+    }
+
+    // Without fromId the version is compared with an empty CV
+    diffVersions(id: string, toId: string, fromId: string | null): Observable<VersionDiffResponse> {
+        let params = new HttpParams().set('to', toId);
+        if (fromId) {
+            params = params.set('from', fromId);
+        }
+        return this.http.get<VersionDiffResponse>(
+            this.url(`${ApiEndpoint.Cvs}/${id}/versions/diff`), { params }
+        );
     }
 
     create(profileId: string, body: CvCreateRequest): Observable<CvResponse> {

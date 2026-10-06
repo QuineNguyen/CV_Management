@@ -56,7 +56,6 @@ export interface CvVersionSummary {
     authoredBy: string;
     level1ApproverId: string | null;
     level2ApproverId: string | null;
-    changeSummary: string | null;
 }
 
 // Content is null when the CV has no published version - the screen says so explicitly.

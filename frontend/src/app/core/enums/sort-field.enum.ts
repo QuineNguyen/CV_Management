@@ -52,6 +52,11 @@ export enum UpdateRequestSortField {
     EmployeeName = 'EMPLOYEE_NAME',
 }
 
+export enum CvVersionSortField {
+    VersionNumber = 'VERSION_NUMBER',
+    PublishedAt = 'PUBLISHED_AT',
+}
+
 export enum SortDirection {
     Asc = 'ASC',
     Desc = 'DESC',
