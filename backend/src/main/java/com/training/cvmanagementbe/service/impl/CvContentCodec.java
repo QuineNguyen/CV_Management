@@ -160,7 +160,7 @@ public class CvContentCodec {
         return builder.toString().trim();
     }
 
-    // ---------- Flat views (used by ChangeLogGenerator) ----------
+    // ---------- Flat views (used by ChangeLogGenerator and DiffServiceImpl) ----------
 
     /*
      * The SINGLE section of a key, as a record - or null for repeated sections.
@@ -208,6 +208,25 @@ public class CvContentCodec {
         return result;
     }
 
+    /*
+     * Same view as fieldsOf, but list values read "a, b" instead of "[a, b]". Used by the
+     * read-time diff, whose values are shown to people; fieldsOf stays as the change log stores it.
+     */
+    public Map<String, String> readableFieldsOf(Object record) {
+        Map<String, String> result = new LinkedHashMap<>();
+        if (record == null) {
+            return result;
+        }
+        Map<String, Object> raw = objectMapper.convertValue(record, new TypeReference<>() {});
+        raw.forEach((key, value) -> {
+            if (IDENTITY_KEYS.contains(key)) {
+                return;
+            }
+            result.put(key, readable(value));
+        });
+        return result;
+    }
+
     // One-line rendering of an added or removed item, stored as its change-log value.
     public String summarise(Object record) {
         StringBuilder builder = new StringBuilder();
@@ -224,6 +243,19 @@ public class CvContentCodec {
     }
 
     // ---------- Private helpers ----------
+
+    private String readable(Object value) {
+        if (value == null) {
+            return null;
+        }
+        if (value instanceof Collection<?> values) {
+            return values.stream()
+                    .filter(Objects::nonNull)
+                    .map(String::valueOf)
+                    .collect(Collectors.joining(", "));
+        }
+        return String.valueOf(value);
+    }
 
     private void collectText(JsonNode node, StringBuilder builder) {
         if (node == null || node.isNull()) {

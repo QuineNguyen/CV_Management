@@ -9,6 +9,7 @@ import com.training.cvmanagementbe.dto.response.configs.ApiResponse;
 import com.training.cvmanagementbe.dto.response.configs.PagedResponse;
 import com.training.cvmanagementbe.dto.response.cvs.*;
 import com.training.cvmanagementbe.enums.cvs.CvSortField;
+import com.training.cvmanagementbe.enums.cvs.CvVersionSortField;
 import com.training.cvmanagementbe.service.CvService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -81,9 +82,31 @@ public class CvController {
     }
 
     @GetMapping(ApiPath.CVS + ApiPath.VERSIONS)
-    @Operation(summary = "List the published versions of a CV, newest first")
-    public ResponseEntity<List<CvVersionSummary>> listVersions(@PathVariable UUID id) {
-        return ResponseEntity.ok(cvService.listVersions(id));
+    @Operation(summary = "List the published versions of a CV, newest first by default")
+    public ResponseEntity<PagedResponse<CvVersionHistoryItem>> listVersions(
+            @PathVariable UUID id,
+            @RequestParam(defaultValue = PageDefaults.PAGE) int page,
+            @RequestParam(defaultValue = PageDefaults.SIZE) int size,
+            @RequestParam(defaultValue = "VERSION_NUMBER") CvVersionSortField sortBy,
+            @RequestParam(defaultValue = "DESC") Sort.Direction direction
+    ) {
+        Pageable pageable = PageRequest.of(
+                PageDefaults.clampPage(page),
+                PageDefaults.clampSize(size),
+                Sort.by(direction, sortBy.getProperty())
+        );
+
+        return ResponseEntity.ok(cvService.listVersions(id, pageable));
+    }
+
+    @GetMapping(ApiPath.CVS + ApiPath.VERSION_DIFF)
+    @Operation(summary = "Compare two published versions; without 'from', 'to' is compared with an empty CV")
+    public ResponseEntity<VersionDiffResponse> diffVersions(
+            @PathVariable UUID id,
+            @RequestParam(required = false) UUID from,
+            @RequestParam UUID to
+    ) {
+        return ResponseEntity.ok(cvService.diffVersions(id, from, to));
     }
 
     @PutMapping(ApiPath.CVS + ApiPath.CV_CONTENT)

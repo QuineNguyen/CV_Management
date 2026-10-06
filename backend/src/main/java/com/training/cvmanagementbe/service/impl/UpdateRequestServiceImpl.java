@@ -22,6 +22,7 @@ import com.training.cvmanagementbe.record.cvs.CvContent;
 import com.training.cvmanagementbe.record.cvs.UpdateRequestCriteria;
 import com.training.cvmanagementbe.record.events.CvUpdateRequestedEvent;
 import com.training.cvmanagementbe.repository.*;
+import com.training.cvmanagementbe.repository.specifications.UpdateRequestSpecifications;
 import com.training.cvmanagementbe.service.UpdateRequestService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;

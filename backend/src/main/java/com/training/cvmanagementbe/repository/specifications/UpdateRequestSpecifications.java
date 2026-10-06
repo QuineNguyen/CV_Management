@@ -1,4 +1,4 @@
-package com.training.cvmanagementbe.repository;
+package com.training.cvmanagementbe.repository.specifications;
 
 import com.training.cvmanagementbe.entity.models.UpdateRequest;
 import com.training.cvmanagementbe.enums.cvs.Language;

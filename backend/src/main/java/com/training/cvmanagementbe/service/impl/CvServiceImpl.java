@@ -17,12 +17,15 @@ import com.training.cvmanagementbe.enums.cvs.LifecycleStatus;
 import com.training.cvmanagementbe.enums.users.RequestStatus;
 import com.training.cvmanagementbe.enums.users.Role;
 import com.training.cvmanagementbe.exception.ApiException;
+import com.training.cvmanagementbe.record.cvs.ContentDiff;
 import com.training.cvmanagementbe.record.cvs.CvContent;
 import com.training.cvmanagementbe.record.cvs.PublishCommand;
 import com.training.cvmanagementbe.record.events.CvDeletedEvent;
 import com.training.cvmanagementbe.record.events.CvRestoredEvent;
 import com.training.cvmanagementbe.repository.*;
+import com.training.cvmanagementbe.repository.projection.CvVersionRef;
 import com.training.cvmanagementbe.service.CvService;
+import com.training.cvmanagementbe.service.DiffService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
@@ -34,6 +37,7 @@ import java.time.LocalDateTime;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Service
 @RequiredArgsConstructor
@@ -55,6 +59,7 @@ public class CvServiceImpl implements CvService {
     private final AvatarUrlResolver avatarUrlResolver;
     private final AuditLogger auditLogger;
     private final ApplicationEventPublisher eventPublisher;
+    private final DiffService diffService;
 
     // ---------- Queries ----------
 
@@ -123,14 +128,62 @@ public class CvServiceImpl implements CvService {
         return PagedResponse.of(page, content);
     }
 
+    /*
+     * Timeline page. Names are resolved for this page only and each row carries its
+     * predecessor id so "compare with previous" works across page boundaries.
+     */
     @Override
-    public List<CvVersionSummary> listVersions(UUID cvId) {
+    public PagedResponse<CvVersionHistoryItem> listVersions(UUID cvId, Pageable pageable) {
         Cv cv = requireCv(cvId);
         requireCanRead(requireProfileAnyStatus(cv.getProfileId()).getEmployeeId());
 
-        return cvVersionRepository.findByCvIdOrderByVersionNumberDesc(cvId).stream()
-                .map(this::toSummary)
+        Page<CvVersionRef> page = cvVersionRepository.findByCvId(cvId, pageable);
+        List<CvVersionRef> rows = page.getContent();
+
+        Map<UUID, String> names = loadUserNames(rows.stream()
+                .flatMap(row -> Stream.of(
+                        row.getAuthoredBy(), row.getLevel1ApproverId(), row.getLevel2ApproverId()))
+                .toList());
+        Map<UUID, Integer> rollbackSources = loadRollbackSourceNumbers(rows);
+        Map<Integer, UUID> predecessors = loadPredecessorIds(cvId, rows);
+
+        List<CvVersionHistoryItem> content = rows.stream()
+                .map(row -> toHistoryItem(row, names, rollbackSources, predecessors))
                 .toList();
+
+        return PagedResponse.of(page, content);
+    }
+
+    /*
+     * Compares two published versions. Without fromVersionId the "to" version is compared
+     * with an empty CV - how v1 shows what it introduced. Same read scope as the CV; a version
+     * of another CV reads as not found.
+     */
+    @Override
+    public VersionDiffResponse diffVersions(UUID cvId, UUID fromVersionId, UUID toVersionId) {
+        Cv cv = requireCv(cvId);
+        requireCanRead(requireProfileAnyStatus(cv.getProfileId()).getEmployeeId());
+
+        if (toVersionId.equals(fromVersionId)) {
+            throw new ApiException.BusinessRuleException(ErrorCode.DIFF_SAME_VERSION);
+        }
+
+        CvVersion to = requireVersionOf(cvId, toVersionId);
+        CvVersion from = fromVersionId == null ? null : requireVersionOf(cvId, fromVersionId);
+
+        ContentDiff diff = diffService.diff(
+                from == null ? null : codec.read(from.getContentJson()),
+                from == null ? null : from.getAvatarImageId(),
+                codec.read(to.getContentJson()),
+                to.getAvatarImageId()
+        );
+
+        return new VersionDiffResponse(
+                from == null ? null : toDiffSide(from),
+                toDiffSide(to),
+                diff.stats(),
+                diff.sections()
+        );
     }
 
     /*
@@ -640,6 +693,77 @@ public class CvServiceImpl implements CvService {
                 cv.getCreatedAt(),
                 cv.getUpdatedAt()
         );
+    }
+
+    // ---------- Version helpers ----------
+
+    private CvVersion requireVersionOf(UUID cvId, UUID versionId) {
+        return cvVersionRepository.findByIdAndCvId(versionId, cvId)
+                .orElseThrow(() -> new ApiException.NotFoundException("cv version", versionId));
+    }
+
+    private VersionDiffSide toDiffSide(CvVersion version) {
+        return new VersionDiffSide(
+                version.getVersionNumber(),
+                version.getPublishedAt(),
+                version.getSource(),
+                avatarUrlResolver.resolve(version.getAvatarImageId())
+        );
+    }
+
+    // The maps are HashMaps, so a null key (skipped level, no rollback, v1) simply reads as null.
+    private CvVersionHistoryItem toHistoryItem(CvVersionRef row,
+                                               Map<UUID, String> names,
+                                               Map<UUID, Integer> rollbackSources,
+                                               Map<Integer, UUID> predecessors) {
+        return new CvVersionHistoryItem(
+                row.getId(),
+                row.getVersionNumber(),
+                row.getPublishedAt(),
+                row.getSource(),
+                names.get(row.getAuthoredBy()),
+                names.get(row.getLevel1ApproverId()),
+                names.get(row.getLevel2ApproverId()),
+                rollbackSources.get(row.getRollbackSourceVersionId()),
+                predecessors.get(row.getVersionNumber() - 1),
+                row.getChangeSummary()
+        );
+    }
+
+    // id -> full name in one query; nulls are skipped.
+    private Map<UUID, String> loadUserNames(Collection<UUID> userIds) {
+        Set<UUID> ids = userIds.stream().filter(Objects::nonNull).collect(Collectors.toSet());
+        Map<UUID, String> names = new HashMap<>();
+        if (!ids.isEmpty()) {
+            userRepository.findAllById(ids).forEach(user -> names.put(user.getId(), user.getFullName()));
+        }
+        return names;
+    }
+
+    private Map<UUID, Integer> loadRollbackSourceNumbers(List<CvVersionRef> rows) {
+        Set<UUID> ids = rows.stream()
+                .map(CvVersionRef::getRollbackSourceVersionId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+        Map<UUID, Integer> numbers = new HashMap<>();
+        if (!ids.isEmpty()) {
+            cvVersionRepository.findByIdIn(ids).forEach(ref -> numbers.put(ref.getId(), ref.getVersionNumber()));
+        }
+        return numbers;
+    }
+
+    // version_number -> id of v_{n-1} for every row of the page; v1 has none.
+    private Map<Integer, UUID> loadPredecessorIds(UUID cvId, List<CvVersionRef> rows) {
+        Set<Integer> numbers = rows.stream()
+                .map(row -> row.getVersionNumber() - 1)
+                .filter(number -> number > 0)
+                .collect(Collectors.toSet());
+        Map<Integer, UUID> ids = new HashMap<>();
+        if (!numbers.isEmpty()) {
+            cvVersionRepository.findByCvIdAndVersionNumberIn(cvId, numbers)
+                    .forEach(ref -> ids.put(ref.getVersionNumber(), ref.getId()));
+        }
+        return ids;
     }
 
     private CvVersionSummary toSummary(CvVersion version) {
