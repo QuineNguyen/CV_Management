@@ -68,6 +68,17 @@ html {
   --vt-note-surface: #fdf0e0;
   --vt-note-ink: #8a5210;
   --vt-note-line: rgba(237, 108, 2, 0.35);
+
+  /* Diff colors: green (added), amber (modified), red (removed) */
+  --diff-added-bg: #e9f6ee;
+  --diff-added-mark: #bfe5cb;
+  --diff-added-ink: var(--vt-success);
+  --diff-removed-bg: var(--vt-red-surface);
+  --diff-removed-mark: #ffd0da;
+  --diff-removed-ink: var(--vt-red-dark);
+  --diff-modified-bg: #fff6e5;
+  --diff-modified-mark: #ffe2b0;
+  --diff-modified-ink: #a24f00;
 }
 
 html, body {

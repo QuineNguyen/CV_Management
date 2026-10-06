@@ -2,17 +2,6 @@
   display: block;
   color: var(--vt-ink);
 
-  /* Green and amber stay light, so Viettel red keeps one meaning here: removed */
-  --diff-added-bg: #e9f6ee;
-  --diff-added-mark: #bfe5cb;
-  --diff-added-ink: var(--vt-success);
-  --diff-removed-bg: var(--vt-red-surface);
-  --diff-removed-mark: #ffd0da;
-  --diff-removed-ink: var(--vt-red-dark);
-  --diff-modified-bg: #fff6e5;
-  --diff-modified-mark: #ffe2b0;
-  --diff-modified-ink: #a24f00;
-
   /* old | new | change gutter */
   --diff-gutter-w: clamp(7.5rem, 14vw, 9rem);
   --diff-cols: minmax(0, 1fr) minmax(0, 1fr) var(--diff-gutter-w);
@@ -60,80 +49,6 @@
   align-items: center;
   justify-content: space-between;
   gap: var(--vt-gap);
-}
-
-.diff-stats {
-  display: flex;
-  flex-wrap: wrap;
-  gap: calc(var(--vt-gap) * 0.5);
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.diff-stat {
-  display: inline-flex;
-  align-items: baseline;
-  gap: 0.35rem;
-  padding: 0.3rem clamp(0.6rem, 2vw, 0.85rem);
-  border-radius: var(--vt-radius-sm);
-  font-size: var(--vt-fs-sm);
-}
-
-.diff-stat strong {
-  font-size: var(--vt-fs-md);
-}
-
-.diff-stat-mark {
-  font-weight: 700;
-}
-
-.diff-stat[data-change='ADDED']    { background: var(--diff-added-bg);    color: var(--diff-added-ink); }
-.diff-stat[data-change='MODIFIED'] { background: var(--diff-modified-bg); color: var(--diff-modified-ink); }
-.diff-stat[data-change='REMOVED']  { background: var(--diff-removed-bg);  color: var(--diff-removed-ink); }
-
-.view-toggle {
-  display: inline-flex;
-  overflow: hidden;
-  background: var(--vt-surface);
-  border: 0.0625rem solid var(--vt-line);
-  border-radius: var(--vt-radius-sm);
-}
-
-.view-toggle-btn {
-  min-height: var(--vt-tap);
-  padding-inline: clamp(0.75rem, 2.5vw, 1.1rem);
-  border: 0;
-  background: transparent;
-  color: var(--vt-ink-muted);
-  font: inherit;
-  font-size: var(--vt-fs-sm);
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.view-toggle-btn + .view-toggle-btn {
-  border-inline-start: 0.0625rem solid var(--vt-line);
-}
-
-.view-toggle-btn.is-active {
-  background: var(--vt-red);
-  color: var(--vt-surface);
-}
-
-.view-toggle-btn:focus-visible {
-  outline: 0.125rem solid var(--vt-red);
-  outline-offset: -0.125rem;
-}
-
-.notice {
-  padding: clamp(0.6rem, 2vw, 1rem);
-  border: 0.0625rem solid var(--vt-line);
-  border-inline-start: 0.25rem solid var(--vt-ink-muted);
-  border-radius: var(--vt-radius-sm);
-  background: var(--vt-surface);
-  font-size: var(--vt-fs-sm);
-  line-height: 1.5;
 }
 
 /* ---------- Column headers ---------- */
@@ -212,67 +127,11 @@
   font-weight: 700;
 }
 
-.status-badge.is-changed {
-  background: var(--vt-red-tint);
-  color: var(--vt-red);
-}
-
 .diff-section-body {
   display: flex;
   flex-direction: column;
   gap: calc(var(--vt-gap) * 0.6);
   padding: 0 var(--vt-pad) var(--vt-pad);
-}
-
-/* Expandable body animates smoothly using grid-template-rows (patterned after cv-item-editor) */
-.diff-section-collapse,
-.diff-item-collapse {
-  display: grid;
-  grid-template-rows: 0fr;
-  opacity: 0;
-  visibility: hidden;
-  pointer-events: none;
-  transform: translateY(-0.375rem);
-  transition: grid-template-rows 0.24s cubic-bezier(0.16, 1, 0.3, 1),
-              opacity 0.2s cubic-bezier(0.16, 1, 0.3, 1),
-              transform 0.24s cubic-bezier(0.16, 1, 0.3, 1),
-              visibility 0.24s;
-}
-
-.diff-section-collapse.is-expanded,
-.diff-item-collapse.is-expanded {
-  grid-template-rows: 1fr;
-  opacity: 1;
-  visibility: visible;
-  pointer-events: auto;
-  transform: translateY(0);
-}
-
-.diff-section-collapse-inner,
-.diff-item-collapse-inner {
-  min-height: 0;
-  overflow: hidden;
-}
-
-.diff-caret {
-  flex: 0 0 auto;
-  width: 0.5rem;
-  height: 0.5rem;
-  margin-inline: 0.25rem;
-  margin-top: -0.0625rem;
-  border-right: 0.125rem solid var(--vt-ink-muted);
-  border-bottom: 0.125rem solid var(--vt-ink-muted);
-  transform: rotate(45deg);
-  transform-origin: center;
-  transition: transform 0.24s cubic-bezier(0.16, 1, 0.3, 1),
-              border-color 0.15s ease,
-              margin-top 0.24s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.diff-caret.is-open {
-  transform: rotate(-135deg);
-  border-color: var(--vt-red);
-  margin-top: 0.1875rem;
 }
 
 /* ---------- Rows: old | new | gutter ---------- */
@@ -336,69 +195,27 @@
   margin-inline: 0;
 }
 
-/* Shown only on phones, where the two sides stack */
 .diff-side-tag {
   display: none;
 }
 
 /* ---------- Change colouring (§8.2) ---------- */
-.diff-row[data-change='ADDED'] .is-new {
+[data-change='ADDED'] .is-new {
   background: var(--diff-added-bg);
 }
 
-.diff-row[data-change='REMOVED'] .is-old {
+[data-change='REMOVED'] .is-old {
   background: var(--diff-removed-bg);
 }
 
-.diff-row[data-change='REMOVED'] .is-old .diff-text {
+[data-change='REMOVED'] .is-old :is(.diff-text, .diff-item-title) {
   color: var(--diff-removed-ink);
   text-decoration: line-through;
 }
 
-.diff-row[data-change='MODIFIED'] .diff-cell {
+.diff-row[data-change='MODIFIED'] .diff-cell,
+.diff-item[data-change='MODIFIED'] .diff-item-head .diff-cell {
   background: var(--diff-modified-bg);
-}
-
-.diff-del {
-  border-radius: 0.15rem;
-  background: var(--diff-removed-mark);
-  color: var(--diff-removed-ink);
-  text-decoration: line-through;
-}
-
-.diff-ins {
-  border-radius: 0.15rem;
-  background: var(--diff-added-mark);
-  color: var(--diff-added-ink);
-  text-decoration: none;
-}
-
-.diff-mark {
-  display: inline-grid;
-  place-items: center;
-  width: 1.5rem;
-  height: 1.5rem;
-  border-radius: 50%;
-  font-size: var(--vt-fs-md);
-  font-weight: 700;
-}
-
-.diff-mark[data-change='ADDED'],
-.diff-chip[data-change='ADDED'] {
-  background: var(--diff-added-mark);
-  color: var(--diff-added-ink);
-}
-
-.diff-mark[data-change='MODIFIED'],
-.diff-chip[data-change='MODIFIED'] {
-  background: var(--diff-modified-mark);
-  color: var(--diff-modified-ink);
-}
-
-.diff-mark[data-change='REMOVED'],
-.diff-chip[data-change='REMOVED'] {
-  background: var(--diff-removed-mark);
-  color: var(--diff-removed-ink);
 }
 
 .diff-avatar {
@@ -409,8 +226,7 @@
   border-radius: 50%;
 }
 
-.diff-row[data-change='MODIFIED'] .is-new .diff-avatar,
-.diff-row[data-change='ADDED'] .is-new .diff-avatar {
+:is(.diff-row[data-change='MODIFIED'], .diff-row[data-change='ADDED']) .is-new .diff-avatar {
   border-color: var(--vt-red);
 }
 
@@ -448,41 +264,10 @@
   color: var(--vt-ink-muted);
 }
 
-.diff-item[data-change='ADDED'] .diff-item-head .is-new {
-  background: var(--diff-added-bg);
-}
-
-.diff-item[data-change='REMOVED'] .diff-item-head .is-old {
-  background: var(--diff-removed-bg);
-}
-
-.diff-item[data-change='REMOVED'] .diff-item-head .is-old .diff-item-title {
-  text-decoration: line-through;
-}
-
-.diff-item[data-change='MODIFIED'] .diff-item-head .diff-cell {
-  background: var(--diff-modified-bg);
-}
-
-/* The entry already has a frame; its fields only need the divider above them */
 .diff-item-body {
   border: 0;
   border-block-start: 0.0625rem solid var(--vt-line);
   border-radius: 0;
-}
-
-.diff-chip {
-  display: inline-flex;
-  align-items: center;
-  padding: 0.0625rem 0.4rem;
-  border-radius: var(--vt-radius-sm);
-  background: var(--vt-canvas);
-  color: var(--vt-ink-muted);
-  font-size: var(--vt-fs-sm);
-  font-weight: 700;
-  white-space: nowrap;
-  line-height: 1.4;
-  flex-shrink: 0;
 }
 
 .diff-empty-note {
@@ -492,7 +277,7 @@
   color: var(--vt-ink-muted);
 }
 
-/* ---------- iPad ---------- */
+/* ---------- Responsive ---------- */
 @media (max-width: 64rem) {
   :host {
     --diff-gutter-w: clamp(7rem, 15vw, 8.25rem);
@@ -507,7 +292,6 @@
   }
 }
 
-/* ---------- Phone: one column, each cell names its side ---------- */
 @media (max-width: 40rem) {
   .diff-columns {
     display: none;
@@ -538,14 +322,8 @@
     padding-block: calc(var(--vt-gap) * 0.55);
   }
 
-  /* The side that does not hold the value takes no room */
-  .diff-cell.is-blank {
-    display: none;
-  }
-
-  /* The same value twice says nothing on a narrow screen */
-  .diff-row[data-change='UNCHANGED'] .is-old,
-  .diff-item[data-change='UNCHANGED'] .diff-item-head .is-old {
+  .diff-cell.is-blank,
+  [data-change='UNCHANGED'] :is(.is-old, .diff-side-tag) {
     display: none;
   }
 
@@ -560,18 +338,9 @@
     font-weight: 700;
   }
 
-  .diff-row[data-change='UNCHANGED'] .diff-side-tag,
-  .diff-item[data-change='UNCHANGED'] .diff-side-tag {
-    display: none;
-  }
-
   .diff-summary {
     flex-direction: column;
     align-items: stretch;
-  }
-
-  .view-toggle-btn {
-    flex: 1 1 0;
   }
 
   .diff-section-head {
@@ -580,13 +349,5 @@
 
   .diff-section-body {
     padding: 0 var(--vt-gap) var(--vt-gap);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .diff-caret,
-  .diff-section-collapse,
-  .diff-item-collapse {
-    transition-duration: 0.01ms !important;
   }
 }
