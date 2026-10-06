@@ -65,7 +65,4 @@ public class CvVersion {
 
     @Column(name = "rollback_source_version_id", updatable = false)
     private UUID rollbackSourceVersionId;
-
-    @Column(name = "change_summary", updatable = false, columnDefinition = "TEXT")
-    private String changeSummary;
 }

@@ -135,10 +135,10 @@ export const CV_SECTIONS: readonly SectionDescriptor[] = [
         subtitleField: 'degree',
         fields: [
             { key: 'institution', label: 'Institution', kind: FieldKind.Text, required: true, maxLength: 255, half: true },
-            { key: 'degree', label: 'Degree', kind: FieldKind.Text, maxLength: 255, half: true },
             { key: 'field', label: 'Field of study', kind: FieldKind.Text, maxLength: 255, half: true },
             { key: 'start_date', label: 'From', kind: FieldKind.Date, dateStyle: 'monthYear', half: true },
             { key: 'end_date', label: 'To', kind: FieldKind.Date, dateStyle: 'monthYear', half: true, hint: 'Leave empty if still studying' },
+            { key: 'degree', label: 'Degree', kind: FieldKind.Text, maxLength: 255, half: true },
             { key: 'description', label: 'Notes', kind: FieldKind.Textarea, maxLength: 2000 },
         ],
     },

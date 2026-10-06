@@ -1,0 +1,1 @@
+ALTER TABLE cv_versions DROP COLUMN change_summary;

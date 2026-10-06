@@ -116,6 +116,13 @@ export class CvDetailComponent implements OnInit {
         }
     }
 
+    openHistory(): void {
+        const id = this.detail()?.cv.id;
+        if (id) {
+            void this.router.navigate(['/' + AppRoute.Cvs, id, 'history']);
+        }
+    }
+
     private load(id: string): void {
         this.cvService.getById(id).subscribe({
             next: detail => {

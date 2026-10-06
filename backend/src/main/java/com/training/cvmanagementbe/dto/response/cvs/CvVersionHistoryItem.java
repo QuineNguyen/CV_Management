@@ -20,7 +20,6 @@ public record CvVersionHistoryItem(
         // Set only for ROLLBACK
         Integer rollbackSourceVersionNumber,
         // v_{n-1}; null for v1. Lets the client compare a row with its predecessor directly.
-        UUID previousVersionId,
-        String changeSummary
+        UUID previousVersionId
 ) {
 }

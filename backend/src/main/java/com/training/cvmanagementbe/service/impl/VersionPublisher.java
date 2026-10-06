@@ -4,7 +4,6 @@ import com.training.cvmanagementbe.common.AuditLogger;
 import com.training.cvmanagementbe.entity.models.*;
 import com.training.cvmanagementbe.enums.configs.Action;
 import com.training.cvmanagementbe.enums.configs.TargetType;
-import com.training.cvmanagementbe.enums.cvs.ChangeType;
 import com.training.cvmanagementbe.enums.cvs.DraftStatus;
 import com.training.cvmanagementbe.enums.cvs.LifecycleStatus;
 import com.training.cvmanagementbe.exception.ApiException;
@@ -20,9 +19,7 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.EnumMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
 /*
@@ -87,8 +84,7 @@ public class VersionPublisher {
 
         CvVersion saved = cvVersionRepository.saveAndFlush(version);
 
-        saved.setChangeSummary(summarise(buildChangeLog(command, previous, saved)));
-        cvVersionRepository.saveAndFlush(saved);
+        buildChangeLog(command, previous, saved);
 
         // Creating the CV does not complete a request; publishing content does.
         cvRepository.completePendingRequestsByCvId(cv.getId(), CurrentActor.requireUserId(), saved.getPublishedAt());
@@ -104,9 +100,9 @@ public class VersionPublisher {
 
     // ---------- Private helpers ----------
 
-    private List<ChangeLogEntry> buildChangeLog(PublishCommand command,
-                                                Optional<CvVersion> previous,
-                                                CvVersion saved) {
+    private void buildChangeLog(PublishCommand command,
+                                Optional<CvVersion> previous,
+                                CvVersion saved) {
         CvContent previousContent = previous.map(version -> codec.read(version.getContentJson())).orElse(null);
 
         List<ChangeLogEntry> changes = changeLogGenerator.generate(
@@ -117,7 +113,7 @@ public class VersionPublisher {
                 command.avatarImageId()
         );
 
-        return changeLogEntryRepository.saveAll(changes);
+        changeLogEntryRepository.saveAll(changes);
     }
 
     private void closeDraft(PublishCommand command, CvVersion saved) {
@@ -130,23 +126,5 @@ public class VersionPublisher {
         draft.setStatus(DraftStatus.PUBLISHED);
         draft.setPublishedVersionId(saved.getId());
         cvDraftRepository.save(draft);
-    }
-
-    // Short human-readable roll-up, stored on the version and shown in the history list.
-    private String summarise(List<ChangeLogEntry> changes) {
-        if (changes.isEmpty()) {
-            return "No content changes";
-        }
-        Map<ChangeType, Integer> counts = new EnumMap<>(ChangeType.class);
-        changes.forEach(entry -> counts.merge(entry.getChangeType(), 1, Integer::sum));
-
-        StringBuilder builder = new StringBuilder();
-        counts.forEach((type, count) -> {
-            if (!builder.isEmpty()) {
-                builder.append(", ");
-            }
-            builder.append(count).append(' ').append(type.name().toLowerCase());
-        });
-        return builder.toString();
     }
 }

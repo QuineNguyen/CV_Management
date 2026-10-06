@@ -29,6 +29,9 @@
       </div>
 
       <div class="page-toolbar-actions">
+        @if (detail.currentVersion) {
+          <button type="button" class="btn btn-primary" (click)="openHistory()">Version history</button>
+        }
         @if (canEdit()) {
           <button type="button" class="btn btn-primary" (click)="edit()">Edit</button>
         }
@@ -69,10 +72,6 @@
         <dd>
           {{ detail.currentVersion ? versionSourceLabels[detail.currentVersion.source] : '—' }}
         </dd>
-      </div>
-      <div>
-        <dt>Changes</dt>
-        <dd>{{ detail.currentVersion?.changeSummary ?? '—' }}</dd>
       </div>
       <div>
         <dt>Open draft</dt>

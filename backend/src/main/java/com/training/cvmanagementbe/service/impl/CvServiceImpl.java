@@ -725,8 +725,7 @@ public class CvServiceImpl implements CvService {
                 names.get(row.getLevel1ApproverId()),
                 names.get(row.getLevel2ApproverId()),
                 rollbackSources.get(row.getRollbackSourceVersionId()),
-                predecessors.get(row.getVersionNumber() - 1),
-                row.getChangeSummary()
+                predecessors.get(row.getVersionNumber() - 1)
         );
     }
 
@@ -774,8 +773,7 @@ public class CvServiceImpl implements CvService {
                 version.getSource(),
                 version.getAuthoredBy(),
                 version.getLevel1ApproverId(),
-                version.getLevel2ApproverId(),
-                version.getChangeSummary()
+                version.getLevel2ApproverId()
         );
     }
 

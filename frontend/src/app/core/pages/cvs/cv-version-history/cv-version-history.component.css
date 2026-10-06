@@ -1,0 +1,202 @@
+:host {
+  display: block;
+  color: var(--vt-ink);
+}
+
+/* ---------- Column widths ---------- */
+.col-pick      { width: 3rem; }
+.col-version   { width: 8.5rem; }
+.col-published { width: 10rem; }
+.col-author    { width: 14%; min-width: 9rem; }
+.col-reviewers { width: 16%; min-width: 10rem; }
+.col-source    { width: 10rem; }
+.col-summary   { min-width: 12rem; }
+.col-actions   { width: 6rem; }
+
+.data-table td.col-pick,
+.data-table td.col-version,
+.data-table td.col-published,
+.data-table td.col-source,
+.data-table td.col-actions {
+  text-align: center;
+}
+
+.row-actions {
+  justify-content: center;
+}
+
+/* Picked rows share the selected tint of the rest of the app */
+.data-table tbody tr.is-picked,
+.data-table tbody tr.is-picked:hover {
+  background: var(--vt-red-surface);
+}
+
+.data-card.is-picked {
+  border-color: var(--vt-red);
+  background: var(--vt-red-surface);
+}
+
+/* ---------- Cells ---------- */
+.pick-box {
+  width: 1.125rem;
+  height: 1.125rem;
+  margin: 0;
+  accent-color: var(--vt-red);
+  cursor: pointer;
+}
+
+.pick-box:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.pick-box:focus-visible {
+  outline: 0.125rem solid var(--vt-red);
+  outline-offset: 0.125rem;
+}
+
+.version-tag {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  margin-inline-end: 0.35rem;
+}
+
+.cell-date {
+  color: var(--vt-ink-muted);
+  white-space: nowrap;
+}
+
+/* Rollback notes sit under their value instead of truncating beside it */
+.col-author .cell-muted,
+.col-source .cell-muted,
+.data-card-facts .cell-muted {
+  display: block;
+  max-width: none;
+  margin-block-start: 0.2rem;
+  white-space: normal;
+}
+
+.reviewer-line {
+  display: block;
+  font-size: var(--vt-fs-sm);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.reviewer-level {
+  display: inline-block;
+  min-width: 1.75rem;
+  color: var(--vt-ink-muted);
+  font-weight: 700;
+}
+
+.summary-text {
+  font-size: var(--vt-fs-sm);
+  color: var(--vt-ink-muted);
+  overflow-wrap: anywhere;
+}
+
+/* ---------- Draft pinned above the timeline ---------- */
+.history-draft {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--vt-gap);
+  padding: clamp(0.6rem, 2vw, 0.9rem) var(--vt-pad);
+  border: 0.0625rem dashed var(--vt-warning);
+  border-radius: var(--vt-radius-sm);
+  background: #fdf7ef;
+}
+
+.history-draft-text {
+  flex: 1 1 min(20rem, 100%);
+  margin: 0;
+  font-size: var(--vt-fs-sm);
+  line-height: 1.5;
+}
+
+.status-badge.is-draft {
+  background: rgba(237, 108, 2, 0.14);
+  color: var(--vt-warning);
+}
+
+/* ---------- Picks ---------- */
+.history-picks {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: calc(var(--vt-gap) * 0.5);
+  min-height: var(--vt-tap);
+}
+
+.history-picks-label {
+  font-size: var(--vt-fs-sm);
+  font-weight: 700;
+  color: var(--vt-ink-muted);
+}
+
+.history-picks-hint {
+  font-size: var(--vt-fs-sm);
+  color: var(--vt-ink-muted);
+}
+
+.pick-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-height: var(--vt-tap);
+  padding-inline: clamp(0.6rem, 2vw, 0.85rem);
+  border: 0.0625rem solid var(--vt-red);
+  border-radius: calc(var(--vt-tap) / 2);
+  background: var(--vt-red-surface);
+  color: var(--vt-red);
+  font: inherit;
+  font-size: var(--vt-fs-sm);
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.pick-chip:hover {
+  background: var(--vt-red);
+  color: var(--vt-surface);
+}
+
+.pick-chip:focus-visible {
+  outline: 0.125rem solid var(--vt-red);
+  outline-offset: 0.125rem;
+}
+
+/* ---------- Cards ---------- */
+.card-pick {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: var(--vt-touch-target);
+  font-size: var(--vt-fs-md);
+  cursor: pointer;
+}
+
+.card-fact-wide {
+  grid-column: 1 / -1;
+}
+
+/* ---------- Phone ---------- */
+@media (max-width: 40rem) {
+  /* A bigger box is easier to hit with a thumb */
+  .pick-box {
+    width: 1.375rem;
+    height: 1.375rem;
+  }
+
+  .history-picks-hint {
+    flex: 1 1 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pick-chip {
+    transition: none;
+  }
+}

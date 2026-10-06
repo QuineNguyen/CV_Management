@@ -12,7 +12,6 @@ public record CvVersionSummary(
         VersionSource source,
         UUID authoredBy,
         UUID level1ApproverId,
-        UUID level2ApproverId,
-        String changeSummary
+        UUID level2ApproverId
 ) {
 }
