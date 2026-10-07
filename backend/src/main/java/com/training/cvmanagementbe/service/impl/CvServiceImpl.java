@@ -4,6 +4,7 @@ import com.training.cvmanagementbe.common.AuditLogger;
 import com.training.cvmanagementbe.dto.request.cvs.CvCreateRequest;
 import com.training.cvmanagementbe.dto.request.cvs.CvDeleteRequest;
 import com.training.cvmanagementbe.dto.request.cvs.CvEditRequest;
+import com.training.cvmanagementbe.dto.request.cvs.CvRollbackRequest;
 import com.training.cvmanagementbe.dto.response.approvals.InlineCommentResponse;
 import com.training.cvmanagementbe.dto.response.configs.PagedResponse;
 import com.training.cvmanagementbe.dto.response.cvs.*;
@@ -20,8 +21,10 @@ import com.training.cvmanagementbe.exception.ApiException;
 import com.training.cvmanagementbe.record.cvs.ContentDiff;
 import com.training.cvmanagementbe.record.cvs.CvContent;
 import com.training.cvmanagementbe.record.cvs.PublishCommand;
+import com.training.cvmanagementbe.record.cvs.RollbackAuditDetail;
 import com.training.cvmanagementbe.record.events.CvDeletedEvent;
 import com.training.cvmanagementbe.record.events.CvRestoredEvent;
+import com.training.cvmanagementbe.record.events.CvRolledBackEvent;
 import com.training.cvmanagementbe.repository.*;
 import com.training.cvmanagementbe.repository.projection.CvVersionRef;
 import com.training.cvmanagementbe.service.CvService;
@@ -388,6 +391,54 @@ public class CvServiceImpl implements CvService {
         return after;
     }
 
+    /*
+     * Rollback publishes a new version copied from an older one: content, avatar and the
+     * three identity columns come from the source. No version is edited or deleted and the
+     * person who clicked is recorded only in the audit log - never on cv_versions.
+     */
+    @Override
+    @Transactional
+    public CvVersionHistoryItem rollback(UUID cvId, CvRollbackRequest request) {
+        requireAdminOrHr();
+
+        // Locked before validating, so two rollbacks of one CV check against the same current version.
+        Cv cv = requireActiveCvForUpdate(cvId);
+
+        CvVersion source = requireVersionOf(cvId, request.targetVersionId());
+        CvVersion current = requireCurrentVersion(cvId);
+
+        validateNotCurrent(source, current);
+        // Only PENDING_* blocks; an owner's DRAFT or REJECTED draft stays open untouched.
+        validateNoPendingDraft(cvId);
+
+        // VersionPublisher numbers it MAX + 1, writes the change log and completes PENDING requests.
+        CvVersion published = versionPublisher.publish(PublishCommand.rollback(
+                cvId,
+                codec.read(source.getContentJson()),
+                source.getAvatarImageId(),
+                source.getAuthoredBy(),
+                source.getLevel1ApproverId(),
+                source.getLevel2ApproverId(),
+                source.getId()
+        ));
+
+        // Approval is bypassed, so the trail is mandatory - and the only place naming the clicker.
+        auditLogger.record(Action.ROLLBACK_VERSION, TargetType.CV, cvId,
+                current.getVersionNumber(),
+                new RollbackAuditDetail(source.getVersionNumber(), published.getVersionNumber()));
+
+        eventPublisher.publishEvent(new CvRolledBackEvent(
+                cvId,
+                requireProfileAnyStatus(cv.getProfileId()).getEmployeeId(),
+                CurrentActor.requireUserId(),
+                source.getVersionNumber(),
+                published.getVersionNumber()
+        ));
+
+        // The CV row is still locked, so the replaced version is the new one's predecessor
+        return toHistoryItem(published, source.getVersionNumber(), current.getId());
+    }
+
     // ---------- Validation ----------
 
     private void validateLanguageAvailable(UUID profileId, Language language) {
@@ -397,9 +448,17 @@ public class CvServiceImpl implements CvService {
         }
     }
 
+    // Shared by delete and rollback: Both wait until the review ends.
     private void validateNoPendingDraft(UUID cvId) {
         if (cvDraftRepository.existsByCvIdAndStatusIn(cvId, CvDraft.LOCKED_STATUSES)) {
             throw new ApiException.BusinessRuleException(ErrorCode.CV_HAS_PENDING_DRAFTS);
+        }
+    }
+
+    // Rolling back to the current version would publish an identical copy
+    private void validateNotCurrent(CvVersion source, CvVersion current) {
+        if (source.getId().equals(current.getId())) {
+            throw new ApiException.BusinessRuleException(ErrorCode.ROLLBACK_TO_CURRENT);
         }
     }
 
@@ -617,6 +676,15 @@ public class CvServiceImpl implements CvService {
                 .orElseThrow(() -> new ApiException.NotFoundException("cv", cvId));
     }
 
+    private Cv requireActiveCvForUpdate(UUID cvId) {
+        Cv cv = cvRepository.findByIdForUpdate(cvId)
+                .orElseThrow(() -> new ApiException.NotFoundException("cv", cvId));
+        if (cv.getLifecycleStatus() != LifecycleStatus.ACTIVE) {
+            throw new ApiException.NotFoundException("cv", cvId);
+        }
+        return cv;
+    }
+
     private CvProfile requireActiveProfile(UUID profileId) {
         return cvProfileRepository.findByIdAndLifecycleStatus(profileId, LifecycleStatus.ACTIVE)
                 .orElseThrow(() -> new ApiException.NotFoundException("cv profile", profileId));
@@ -702,6 +770,11 @@ public class CvServiceImpl implements CvService {
                 .orElseThrow(() -> new ApiException.NotFoundException("cv version", versionId));
     }
 
+    private CvVersion requireCurrentVersion(UUID cvId) {
+        return cvVersionRepository.findTopByCvIdOrderByVersionNumberDesc(cvId)
+                .orElseThrow(() -> new ApiException.NotFoundException("cv version", cvId));
+    }
+
     private VersionDiffSide toDiffSide(CvVersion version) {
         return new VersionDiffSide(
                 version.getVersionNumber(),
@@ -726,6 +799,26 @@ public class CvServiceImpl implements CvService {
                 names.get(row.getLevel2ApproverId()),
                 rollbackSources.get(row.getRollbackSourceVersionId()),
                 predecessors.get(row.getVersionNumber() - 1)
+        );
+    }
+
+    // A version just published: Source number and predecessor are already known to the caller
+    private CvVersionHistoryItem toHistoryItem(CvVersion version, Integer rollbackSourceNumber, UUID previousVersionId) {
+        // Arrays.asList keeps the null ids, which loadUserNames then skips
+        Map<UUID, String> names = loadUserNames(Arrays.asList(
+                version.getAuthoredBy(), version.getLevel1ApproverId(), version.getLevel2ApproverId()
+        ));
+
+        return new CvVersionHistoryItem(
+                version.getId(),
+                version.getVersionNumber(),
+                version.getPublishedAt(),
+                version.getSource(),
+                names.get(version.getAuthoredBy()),
+                names.get(version.getLevel1ApproverId()),
+                names.get(version.getLevel2ApproverId()),
+                rollbackSourceNumber,
+                previousVersionId
         );
     }
 

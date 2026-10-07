@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<!-- Event #15, rollback: tells the owner which version came back and its new number -->
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{email/base-layout :: layout(~{::section})}">
+<body>
+<section>
+    <p style="margin:0 0 12px;">
+        <strong th:text="${actorName}">An HR officer</strong> rolled back your CV
+        <strong th:text="|${profileName} (${language})|">Backend Developer (EN)</strong>
+        to an earlier version.
+    </p>
+
+    <table class="facts" role="presentation" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+            <td class="label">Content restored from</td>
+            <td class="value" th:text="|v${sourceVersionNumber}|">v3</td>
+        </tr>
+        <tr>
+            <td class="label">New current version</td>
+            <td class="value" th:text="|v${versionNumber}|">v6</td>
+        </tr>
+    </table>
+
+    <p class="note" style="margin:0 0 8px;">
+        The new version keeps the author and reviewers of
+        <span th:text="|v${sourceVersionNumber}|">v3</span>.
+        Every earlier version stays in the history unchanged.
+    </p>
+    <p class="note" style="margin:0;">
+        Any pending update request on this CV is now marked as completed.
+    </p>
+</section>
+</body>
+</html>

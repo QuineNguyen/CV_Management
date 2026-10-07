@@ -25,7 +25,6 @@ public enum ErrorCode {
     INVALID_CREDENTIALS("The username or password is incorrect"),
     ACCOUNT_LOCKED("Your account is temporarily locked. Please try again later"),
     ACCOUNT_INACTIVE("This account has been deactivated"),
-    INVALID_TOKEN("The authentication token is invalid or has expired"),
     GOOGLE_TOKEN_INVALID("The Google sign-in token could not be verified"),
     GOOGLE_EMAIL_NOT_REGISTERED("This Google email is not registered in the system. Please contact your administrator"),
     GOOGLE_ACCOUNT_MISMATCH("This Google account is already linked to a different user"),
@@ -138,10 +137,11 @@ public enum ErrorCode {
     CV_NOT_DELETED("This CV is not in DELETED status"),
     MUST_DESIGNATE_NEW_MASTER("This CV is the master; designate a replacement before deleting"),
     INVALID_NEW_MASTER("The designated master must be another active CV of the same profile"),
-    CV_HAS_PENDING_DRAFTS("Cannot delete a CV that has drafts awaiting approval"),
+    CV_HAS_PENDING_DRAFTS("This CV has a draft awaiting approval; finish or cancel that review first"),
 
     // ---------- CV versions ----------
     DIFF_SAME_VERSION("Choose two different versions to compare"),
+    ROLLBACK_TO_CURRENT("This is already the current version; pick an older version to roll back to"),
 
     // ---------- Image upload ----------
     IMAGE_EMPTY("The uploaded file is empty"),

@@ -6,7 +6,6 @@ import com.training.cvmanagementbe.enums.approvals.ApprovalLevel;
 import com.training.cvmanagementbe.enums.approvals.DecisionResult;
 import com.training.cvmanagementbe.enums.cvs.DraftStatus;
 import com.training.cvmanagementbe.enums.cvs.LifecycleStatus;
-import com.training.cvmanagementbe.enums.notifications.EmailTemplateVar;
 import com.training.cvmanagementbe.enums.notifications.NotificationEventType;
 import com.training.cvmanagementbe.enums.notifications.NotificationLink;
 import com.training.cvmanagementbe.enums.users.AccountStatus;
@@ -283,6 +282,37 @@ public class NotificationListener {
     public void onCvRestored(CvRestoredEvent event) {
         notifyCvLifecycle(NotificationEventType.CV_RESTORED, event.cvId(), event.ownerId(), event.actorId(),
                 NotificationLink.CV_DETAIL.path(event.cvId()));
+    }
+
+    // The owner learns which version came back and the number it now has.
+    @Async
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void onCvRolledBack(CvRolledBackEvent event) {
+        Optional<Cv> cv = cvRepository.findById(event.cvId());
+        if (cv.isEmpty()) {
+            log.warn("CV {} is gone; rollback notification skipped", event.cvId());
+            return;
+        }
+        String profileName = profileNameOf(cv.get().getProfileId());
+        String language = cv.get().getLanguage().name();
+        String actor = nameOf(event.actorId());
+
+        dispatcher.dispatch(new NotificationCommand(
+                event.ownerId(), event.actorId(), NotificationEventType.CV_ROLLBACK,
+                "%s rolled back your CV %s (%s) to the content of v%d. v%d is now the current version"
+                        .formatted(actor, profileName, language,
+                                event.sourceVersionNumber(), event.newVersionNumber()),
+                NotificationLink.CV_DETAIL.path(event.cvId()),
+                "Your CV was rolled back to v%d - %s (%s)"
+                        .formatted(event.sourceVersionNumber(), profileName, language),
+                vars()
+                        .with(ACTOR_NAME, actor)
+                        .with(PROFILE_NAME, profileName)
+                        .with(LANGUAGE, language)
+                        .with(SOURCE_VERSION_NUMBER, event.sourceVersionNumber())
+                        .with(VERSION_NUMBER, event.newVersionNumber())
+                        .build()
+        ));
     }
 
     @Async

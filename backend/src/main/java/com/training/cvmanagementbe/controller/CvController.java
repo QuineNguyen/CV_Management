@@ -5,6 +5,7 @@ import com.training.cvmanagementbe.constant.PageDefaults;
 import com.training.cvmanagementbe.dto.request.cvs.CvCreateRequest;
 import com.training.cvmanagementbe.dto.request.cvs.CvDeleteRequest;
 import com.training.cvmanagementbe.dto.request.cvs.CvEditRequest;
+import com.training.cvmanagementbe.dto.request.cvs.CvRollbackRequest;
 import com.training.cvmanagementbe.dto.response.configs.ApiResponse;
 import com.training.cvmanagementbe.dto.response.configs.PagedResponse;
 import com.training.cvmanagementbe.dto.response.cvs.*;
@@ -107,6 +108,12 @@ public class CvController {
             @RequestParam UUID to
     ) {
         return ResponseEntity.ok(cvService.diffVersions(id, from, to));
+    }
+
+    @PostMapping(ApiPath.CVS + ApiPath.CV_ROLLBACK)
+    @Operation(summary = "Roll a CV back to an older version, published as a new version (Admin/HR)")
+    public ResponseEntity<CvVersionHistoryItem> rollback(@PathVariable UUID id, @Valid @RequestBody CvRollbackRequest request) {
+        return ResponseEntity.ok(cvService.rollback(id, request));
     }
 
     @PutMapping(ApiPath.CVS + ApiPath.CV_CONTENT)

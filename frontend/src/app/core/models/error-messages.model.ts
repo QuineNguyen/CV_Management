@@ -29,9 +29,10 @@ export const ERROR_MESSAGES: Readonly<Record<ClientErrorCode, string>> = {
   CV_NOT_DELETED: 'This CV is not deleted, so there is nothing to restore',
   MUST_DESIGNATE_NEW_MASTER: 'This is the master CV. Choose which of the remaining CVs takes over before deleting it',
   INVALID_NEW_MASTER: 'The CV you chose as the new master must be another active CV of the same profile',
-  CV_HAS_PENDING_DRAFTS: 'This CV has a draft awaiting approval. Cancel the draft before deleting it',
+  CV_HAS_PENDING_DRAFTS: 'This CV has a draft awaiting approval. Finish or cancel that review first',
   CV_HAS_NO_VERSION: 'This CV has no published version yet',
   DIFF_SAME_VERSION: 'Pick two different versions to compare',
+  ROLLBACK_TO_CURRENT: 'This is already the current version. Pick an older version to roll back to',
   DUPLICATE_CV_ITEM_ID: 'Two entries in this CV share the same identifier. Reload the editor and try again',
   ITEM_ID_FOREIGN_TO_PROFILE: 'This content references an entry from another profile. Reload the editor and try again',
 
