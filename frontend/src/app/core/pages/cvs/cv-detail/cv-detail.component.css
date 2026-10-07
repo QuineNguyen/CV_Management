@@ -41,14 +41,24 @@
 
 .version-facts dt {
   font-size: var(--vt-fs-sm);
+  font-weight: 500;
   color: var(--vt-ink-muted);
   margin-block-end: 0.25rem;
 }
 
 .version-facts dd {
   margin: 0;
-  font-weight: 700;
+  font-size: var(--vt-fs-md);
+  font-weight: 600;
+  color: var(--vt-ink);
   overflow-wrap: anywhere;
+}
+
+.version-facts .cell-muted {
+  display: inline;
+  font-size: inherit;
+  font-weight: inherit;
+  color: var(--vt-ink-muted);
 }
 
 /* ---------- Notice ---------- */

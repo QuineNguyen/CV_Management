@@ -62,15 +62,21 @@
       <div>
         <dt>Published</dt>
         <dd>
-          {{ detail.currentVersion
-              ? (detail.currentVersion.publishedAt | date:'dd/MM/yyyy HH:mm')
-              : '—' }}
+          @if (detail.currentVersion; as version) {
+            {{ version.publishedAt | date:'dd/MM/yyyy HH:mm' }}
+          } @else {
+            <span class="cell-muted">—</span>
+          }
         </dd>
       </div>
       <div>
         <dt>Source</dt>
         <dd>
-          {{ detail.currentVersion ? versionSourceLabels[detail.currentVersion.source] : '—' }}
+          @if (detail.currentVersion; as version) {
+            {{ versionSourceLabels[version.source] }}
+          } @else {
+            <span class="cell-muted">—</span>
+          }
         </dd>
       </div>
       <div>

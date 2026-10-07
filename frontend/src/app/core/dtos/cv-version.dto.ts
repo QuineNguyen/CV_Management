@@ -24,6 +24,10 @@ export interface CvVersionQuery {
     direction?: SortDirection;
 }
 
+export interface CvRollbackRequest {
+    targetVersionId: string;
+}
+
 // EQUAL shows on both sides, DELETE only on the old side, INSERT only on the new side
 export interface DiffChunk {
     type: DiffChunkType;

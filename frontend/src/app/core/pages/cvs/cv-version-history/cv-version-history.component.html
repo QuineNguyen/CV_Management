@@ -34,6 +34,9 @@
         <p class="history-draft-text">
           <strong>{{ draftStatusLabels[draft.status] }}</strong>, review round {{ draft.reviewRound }}.
           It joins this history once it is published
+          @if (canRollback() && reviewInProgress()) {
+            <span class="history-draft-note">Rollback is unavailable until this review ends</span>
+          }
         </p>
       </div>
     }
@@ -85,7 +88,7 @@
               <th scope="col" class="col-author">Author</th>
               <th scope="col" class="col-reviewers">Reviewers</th>
               <th scope="col" class="col-source">Source</th>
-              <th scope="col" class="col-actions">Compare</th>
+              <th scope="col" class="col-actions">Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -100,7 +103,7 @@
                 </td>
                 <td class="col-version">
                   <span class="version-tag">v{{ version.versionNumber }}</span>
-                  @if (version.versionNumber === currentVersionNumber()) {
+                  @if (isCurrent(version)) {
                     <span class="status-badge is-active">Current</span>
                   }
                 </td>
@@ -109,22 +112,32 @@
                 </td>
                 <td class="col-author">
                   <span class="cell-strong">{{ version.authoredByName ?? '—' }}</span>
-                  @if (version.rollbackSourceVersionNumber; as source) {
+                  @if (inheritedFrom(version); as source) {
                     <span class="cell-muted">Inherited from v{{ source }}</span>
                   }
                 </td>
                 <td class="col-reviewers">
                   <span class="reviewer-line">
-                    <span class="reviewer-level">L1</span>{{ version.level1ApproverName ?? '—' }}
+                    <span class="reviewer-level">Level 1:</span>
+                    <span class="reviewer-name">{{ version.level1ApproverName ?? '—' }}</span>
                   </span>
                   <span class="reviewer-line">
-                    <span class="reviewer-level">L2</span>{{ version.level2ApproverName ?? '—' }}
+                    <span class="reviewer-level">Level 2:</span>
+                    <span class="reviewer-name">{{ version.level2ApproverName ?? '—' }}</span>
                   </span>
+                  @if (inheritedFrom(version); as source) {
+                    <span class="cell-muted">Inherited from v{{ source }}</span>
+                  }
                 </td>
                 <td class="col-source">
-                  <span class="status-badge">{{ sourceLabels[version.source] }}</span>
-                  @if (version.rollbackSourceVersionNumber; as source) {
-                    <span class="cell-muted">Content of v{{ source }}</span>
+                  <span class="status-badge" [class.is-rollback]="isRollback(version)">
+                    @if (isRollback(version)) {
+                      <span class="material-symbols-outlined badge-icon" aria-hidden="true">history</span>
+                    }
+                    {{ sourceLabels[version.source] }}
+                  </span>
+                  @if (inheritedFrom(version); as source) {
+                    <span class="cell-muted">Restored from v{{ source }}</span>
                   }
                 </td>
                 <td class="col-actions">
@@ -133,6 +146,18 @@
                             [matTooltip]="compareTooltip(version)"
                             [attr.aria-label]="compareTooltip(version)"
                             (click)="compareWithPrevious(version)">⇄</button>
+                    
+                    <!-- Wrapper keeps the tooltip working while the button is disabled -->
+                    @if (showRollback(version)) {
+                      <span class="tooltip-host" [matTooltip]="rollbackTooltip(version)">
+                        <button type="button" class="icon-btn"
+                                [disabled]="reviewInProgress()"
+                                [attr.aria-label]="rollbackTooltip(version)"
+                                (click)="askRollback(version)">
+                          <span class="material-symbols-outlined action-icon" aria-hidden="true">settings_backup_restore</span>
+                        </button>
+                      </span>
+                    }
                   </div>
                 </td>
               </tr>
@@ -152,7 +177,7 @@
                        [disabled]="!canPick(version.id)"
                        (change)="togglePick(version)" />
                 <span class="version-tag">v{{ version.versionNumber }}</span>
-                @if (version.versionNumber === currentVersionNumber()) {
+                @if (isCurrent(version)) {
                   <span class="status-badge is-active">Current</span>
                 }
               </label>
@@ -162,6 +187,17 @@
                         [matTooltip]="compareTooltip(version)"
                         [attr.aria-label]="compareTooltip(version)"
                         (click)="compareWithPrevious(version)">⇄</button>
+
+                @if (showRollback(version)) {
+                  <span class="tooltip-host" [matTooltip]="rollbackTooltip(version)">
+                    <button type="button" class="icon-btn"
+                            [disabled]="reviewInProgress()"
+                            [attr.aria-label]="rollbackTooltip(version)"
+                            (click)="askRollback(version)">
+                      <span class="material-symbols-outlined action-icon" aria-hidden="true">settings_backup_restore</span>
+                    </button>
+                  </span>
+                }
               </div>
             </div>
 
@@ -173,9 +209,14 @@
               <div>
                 <dt>Source</dt>
                 <dd>
-                  {{ sourceLabels[version.source] }}
-                  @if (version.rollbackSourceVersionNumber; as source) {
-                    <span class="cell-muted">Content of v{{ source }}</span>
+                  <span class="status-badge" [class.is-rollback]="isRollback(version)">
+                    @if (isRollback(version)) {
+                      <span class="material-symbols-outlined badge-icon" aria-hidden="true">history</span>
+                    }
+                    {{ sourceLabels[version.source] }}
+                  </span>
+                  @if (inheritedFrom(version); as source) {
+                    <span class="cell-muted">Restored from v{{ source }}</span>
                   }
                 </dd>
               </div>
@@ -183,7 +224,7 @@
                 <dt>Author</dt>
                 <dd>
                   {{ version.authoredByName ?? '—' }}
-                  @if (version.rollbackSourceVersionNumber; as source) {
+                  @if (inheritedFrom(version); as source) {
                     <span class="cell-muted">Inherited from v{{ source }}</span>
                   }
                 </dd>
@@ -192,11 +233,16 @@
                 <dt>Reviewers</dt>
                 <dd>
                   <span class="reviewer-line">
-                    <span class="reviewer-level">L1</span>{{ version.level1ApproverName ?? '—' }}
+                    <span class="reviewer-level">Level 1:</span>
+                    <span class="reviewer-name">{{ version.level1ApproverName ?? '—' }}</span>
                   </span>
                   <span class="reviewer-line">
-                    <span class="reviewer-level">L2</span>{{ version.level2ApproverName ?? '—' }}
+                    <span class="reviewer-level">Level 2:</span>
+                    <span class="reviewer-name">{{ version.level2ApproverName ?? '—' }}</span>
                   </span>
+                  @if (inheritedFrom(version); as source) {
+                    <span class="cell-muted">Inherited from v{{ source }}</span>
+                  }
                 </dd>
               </div>
             </dl>
@@ -214,4 +260,16 @@
         (page)="onPageChange($event)" />
     }
   </section>
+
+  <!-- Rollback confirmation -->
+  @if (rollbackTarget(); as target) {
+    <app-cv-rollback-dialog
+      [cvId]="detail.cv.id"
+      [target]="target"
+      [currentVersionNumber]="currentVersionNumber() ?? target.versionNumber"
+      [openDraftStatus]="detail.openDraft?.status ?? null"
+      (cancelled)="onRollbackCancelled()"
+      (completed)="onRollbackCompleted()"
+      (failed)="onRollbackFailed()" />
+  }
 }

@@ -6,7 +6,7 @@ import { CvCreateRequest, CvDeleteRequest, CvDetailResponse, CvEditRequest, CvEd
 import { ApiEndpoint } from "../enums/api-endpoint.enum";
 import { PagedResponse } from "../dtos/page.dto";
 import { PendingNoteResponse } from "../dtos/update-request.dto";
-import { CvVersionHistoryItem, CvVersionQuery, VersionDiffResponse } from "../dtos/cv-version.dto";
+import { CvRollbackRequest, CvVersionHistoryItem, CvVersionQuery, VersionDiffResponse } from "../dtos/cv-version.dto";
 
 @Injectable({ providedIn: 'root' })
 export class CvService {
@@ -66,6 +66,13 @@ export class CvService {
         }
         return this.http.get<VersionDiffResponse>(
             this.url(`${ApiEndpoint.Cvs}/${id}/versions/diff`), { params }
+        );
+    }
+
+    // Admin/HR: publishes a new version with the content of an older one
+    rollback(id: string, body: CvRollbackRequest): Observable<CvVersionHistoryItem> {
+        return this.http.post<CvVersionHistoryItem>(
+            this.url(`${ApiEndpoint.Cvs}/${id}/rollback`), body
         );
     }
 
