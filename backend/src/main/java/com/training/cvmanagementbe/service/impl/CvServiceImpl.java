@@ -74,17 +74,20 @@ public class CvServiceImpl implements CvService {
 
         Optional<CvVersion> current = cvVersionRepository.findTopByCvIdOrderByVersionNumberDesc(cvId);
 
-        // The open draft rides along: the edit screen needs it and a second round trip for a
-        // row we already know exists buys nothing.
-        CvDraftResponse openDraft = cvDraftRepository
-                .findByCvIdAndStatusIn(cvId, CvDraft.OPEN_STATUSES)
-                .map(this::toDraftResponse)
-                .orElse(null);
+        // Draft content and review feedback belong to the owner only.
+        // Reviewers/Admin read pending drafts via the approval screens, which check assignment.
+        boolean owner = isOwner(profile.getEmployeeId());
+
+        CvDraftResponse openDraft = owner
+                ? cvDraftRepository.findByCvIdAndStatusIn(cvId, CvDraft.OPEN_STATUSES)
+                        .map(this::toDraftResponse)
+                        .orElse(null)
+                : null;
 
         UUID avatarImageId = current.map(CvVersion::getAvatarImageId).orElse(null);
 
-        // Only while nothing has replaced it: a new draft or a publication turns it into history.
-        DraftCancellationResponse lastCancellation = openDraft == null
+        // Cancellation reason is addressed to the owner, not to every reader.
+        DraftCancellationResponse lastCancellation = owner && openDraft == null
                 ? lastCancellationOf(cvId, profile.getEmployeeId())
                 : null;
 
@@ -610,8 +613,12 @@ public class CvServiceImpl implements CvService {
         }
     }
 
+    private boolean isOwner(UUID employeeId) {
+        return CurrentActor.requireUserId().equals(employeeId);
+    }
+
     private void requireOwner(UUID employeeId) {
-        if (!CurrentActor.requireUserId().equals(employeeId)) {
+        if (!isOwner(employeeId)) {
             throw new ApiException.ForbiddenException(ErrorCode.NOT_CV_OWNER);
         }
     }

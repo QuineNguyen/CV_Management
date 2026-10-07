@@ -84,6 +84,8 @@
         <dd>
           @if (detail.openDraft; as draft) {
             {{ draftStatusLabels[draft.status] }} · round {{ draft.reviewRound }}
+          } @else if (detail.cv.openDraftStatus; as status) {
+            {{ draftStatusLabels[status] }}
           } @else {
             <span class="cell-muted">None</span>
           }
@@ -95,8 +97,8 @@
       <div class="notice notice-warning" role="status">
         <strong>No official version yet.</strong>
         Nothing has been published for this CV, so there is nothing to export or send out.
-        @if (detail.openDraft) {
-          A draft exists and is {{ draftStatusLabels[detail.openDraft.status] }}
+        @if (detail.cv.openDraftStatus; as status) {
+          A draft exists and is {{ draftStatusLabels[status] }}
         }
       </div>
     }
