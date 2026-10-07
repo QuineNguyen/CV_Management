@@ -399,6 +399,20 @@ input[type='search']::-webkit-search-cancel-button {
   text-align: center;
 }
 
+.data-table thead tr:first-child th {
+  border-block-start: 0;
+}
+
+.data-table th:first-child,
+.data-table td:first-child {
+  border-inline-start: 0;
+}
+
+.data-table th:last-child,
+.data-table td:last-child {
+  border-inline-end: 0;
+}
+
 .data-table tbody tr:last-child td {
   border-block-end: 0;
 }

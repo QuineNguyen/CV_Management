@@ -7,5 +7,5 @@ export enum VersionSource {
 export const VERSION_SOURCE_LABELS: Record<VersionSource, string> = {
     [VersionSource.Approval]: 'Approved',
     [VersionSource.DirectEdit]: 'Published directly by owner',
-    [VersionSource.Rollback]: 'Restored from an earlier version',
+    [VersionSource.Rollback]: 'Rollback',
 };

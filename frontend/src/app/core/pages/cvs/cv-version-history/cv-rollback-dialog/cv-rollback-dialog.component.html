@@ -1,0 +1,86 @@
+<div class="modal-backdrop" [class.is-closing]="isClosing()"
+     (mousedown)="onBackdropMouseDown($event)" (click)="onBackdropClick($event)">
+  <div class="modal rollback-modal" role="alertdialog" aria-modal="true"
+       aria-labelledby="rollback-title" aria-describedby="rollback-intro"
+       (click)="$event.stopPropagation()">
+
+    <h2 id="rollback-title" class="modal-title">Roll back to v{{ target().versionNumber }}?</h2>
+
+    <p id="rollback-intro" class="modal-body">
+      A new version is published with the exact content of v{{ target().versionNumber }}.
+      No existing version is edited or removed
+    </p>
+
+    <!-- Source -> new version -->
+    <dl class="rollback-versions">
+      <div class="rollback-version">
+        <dt>Source version</dt>
+        <dd>
+          <span class="version-pill">v{{ target().versionNumber }}</span>
+          Published {{ target().publishedAt | date:'dd/MM/yyyy HH:mm' }}
+        </dd>
+      </div>
+
+      <span class="rollback-arrow" aria-hidden="true">→</span>
+
+      <div class="rollback-version is-new">
+        <dt>New version</dt>
+        <dd>
+          <span class="version-pill">v{{ nextVersionNumber() }}</span>
+          Becomes the current version
+        </dd>
+      </div>
+    </dl>
+
+    <!-- Identity is inherited, never the person clicking -->
+    <section class="rollback-identity" aria-labelledby="rollback-identity-title">
+      <h3 id="rollback-identity-title" class="rollback-identity-title">
+        Carried over from v{{ target().versionNumber }}
+      </h3>
+      <dl class="rollback-identity-list">
+        <div>
+          <dt>Author</dt>
+          <dd>
+            {{ target().authoredByName ?? '—' }}
+            <span class="inherited-tag">inherited from v{{ target().versionNumber }}</span>
+          </dd>
+        </div>
+        <div>
+          <dt>Level 1 reviewer</dt>
+          <dd>
+            {{ target().level1ApproverName ?? '—' }}
+            <span class="inherited-tag">inherited from v{{ target().versionNumber }}</span>
+          </dd>
+        </div>
+        <div>
+          <dt>Level 2 reviewer</dt>
+          <dd>
+            {{ target().level2ApproverName ?? '—' }}
+            <span class="inherited-tag">inherited from v{{ target().versionNumber }}</span>
+          </dd>
+        </div>
+      </dl>
+    </section>
+
+    <div class="rollback-notes">
+      <p class="notice">
+        Content, photo, author and reviewers are copied from v{{ target().versionNumber }}.
+        Your name is recorded in the audit log only, never on the version
+      </p>
+      <p class="notice notice-warning">
+        Pending update requests for this CV are marked as completed, and the owner is notified
+        by email and in-app.
+        @if (openDraftStatus(); as status) {
+          The owner's open draft ({{ draftStatusLabels[status] }}) stays as it is
+        }
+      </p>
+    </div>
+
+    <div class="modal-footer">
+      <button type="button" class="btn btn-ghost" (click)="cancel()" [disabled]="rolling()">Cancel</button>
+      <button type="button" class="btn btn-primary" (click)="confirm()" [disabled]="rolling()">
+        {{ rolling() ? 'Rolling back...' : 'Roll back to v' + target().versionNumber }}
+      </button>
+    </div>
+  </div>
+</div>

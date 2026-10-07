@@ -5,8 +5,8 @@ import { MatTooltipModule } from "@angular/material/tooltip";
 import { CvService } from "../../../services/cv.service";
 import { ActivatedRoute, Router } from "@angular/router";
 import { CV_LANGUAGE_LABELS } from "../../../enums/cv-language.enum";
-import { VERSION_SOURCE_LABELS } from "../../../enums/version-source.enum";
-import { DRAFT_STATUS_LABELS } from "../../../enums/draft-status.enum";
+import { VERSION_SOURCE_LABELS, VersionSource } from "../../../enums/version-source.enum";
+import { DRAFT_STATUS_LABELS, LOCKED_DRAFT_STATUSES } from "../../../enums/draft-status.enum";
 import { CvDetailResponse } from "../../../dtos/cv.dto";
 import { CvVersionHistoryItem } from "../../../dtos/cv-version.dto";
 import { CvPageState } from "../../../models/cv-page.model";
@@ -15,6 +15,9 @@ import { leaveIfAccessDenied } from "../../../utils/access-denied.util";
 import { CvVersionSortField, SortDirection } from "../../../enums/sort-field.enum";
 import { AppRoute } from "../../../enums/app-route.enum";
 import { QueryParam } from "../../../enums/query-param.enum";
+import { CvRollbackDialogComponent } from "./cv-rollback-dialog/cv-rollback-dialog.component";
+import { AuthService } from "../../../services/auth.service";
+import { UserRole } from "../../../enums/user-role.enum";
 
 /*
  * Version timeline of one CV, newest first, with the open draft pinned above it.
@@ -22,11 +25,12 @@ import { QueryParam } from "../../../enums/query-param.enum";
  * on page 1 is still picked on page 3.
  * - Each row compares with its predecessor in one click; v1 compares with an empty CV.
  * - ROLLBACK rows say their author and reviewers are inherited from the source version.
+ * - Admin/HR can roll back to any non-current version, except while a draft is under review.
  */
 @Component({
     selector: 'app-cv-version-history',
     standalone: true,
-    imports: [DatePipe, MatPaginatorModule, MatTooltipModule],
+    imports: [DatePipe, MatPaginatorModule, MatTooltipModule, CvRollbackDialogComponent],
     templateUrl: './cv-version-history.component.html',
     styleUrl: './cv-version-history.component.css',
     changeDetection: ChangeDetectionStrategy.OnPush,
@@ -37,6 +41,7 @@ export class CvVersionHistoryComponent implements OnInit {
     private static readonly MAX_PICKS = 2;
 
     private readonly cvService = inject(CvService);
+    private readonly auth = inject(AuthService);
     private readonly route = inject(ActivatedRoute);
     private readonly router = inject(Router);
 
@@ -60,6 +65,17 @@ export class CvVersionHistoryComponent implements OnInit {
     readonly sortedPicks = computed(() => [...this.picks()].sort((a, b) => a.versionNumber - b.versionNumber));
     readonly pickLimitReached = computed(() => this.picks().length >= CvVersionHistoryComponent.MAX_PICKS);
     readonly currentVersionNumber = computed(() => this.detail()?.currentVersion?.versionNumber ?? null);
+
+    // Rollback bypasses approval, so only Admin/HR get the action (the server checks again)
+    readonly canRollback = computed(() => this.auth.hasRole(UserRole.Admin, UserRole.HR));
+
+    // A draft under review blocks rollback on the server; the button says so up front
+    readonly reviewInProgress = computed(() => {
+        const status = this.detail()?.openDraft?.status;
+        return !!status && LOCKED_DRAFT_STATUSES.includes(status);
+    });
+
+    readonly rollbackTarget = signal<CvVersionHistoryItem | null>(null);
 
     private cvId: string | null = null;
 
@@ -111,9 +127,41 @@ export class CvVersionHistoryComponent implements OnInit {
         });
     }
 
+    // Re-reads current version and draft without the full-page skeleton
+    private refresh(toFirstPage: boolean): void {
+        const id = this.cvId;
+        if (!id) {
+            return;
+        }
+        this.cvService.getById(id).subscribe({
+            next: detail => {
+                this.detail.set(detail);
+                if (toFirstPage) {
+                    this.pageState.update(state => ({ ...state, index: 0 }));
+                }
+                this.loadPage();
+            },
+        });
+    }
+
     onPageChange(event: PageEvent): void {
         this.pageState.update(state => ({ ...state, index: event.pageIndex, size: event.pageSize }));
         this.loadPage();
+    }
+
+    // ---------- Row state ----------
+
+    isCurrent(version: CvVersionHistoryItem): boolean {
+        return version.versionNumber === this.currentVersionNumber();
+    }
+
+    isRollback(version: CvVersionHistoryItem): boolean {
+        return version.source === VersionSource.Rollback;
+    }
+
+    // Source number of a ROLLBACK row; its author and reviewers come from that version
+    inheritedFrom(version: CvVersionHistoryItem): number | null {
+        return this.isRollback(version) ? version.rollbackSourceVersionNumber : null;
     }
 
     // ---------- Picking ----------
@@ -139,6 +187,41 @@ export class CvVersionHistoryComponent implements OnInit {
 
     unpick(id: string): void {
         this.picks.update(picks => picks.filter(pick => pick.id !== id));
+    }
+
+    // ---------- Rollback ----------
+
+    // Rolling back to the current version would publish an identical copy
+    showRollback(version: CvVersionHistoryItem): boolean {
+        return this.canRollback() && !this.isCurrent(version);
+    }
+
+    rollbackTooltip(version: CvVersionHistoryItem): string {
+        return this.reviewInProgress()
+            ? 'Unavailable while a draft is awaiting approval'
+            : `Roll back to v${version.versionNumber}`;
+    }
+
+    askRollback(version: CvVersionHistoryItem): void {
+        if (!this.reviewInProgress()) {
+            this.rollbackTarget.set(version);
+        }
+    }
+
+    onRollbackCancelled(): void {
+        this.rollbackTarget.set(null);
+    }
+
+    // The new version lands on top, so jump back to the first page
+    onRollbackCompleted(): void {
+        this.rollbackTarget.set(null);
+        this.refresh(true);
+    }
+
+    // A draft was submitted or someone rolled back first: show what the server has now
+    onRollbackFailed(): void {
+        this.rollbackTarget.set(null);
+        this.refresh(false);
     }
 
     // ---------- Navigation ----------
