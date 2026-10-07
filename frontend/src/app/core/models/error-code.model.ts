@@ -22,6 +22,7 @@ export type ErrorCode =
   | 'CV_HAS_PENDING_DRAFTS'
   | 'CV_HAS_NO_VERSION'
   | 'DIFF_SAME_VERSION'
+  | 'ROLLBACK_TO_CURRENT'
   | 'DUPLICATE_CV_ITEM_ID'
   | 'ITEM_ID_FOREIGN_TO_PROFILE'
   // Approval

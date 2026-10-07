@@ -34,4 +34,12 @@ public record PublishCommand(
         return new PublishCommand(cvId, content, avatarImageId, VersionSource.APPROVAL,
                 authoredBy, level1ApproverId, level2ApproverId, null, draftId);
     }
+
+    // Content, avatar and all three identity columns come from the source version
+    public static PublishCommand rollback(UUID cvId, CvContent content, UUID avatarImageId,
+                                          UUID authoredBy, UUID level1ApproverId,
+                                          UUID level2ApproverId, UUID rollbackSourceVersionId) {
+        return new PublishCommand(cvId, content, avatarImageId, VersionSource.ROLLBACK,
+                authoredBy, level1ApproverId, level2ApproverId, rollbackSourceVersionId, null);
+    }
 }

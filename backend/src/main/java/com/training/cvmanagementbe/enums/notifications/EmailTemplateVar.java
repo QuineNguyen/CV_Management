@@ -15,6 +15,7 @@ public enum EmailTemplateVar {
     LEVEL1_SKIPPED("level1Skipped"),
     FORWARDED("forwarded"),
     VERSION_NUMBER("versionNumber"),
+    SOURCE_VERSION_NUMBER("sourceVersionNumber"),
     REASON("reason"),
     REVIEWER_NAME("reviewerName"),
     OWNER_VIEW("ownerView"),

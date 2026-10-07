@@ -3,6 +3,7 @@ package com.training.cvmanagementbe.service;
 import com.training.cvmanagementbe.dto.request.cvs.CvCreateRequest;
 import com.training.cvmanagementbe.dto.request.cvs.CvDeleteRequest;
 import com.training.cvmanagementbe.dto.request.cvs.CvEditRequest;
+import com.training.cvmanagementbe.dto.request.cvs.CvRollbackRequest;
 import com.training.cvmanagementbe.dto.response.configs.PagedResponse;
 import com.training.cvmanagementbe.dto.response.cvs.*;
 import org.springframework.data.domain.Pageable;
@@ -40,6 +41,9 @@ public interface CvService {
      *    If the profile currently has no other active CVs, keep master_cv_id null and it becomes Master.
      */
     CvResponse restore(UUID cvId);
+
+    // Publishes a new version copied from an older one (Admin/HR); returns the new timeline row.
+    CvVersionHistoryItem rollback(UUID cvId, CvRollbackRequest request);
 
     List<CvResponse> listByProfile(UUID profileId, boolean includeDeleted);
 
