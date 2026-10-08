@@ -9,6 +9,9 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDateTime;
+import java.util.Collection;
+import java.util.Optional;
 import java.util.UUID;
 
 /*
@@ -50,16 +53,33 @@ public interface BatchRequestRepository extends JpaRepository<BatchRequest, UUID
                         @Param("current") BatchRequestStatus current,
                         @Param("target") BatchRequestStatus target);
 
-    // CAS: a second resend click finds the batch PROCESSING already and matches nothing
+    // CAS: only a finished batch reopens; a second click or a cancelled batch matches nothing
     @Modifying(flushAutomatically = true, clearAutomatically = true)
     @Query("""
             UPDATE BatchRequest b
             SET b.status = :processing, b.processedCount = b.totalCount - :requeued
-            WHERE b.id = :id AND b.status <> :processing
+            WHERE b.id = :id AND b.status IN :finished
             """)
     int reopenForResend(@Param("id") UUID id,
                         @Param("requeued") int requeued,
-                        @Param("processing") BatchRequestStatus processing);
+                        @Param("processing") BatchRequestStatus processing,
+                        @Param("finished") Collection<BatchRequestStatus> finished);
 
     Page<BatchRequest> findByStatus(BatchRequestStatus status, Pageable pageable);
+
+    // Worker: a cancelled batch stops its loop
+    @Query("SELECT b.status FROM BatchRequest b WHERE b.id = :id")
+    Optional<BatchRequestStatus> findStatusById(@Param("id") UUID id);
+
+    // CAS: a second, concurrent cancel matches nothing
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query("""
+            UPDATE BatchRequest b
+            SET b.status = :cancelled, b.updatedBy = :actorId, b.updatedAt = :at
+            WHERE b.id = :id AND b.status <> :cancelled
+            """)
+    int cancelBatch(@Param("id") UUID id,
+                    @Param("cancelled") BatchRequestStatus cancelled,
+                    @Param("actorId") UUID actorId,
+                    @Param("at") LocalDateTime at);
 }

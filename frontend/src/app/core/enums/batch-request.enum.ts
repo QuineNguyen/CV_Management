@@ -8,6 +8,7 @@ export enum BatchRequestStatus {
     Processing = 'PROCESSING',
     Completed = 'COMPLETED',
     CompletedWithErrors = 'COMPLETED_WITH_ERRORS',
+    Cancelled = 'CANCELLED',
 }
 
 export enum BatchExclusionReason {
@@ -67,6 +68,7 @@ export const BATCH_STATUS_LABELS: Record<BatchRequestStatus, string> = {
     [BatchRequestStatus.Processing]: 'Processing',
     [BatchRequestStatus.Completed]: 'Completed',
     [BatchRequestStatus.CompletedWithErrors]: 'Completed with errors',
+    [BatchRequestStatus.Cancelled]: 'Cancelled',
 };
 
 export const BATCH_EXCLUSION_LABELS: Record<BatchExclusionReason, string> = {

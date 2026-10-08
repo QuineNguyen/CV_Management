@@ -22,6 +22,11 @@ public record BatchRequestResponse(
         int errorCount,
         BatchRequestStatus status,
         LocalDateTime createdAt,
-        String createdByName
+        String createdByName,
+        // Children still waiting / already done; the rest were cancelled
+        int pendingCount,
+        int completedCount,
+        // The caller may cancel it now: same rule as the cancel endpoint
+        boolean cancellable
 ) {
 }

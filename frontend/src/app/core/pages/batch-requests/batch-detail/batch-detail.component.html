@@ -11,8 +11,13 @@
       }
     </div>
     <div class="page-toolbar-actions">
-      <button type="button" class="btn btn-ghost" (click)="goToList()">Back</button>
+      <button type="button" class="btn btn-ghost" (click)="goToList()">All batches</button>
       <button type="button" class="btn btn-ghost" (click)="refresh()" [disabled]="loading()">Refresh</button>
+      <span class="tooltip-host" [matTooltip]="cancelBatchHint()">
+        <button type="button" class="btn btn-danger" [disabled]="!canCancelBatch()" (click)="openCancel()">
+          Cancel Batch
+        </button>
+      </span>
     </div>
   </header>
 
@@ -54,13 +59,16 @@
 
       <div class="progress-track" role="progressbar" aria-label="Batch progress"
            aria-valuemin="0" aria-valuemax="100" [attr.aria-valuenow]="percent()">
-        <div class="progress-fill" [class.is-running]="isProcessing()" [style.width.%]="percent()"></div>
+        <div class="progress-fill" [class.is-running]="isProcessing()" [class.is-stopped]="isCancelled()"
+             [style.width.%]="percent()"></div>
       </div>
 
       <p class="progress-text" aria-live="polite">
         <span>
           @if (isProcessing()) {
             Sent {{ current.processedCount }}/{{ current.totalCount }} request(s)...
+          } @else if (isCancelled()) {
+            Cancelled after {{ current.processedCount }}/{{ current.totalCount }} request(s)
           } @else {
             Done · {{ current.totalCount }} request(s)
           }
@@ -73,7 +81,7 @@
           <span class="material-symbols-outlined" aria-hidden="true">schedule</span>
           <span>Still processing after 5 minutes. The page now checks every 15 seconds; use Refresh to check right away</span>
         </p>
-      } @else if (!isProcessing()) {
+      } @else if (!isProcessing() && !isCancelled()) {
         <p class="detail-note">
           <span class="material-symbols-outlined" aria-hidden="true">info</span>
           <span>A failed email is retried up to 3 times, 5 minutes apart, so a late failure can still appear here within about 15 minutes</span>
@@ -98,8 +106,11 @@
           <dd>{{ current.deadline | date:'dd/MM/yyyy HH:mm' }}</dd>
         </div>
         <div>
-          <dt>Profile</dt>
-          <dd>Each employee's primary profile</dd>
+          <dt>Requests</dt>
+          <dd>
+            {{ current.pendingCount }} pending · {{ current.completedCount }} completed ·
+            {{ cancelledChildren() }} cancelled
+          </dd>
         </div>
       </dl>
       <div class="request-block">
@@ -116,11 +127,11 @@
             <h2 id="bd-failed-title" class="panel-title">Emails not delivered ({{ current.errorCount }})</h2>
             <p class="panel-hint">These requests exist and stay pending; the employees still got the in-app notification</p>
           </div>
-          @if (canResend()) {
-            <button type="button" class="btn btn-primary" (click)="resend()" [disabled]="resending()">
+          <span class="tooltip-host" [matTooltip]="resendHint()">
+            <button type="button" class="btn btn-primary" (click)="resend()" [disabled]="!canResend() || resending()">
               {{ resending() ? 'Resending...' : 'Resend failed emails' }}
             </button>
-          }
+          </span>
         </div>
 
         @if (failedLoading() && !failedItems().length) {
@@ -183,6 +194,96 @@
         }
       </section>
     }
+
+    <!-- Requests in this batch -->
+    <section class="detail-panel" aria-labelledby="bd-children-title">
+      <div class="panel-heading">
+        <h2 id="bd-children-title" class="panel-title">Requests in this batch ({{ childrenPage().total }})</h2>
+        <p class="panel-hint">Cancelling one request stops its reminders and keeps the employee's draft</p>
+      </div>
+
+      @if (childrenLoading() && !children().length) {
+        <div class="skeleton-stack" aria-busy="true">
+          @for (row of [1, 2, 3]; track row) {
+            <div class="skeleton-row"></div>
+          }
+        </div>
+      } @else if (!children().length) {
+        <p class="panel-hint">No request in this batch</p>
+      } @else {
+        <div class="data-table-wrap" [class.is-refreshing]="childrenLoading()">
+          <table class="data-table children-table">
+            <thead>
+              <tr>
+                <th scope="col" class="col-child-name">Employee</th>
+                <th scope="col" class="col-child-profile">Profile</th>
+                <th scope="col" class="col-child-status">Status</th>
+                <th scope="col" class="col-child-actions">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (request of children(); track request.id) {
+                <tr>
+                  <td class="col-child-name"><span class="cell-strong">{{ request.employeeName ?? '—' }}</span></td>
+                  <td class="col-child-profile">{{ request.profileName ?? 'No profile yet' }}</td>
+                  <td class="col-child-status">
+                    <span class="status-badge"
+                          [class.is-pending]="request.status === childStatus.Pending"
+                          [class.is-active]="request.status === childStatus.Completed">
+                      {{ childStatusLabels[request.status] }}
+                    </span>
+                  </td>
+                  <td class="col-child-actions">
+                    <div class="row-actions">
+                      <span class="tooltip-host" [matTooltip]="childCancelHint(request)">
+                        <button type="button" class="icon-btn" [attr.aria-label]="childCancelHint(request)"
+                                [disabled]="!request.cancellable" (click)="askChildCancel(request)">
+                          <span class="material-symbols-outlined" aria-hidden="true">cancel</span>
+                        </button>
+                      </span>
+                    </div>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+
+        <ul class="data-cards" [class.is-refreshing]="childrenLoading()">
+          @for (request of children(); track request.id) {
+            <li class="data-card">
+              <div class="data-card-head">
+                <div class="data-card-text">
+                  <p class="data-card-title">{{ request.employeeName ?? '—' }}</p>
+                  <p class="data-card-line">{{ request.profileName ?? 'No profile yet' }}</p>
+                </div>
+                <div class="row-actions">
+                  <span class="status-badge"
+                        [class.is-pending]="request.status === childStatus.Pending"
+                        [class.is-active]="request.status === childStatus.Completed">
+                    {{ childStatusLabels[request.status] }}
+                  </span>
+                  <span class="tooltip-host" [matTooltip]="childCancelHint(request)">
+                    <button type="button" class="icon-btn" [attr.aria-label]="childCancelHint(request)"
+                            [disabled]="!request.cancellable" (click)="askChildCancel(request)">
+                      <span class="material-symbols-outlined" aria-hidden="true">cancel</span>
+                    </button>
+                  </span>
+                </div>
+              </div>
+            </li>
+          }
+        </ul>
+
+        <mat-paginator class="page-paginator"
+                       [length]="childrenPage().total"
+                       [pageIndex]="childrenPage().index"
+                       [pageSize]="childrenPage().size"
+                       [pageSizeOptions]="pageSizeOptions"
+                       showFirstLastButtons
+                       (page)="onChildrenPageChange($event)" />
+      }
+    </section>
   } @else {
     <div class="empty-state">
       <p class="empty-state-title">Batch request not found</p>
@@ -191,3 +292,37 @@
     </div>
   }
 </section>
+
+<!-- Cancel the whole batch -->
+@if (cancelOpen() && batch(); as current) {
+  <app-batch-cancel-dialog [batch]="current" (cancelled)="onBatchCancelled($event)" (closed)="onCancelClosed()" />
+}
+
+<!-- Cancel one request of the batch -->
+@if (childCancelTarget(); as target) {
+  <div class="modal-backdrop" [class.is-closing]="isChildCancelClosing()"
+       (mousedown)="onChildBackdropMouseDown($event)" (click)="onChildBackdropClick($event)">
+    <div class="modal modal-sm" role="alertdialog" aria-modal="true"
+         aria-labelledby="bd-child-cancel-title" aria-describedby="bd-child-cancel-body"
+         (click)="$event.stopPropagation()">
+      <h2 id="bd-child-cancel-title" class="modal-title">Cancel update request</h2>
+      <p id="bd-child-cancel-body" class="modal-body">
+        Cancel the request asking <strong>{{ target.employeeName ?? 'this employee' }}</strong> to update
+        <strong>{{ target.profileName ?? 'a new profile' }} · {{ languageLabels[target.language] }}</strong>?
+        Reminders stop and the employee is notified
+      </p>
+      <p class="cancel-note">
+        <span class="material-symbols-outlined" aria-hidden="true">info</span>
+        <span>The employee's draft is <strong>not</strong> deleted; the rest of the batch is unchanged</span>
+      </p>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-ghost" (click)="dismissChildCancel()" [disabled]="childCancelling()">
+          Keep request
+        </button>
+        <button type="button" class="btn btn-danger" (click)="confirmChildCancel()" [disabled]="childCancelling()">
+          {{ childCancelling() ? 'Cancelling...' : 'Cancel request' }}
+        </button>
+      </div>
+    </div>
+  </div>
+}

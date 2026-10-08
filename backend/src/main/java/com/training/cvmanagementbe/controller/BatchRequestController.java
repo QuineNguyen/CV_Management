@@ -4,6 +4,7 @@ import com.training.cvmanagementbe.constant.ApiPath;
 import com.training.cvmanagementbe.constant.AuthorityExpression;
 import com.training.cvmanagementbe.constant.PageDefaults;
 import com.training.cvmanagementbe.dto.response.configs.PagedResponse;
+import com.training.cvmanagementbe.dto.response.cvs.BatchCancelResponse;
 import com.training.cvmanagementbe.dto.response.cvs.BatchFailedItemResponse;
 import com.training.cvmanagementbe.dto.response.cvs.BatchRequestResponse;
 import com.training.cvmanagementbe.enums.cvs.BatchRequestSortField;
@@ -73,5 +74,12 @@ public class BatchRequestController {
                         BatchRequestSortField.ID.getProperty())
         );
         return ResponseEntity.ok(batchRequestService.list(status, pageable));
+    }
+
+    @PostMapping(ApiPath.BATCH_CANCEL)
+    @PreAuthorize(AuthorityExpression.ADMIN_OR_HR)
+    @Operation(summary = "Cancel a batch request and all its pending update requests")
+    public ResponseEntity<BatchCancelResponse> cancel(@PathVariable UUID id) {
+        return ResponseEntity.ok(batchRequestService.cancel(id));
     }
 }

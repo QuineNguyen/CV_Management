@@ -55,4 +55,5 @@ export enum ApiEndpoint {
     BatchRequests = '/batch-requests',
     BatchFailedItems = '/failed-items',
     BatchResendFailed = '/resend-failed',
+    BatchCancel = '/cancel',
 }

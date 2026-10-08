@@ -28,6 +28,7 @@ public record UpdateRequestResponse(
         List<AnchoredNoteResponse> anchoredNotes,
         String createdByName,
         LocalDateTime createdAt,
-        boolean cancellable
+        boolean cancellable,
+        UUID batchRequestId
 ) {
 }

@@ -23,6 +23,7 @@ public final class UpdateRequestSpecifications {
     private static final String STATUS = "status";
     private static final String LANGUAGE = "language";
     private static final String CREATED_AT = "createdAt";
+    private static final String BATCH_REQUEST_ID = "batchRequestId";
 
     private UpdateRequestSpecifications() {
 
@@ -70,5 +71,12 @@ public final class UpdateRequestSpecifications {
                 : (root, query, cb) -> cb.lessThan(
                         root.<LocalDateTime>get(CREATED_AT), toDate.plusDays(1).atStartOfDay()
         );
+    }
+
+    // Children of one batch
+    public static Specification<UpdateRequest> inBatch(UUID batchId) {
+        return batchId == null
+                ? null
+                : (root, query, cb) -> cb.equal(root.get(BATCH_REQUEST_ID), batchId);
     }
 }

@@ -12,6 +12,7 @@ public record UpdateRequestCriteria(
         UUID departmentId,
         Language language,
         LocalDate fromDate,
-        LocalDate toDate
+        LocalDate toDate,
+        UUID batchId
 ) {
 }

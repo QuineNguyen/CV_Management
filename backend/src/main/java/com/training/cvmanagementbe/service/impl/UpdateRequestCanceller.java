@@ -17,6 +17,7 @@ import java.util.UUID;
 /*
  * Every way an update request leaves PENDING for CANCELLED.
  * - Manual: compare-and-set on one row; the caller turns false into a 409.
+ * - Batch: compare-and-set per child, so only rows still PENDING are cancelled and notified.
  * - Automatic: PENDING rows are read first, then cancelled by the
  * same scope, so a row that slipped in meanwhile still leaves PENDING.
  * - Drafts are never touched: Cancelling only stops the reminders.
@@ -39,6 +40,17 @@ public class UpdateRequestCanceller {
         }
         publish(List.of(request), actorId);
         return true;
+    }
+
+    /*
+     * Batch cancelled by Admin/HR. One CAS per child, not read-then-bulk-update: a child the employee
+     * completes in between is left alone and gets no cancel notice. At most 500 rows per batch.
+     */
+    public List<UpdateRequest> cancelPendingForBatch(UUID batchRequestId, UUID actorId, LocalDateTime at) {
+        return updateRequestRepository.findByBatchRequestIdAndStatus(batchRequestId, RequestStatus.PENDING)
+                .stream()
+                .filter(request -> cancelOne(request, actorId, at))
+                .toList();
     }
 
     // CV deleted

@@ -54,6 +54,20 @@
   justify-content: center;
 }
 
+/* ---------- Tooltip host for disabled actions ---------- */
+.tooltip-host {
+  display: inline-flex;
+}
+
+.tooltip-host:has(:disabled) {
+  cursor: not-allowed;
+}
+
+.row-actions .icon-btn-danger:hover:not(:disabled) {
+  background: var(--vt-red-tint);
+  color: var(--vt-red);
+}
+
 /* ---------- Cells ---------- */
 .cell-date {
   display: block;

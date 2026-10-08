@@ -16,6 +16,7 @@ import com.training.cvmanagementbe.enums.users.Role;
 import com.training.cvmanagementbe.exception.ApiException;
 import com.training.cvmanagementbe.record.cvs.BatchRecipient;
 import com.training.cvmanagementbe.repository.*;
+import com.training.cvmanagementbe.repository.projection.BatchStatusCount;
 import com.training.cvmanagementbe.service.BatchRequestService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -59,6 +60,8 @@ public class BatchRequestServiceImpl implements BatchRequestService {
     private static final String MANUAL_LABEL = "%d selected employee(s)";
     private static final Comparator<BatchRecipient> BY_NAME =
             Comparator.comparing(BatchRecipient::fullName, String.CASE_INSENSITIVE_ORDER);
+    private static final Set<BatchRequestStatus> FINISHED =
+            EnumSet.of(BatchRequestStatus.COMPLETED, BatchRequestStatus.COMPLETED_WITH_ERRORS);
 
     private final BatchRequestRepository batchRequestRepository;
     private final UpdateRequestRepository updateRequestRepository;
@@ -72,6 +75,7 @@ public class BatchRequestServiceImpl implements BatchRequestService {
     private final BatchWorker batchWorker;
     private final AuditLogger auditLogger;
     private final TransactionTemplate transactionTemplate;
+    private final UpdateRequestCanceller updateRequestCanceller;
 
     // ---------- Preview ----------
 
@@ -208,6 +212,10 @@ public class BatchRequestServiceImpl implements BatchRequestService {
         requireAdminOrHr();
         BatchRequest batch = requireBatch(batchId);
 
+        // Reopening would bring a cancelled batch back to life
+        if (batch.getStatus() == BatchRequestStatus.CANCELLED) {
+            throw new ApiException.BusinessRuleException(ErrorCode.BATCH_ALREADY_CANCELLED);
+        }
         if (batch.getStatus() == BatchRequestStatus.PROCESSING) {
             throw new ApiException.BusinessRuleException(ErrorCode.BATCH_STILL_PROCESSING);
         }
@@ -217,12 +225,53 @@ public class BatchRequestServiceImpl implements BatchRequestService {
         }
 
         // Back to PROCESSING; processed restarts below the total so the progress bar runs again
-        if (batchRequestRepository.reopenForResend(batchId, failedIds.size(), BatchRequestStatus.PROCESSING) == 0) {
+        if (batchRequestRepository.reopenForResend(batchId, failedIds.size(), BatchRequestStatus.PROCESSING, FINISHED) == 0) {
             throw new ApiException.ConflictException(ErrorCode.STALE_STATE);
         }
 
         afterCommit(() -> batchWorker.processFailedOnly(batchId, failedIds));
         return toResponse(requireBatch(batchId));
+    }
+
+    // ---------- Cancel ----------
+
+    /*
+     * Cancels the batch and every child still PENDING; completed children and drafts are kept.
+     * Scope is checked before status, so a caller outside it learns nothing about the batch.
+     */
+    @Override
+    @Transactional
+    public BatchCancelResponse cancel(UUID batchId) {
+        BatchRequest batch = requireBatch(batchId);
+        Role role = CurrentActor.requireRole();
+        UUID actorId = CurrentActor.requireUserId();
+
+        if (!mayCancel(batch, role, actorId)) {
+            throw new ApiException.ForbiddenException(ErrorCode.OUT_OF_SCOPE);
+        }
+        if (batch.getStatus() == BatchRequestStatus.CANCELLED) {
+            throw new ApiException.ConflictException(ErrorCode.BATCH_ALREADY_CANCELLED);
+        }
+
+        BatchRequestResponse before = toResponse(batch);
+        BatchRequestStatus previousStatus = batch.getStatus();
+        LocalDateTime now = LocalDateTime.now();
+
+        // CAS first: A concurrent cancel stops here instead of notifying everyone twice
+        if (batchRequestRepository.cancelBatch(batchId, BatchRequestStatus.CANCELLED, actorId, now) == 0) {
+            throw new ApiException.ConflictException(ErrorCode.BATCH_ALREADY_CANCELLED);
+        }
+
+        List<UpdateRequest> cancelled = updateRequestCanceller.cancelPendingForBatch(batchId, actorId, now);
+
+        // Nothing left to stop: The exception rolls the CAS back too
+        if (cancelled.isEmpty() && previousStatus != BatchRequestStatus.PROCESSING) {
+            throw new ApiException.BusinessRuleException(ErrorCode.BATCH_NO_PENDING_REQUESTS);
+        }
+
+        BatchRequestResponse after = toResponse(requireBatch(batchId));
+        auditLogger.record(Action.CANCEL_BATCH_REQUEST, TargetType.BATCH_UPDATE_REQUEST, batchId, before, after);
+        return new BatchCancelResponse(after, cancelled.size());
     }
 
     // ---------- Resolution ----------
@@ -455,22 +504,51 @@ public class BatchRequestServiceImpl implements BatchRequestService {
         Map<UUID, String> creatorNames = userRepository.findAllById(creatorIds).stream()
                 .collect(Collectors.toMap(User::getId, User::getFullName));
 
+        Map<UUID, Map<RequestStatus, Long>> childCounts = updateRequestRepository
+                .countByBatchAndStatus(targetIds.keySet()).stream()
+                .collect(Collectors.groupingBy(BatchStatusCount::getBatchRequestId,
+                        Collectors.toMap(BatchStatusCount::getStatus, BatchStatusCount::getRequestCount)));
+
+        // Resolved once per page: Which rows offer a cancel action to this caller
+        Role role = CurrentActor.requireRole();
+        UUID actorId = CurrentActor.requireUserId();
+
         return batches.stream()
-                .map(batch -> new BatchRequestResponse(
-                        batch.getId(),
-                        batch.getTargetType(),
-                        targetLabel(batch, targetIds.get(batch.getId()), departmentNames, teamNames),
-                        batch.getLanguage(),
-                        batch.getReason(),
-                        batch.getDeadline(),
-                        batch.getTotalCount(),
-                        batch.getProcessedCount(),
-                        batch.getErrorCount(),
-                        batch.getStatus(),
-                        batch.getCreatedAt(),
-                        batch.getCreatedBy() == null ? null : creatorNames.get(batch.getCreatedBy())
-                ))
+                .map(batch -> {
+                    Map<RequestStatus, Long> counts = childCounts.getOrDefault(batch.getId(), Map.of());
+                    int pending = counts.getOrDefault(RequestStatus.PENDING, 0L).intValue();
+                    int completed = counts.getOrDefault(RequestStatus.COMPLETED, 0L).intValue();
+                    return new BatchRequestResponse(
+                            batch.getId(),
+                            batch.getTargetType(),
+                            targetLabel(batch, targetIds.get(batch.getId()), departmentNames, teamNames),
+                            batch.getLanguage(),
+                            batch.getReason(),
+                            batch.getDeadline(),
+                            batch.getTotalCount(),
+                            batch.getProcessedCount(),
+                            batch.getErrorCount(),
+                            batch.getStatus(),
+                            batch.getCreatedAt(),
+                            batch.getCreatedBy() == null ? null : creatorNames.get(batch.getCreatedBy()),
+                            pending,
+                            completed,
+                            isCancellable(batch, pending, role, actorId)
+                    );
+                })
                 .toList();
+    }
+
+    // Same rule cancel() enforces, so the button never offers a refused action
+    private boolean isCancellable(BatchRequest batch, int pending, Role role, UUID actorId) {
+        return batch.getStatus() != BatchRequestStatus.CANCELLED
+                && mayCancel(batch, role, actorId)
+                && (pending > 0 || batch.getStatus() == BatchRequestStatus.PROCESSING);
+    }
+
+    // Admin cancels any batch, HR only their own - same split as a single request
+    private boolean mayCancel(BatchRequest batch, Role role, UUID actorId) {
+        return role == Role.ADMIN || (role == Role.HR && actorId.equals(batch.getCreatedBy()));
     }
 
     // Department and team batches hold exactly one id

@@ -1,0 +1,36 @@
+<div class="modal-backdrop" [class.is-closing]="isClosing()"
+     (mousedown)="onBackdropMouseDown($event)" (click)="onBackdropClick($event)">
+  <div class="modal modal-sm" role="alertdialog" aria-modal="true"
+       aria-labelledby="bcd-title" aria-describedby="bcd-body" (click)="$event.stopPropagation()">
+    <h2 id="bcd-title" class="modal-title">Cancel batch request</h2>
+
+    <p id="bcd-body" class="modal-body">
+      Cancel this batch request? This will cancel all <strong>{{ batch().pendingCount }}</strong> pending update
+      request(s). Any completed CV updates will be kept, and employees will be notified
+    </p>
+
+    @if (batch().completedCount) {
+      <p class="cancel-note">
+        <span class="material-symbols-outlined" aria-hidden="true">task_alt</span>
+        <span><strong>{{ batch().completedCount }}</strong> completed update(s) stay as they are</span>
+      </p>
+    }
+    @if (batch().status === processingStatus) {
+      <p class="cancel-note">
+        <span class="material-symbols-outlined" aria-hidden="true">pause_circle</span>
+        <span>The batch is still sending: emails not sent yet are stopped</span>
+      </p>
+    }
+    <p class="cancel-note">
+      <span class="material-symbols-outlined" aria-hidden="true">info</span>
+      <span>Drafts employees already started are <strong>not</strong> deleted</span>
+    </p>
+
+    <div class="modal-footer">
+      <button type="button" class="btn btn-ghost" (click)="close()" [disabled]="submitting()">Keep batch</button>
+      <button type="button" class="btn btn-danger" (click)="confirm()" [disabled]="submitting()">
+        {{ submitting() ? 'Cancelling...' : 'Cancel batch' }}
+      </button>
+    </div>
+  </div>
+</div>

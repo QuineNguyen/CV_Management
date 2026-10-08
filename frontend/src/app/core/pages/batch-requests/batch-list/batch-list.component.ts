@@ -10,6 +10,9 @@ import { BatchRequestResponse } from "../../../dtos/batch-request.dto";
 import { BatchPageState } from "../../../models/batch-request.model";
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 import { AppRoute } from "../../../enums/app-route.enum";
+import { BatchCancelDialogComponent } from "../batch-cancel-dialog/batch-cancel-dialog.component";
+import { AuthService } from "../../../services/auth.service";
+import { UserRole } from "../../../enums/user-role.enum";
 
 /*
  * Every batch, newest first, so a batch can be found again after leaving its detail page.
@@ -18,7 +21,7 @@ import { AppRoute } from "../../../enums/app-route.enum";
 @Component({
     selector: 'app-batch-list',
     standalone: true,
-    imports: [MatPaginatorModule, MatTooltipModule, DatePipe],
+    imports: [MatPaginatorModule, MatTooltipModule, DatePipe, BatchCancelDialogComponent],
     templateUrl: './batch-list.component.html',
     styleUrl: './batch-list.component.css',
     changeDetection: ChangeDetectionStrategy.OnPush,
@@ -30,6 +33,7 @@ export class BatchListComponent implements OnInit {
 
     private readonly batchService = inject(BatchRequestService);
     private readonly router = inject(Router);
+    private readonly auth = inject(AuthService);
     private readonly destroyRef = inject(DestroyRef);
 
     readonly pageSizeOptions = [5, 10, 20, 50];
@@ -49,8 +53,10 @@ export class BatchListComponent implements OnInit {
     });
     readonly statusFilter = signal<BatchRequestStatus | null>(null);
     readonly filterOpen = signal(false);
+    readonly cancelTarget = signal<BatchRequestResponse | null>(null);
 
     readonly isEmpty = computed(() => !this.loading() && this.batches().length === 0);
+    readonly isHr = computed(() => this.auth.hasRole(UserRole.HR));
 
     readonly selectedStatusLabel = computed(() => {
         const status = this.statusFilter();
@@ -120,6 +126,41 @@ export class BatchListComponent implements OnInit {
         if (this.filterOpen()) {
             this.filterOpen.set(false);
         }
+    }
+
+    // ---------- Cancel ----------
+
+    // Offered only where the server set cancellable
+    openCancel(batch: BatchRequestResponse): void {
+        if (!batch.cancellable) {
+            return;
+        }
+        this.cancelTarget.set(batch);
+    }
+
+    cancelBatchHint(batch: BatchRequestResponse): string {
+        if (batch.cancellable) {
+            return 'Cancel batch';
+        }
+        if (batch.status === BatchRequestStatus.Cancelled) {
+            return 'This batch request has already been cancelled';
+        }
+        if (batch.pendingCount === 0) {
+            return 'This batch has no pending update requests to cancel';
+        }
+        if (this.isHr()) {
+            return 'HR can only cancel batches they created';
+        }
+        return 'You do not have permission to cancel this batch';
+    }
+
+    // The dialog already showed its toast; the row needs its new status and counts
+    onCancelled(): void {
+        this.load(false);
+    }
+
+    onCancelClosed(): void {
+        this.cancelTarget.set(null);
     }
 
     // ---------- Navigation ----------

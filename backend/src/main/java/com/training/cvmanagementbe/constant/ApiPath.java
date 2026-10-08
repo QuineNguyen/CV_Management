@@ -82,6 +82,7 @@ public final class ApiPath {
     public static final String BATCH_DETAIL = "/{id}";
     public static final String BATCH_FAILED_ITEMS = "/{id}/failed-items";
     public static final String BATCH_RESEND_FAILED = "/{id}/resend-failed";
+    public static final String BATCH_CANCEL = "/{id}/cancel";
 
     private ApiPath() {}
 }

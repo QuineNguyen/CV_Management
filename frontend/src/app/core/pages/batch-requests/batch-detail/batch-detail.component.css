@@ -9,6 +9,8 @@
   min-width: 0;
   display: flex;
   flex-direction: column;
+  align-items: center;
+  text-align: center;
   gap: 0.25rem;
   padding: var(--vt-pad);
   background: var(--vt-surface);
@@ -243,6 +245,87 @@
   transition: opacity 0.15s ease;
 }
 
+/* ---------- Cancelled batch ---------- */
+.progress-fill.is-stopped {
+  background: var(--vt-ink-muted);
+}
+
+/* ---------- Requests in the batch ---------- */
+.data-table.children-table {
+  min-width: min(36rem, 100%);
+}
+
+.col-child-name {
+  width: 40%;
+}
+
+.col-child-profile {
+  width: 30%;
+}
+
+.col-child-status {
+  width: 18%;
+}
+
+.col-child-actions {
+  width: 12%;
+  min-width: 5rem;
+}
+
+.data-table th.col-child-name,
+.data-table td.col-child-name,
+.data-table th.col-child-profile,
+.data-table td.col-child-profile,
+.data-table th.col-child-status,
+.data-table td.col-child-status,
+.data-table th.col-child-actions,
+.data-table td.col-child-actions {
+  text-align: center;
+}
+
+.data-table td.col-child-actions .row-actions {
+  justify-content: center;
+}
+
+.status-badge.is-pending {
+  background: rgba(237, 108, 2, 0.12);
+  color: var(--vt-warning);
+}
+
+/* ---------- Cancel one request ---------- */
+.cancel-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  margin: 0 0 var(--vt-gap);
+  padding: calc(var(--vt-gap) * 0.75);
+  border-inline-start: 0.25rem solid var(--vt-warning);
+  border-radius: var(--vt-radius-sm);
+  background: var(--vt-note-surface, #fff8e1);
+  font-size: var(--vt-fs-sm);
+  line-height: 1.5;
+}
+
+.cancel-note .material-symbols-outlined {
+  flex: 0 0 auto;
+  font-size: 1.125rem;
+  color: var(--vt-warning);
+}
+
+/* ---------- Tooltip host for disabled actions ---------- */
+.tooltip-host {
+  display: inline-flex;
+}
+
+.tooltip-host:has(:disabled) {
+  cursor: not-allowed;
+}
+
+.row-actions .icon-btn-danger:hover:not(:disabled) {
+  background: var(--vt-red-tint);
+  color: var(--vt-red);
+}
+
 /* ---------- Phone ---------- */
 @media (max-width: 40rem) {
   .stat-grid {
@@ -253,7 +336,12 @@
     padding: calc(var(--vt-pad) * 0.75);
   }
 
-  .panel-head .btn {
+  .panel-head .btn,
+  .panel-head .tooltip-host {
+    width: 100%;
+  }
+
+  .panel-head .tooltip-host .btn {
     width: 100%;
   }
 }
