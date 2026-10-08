@@ -41,6 +41,10 @@ export class UpdateRequestService {
             }
         }
 
+        if (query.batchId) {
+            params = params.set('batchId', query.batchId);
+        }
+
         return this.http.get<PagedResponse<UpdateRequestResponse>>(this.url(ApiEndpoint.UpdateRequests), { params });
     }
 

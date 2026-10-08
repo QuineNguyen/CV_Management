@@ -70,6 +70,8 @@ export const ERROR_MESSAGES: Readonly<Record<ClientErrorCode, string>> = {
   BATCH_INVALID_TARGET: 'Choose exactly one department or team',
   BATCH_STILL_PROCESSING: 'This batch is still being processed. Try again when it finishes',
   BATCH_NO_FAILED_EMAILS: 'This batch has no failed email to resend',
+  BATCH_ALREADY_CANCELLED: 'This batch request has already been cancelled',
+  BATCH_NO_PENDING_REQUESTS: 'This batch has no pending update requests to cancel',
 
   // Catalogue
   DUPLICATE_SKILL_CODE: 'Another skill already uses that code',

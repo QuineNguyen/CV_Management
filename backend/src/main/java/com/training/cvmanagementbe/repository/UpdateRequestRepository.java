@@ -3,6 +3,7 @@ package com.training.cvmanagementbe.repository;
 import com.training.cvmanagementbe.entity.models.UpdateRequest;
 import com.training.cvmanagementbe.enums.cvs.Language;
 import com.training.cvmanagementbe.enums.users.RequestStatus;
+import com.training.cvmanagementbe.repository.projection.BatchStatusCount;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -138,4 +139,16 @@ public interface UpdateRequestRepository extends JpaRepository<UpdateRequest, UU
 
     // Reminder scan: every PENDING request, overdue ones included
     List<UpdateRequest> findByStatusOrderByDeadlineAsc(RequestStatus status);
+
+    // Batch cancel: the children still PENDING
+    List<UpdateRequest> findByBatchRequestIdAndStatus(UUID batchRequestId, RequestStatus status);
+
+    // Pending / completed counts for a page of batches, one query
+    @Query("""
+            SELECT r.batchRequestId AS batchRequestId, r.status AS status, COUNT(r) AS requestCount
+            FROM UpdateRequest r
+            WHERE r.batchRequestId IN :batchIds
+            GROUP BY r.batchRequestId, r.status
+            """)
+    List<BatchStatusCount> countByBatchAndStatus(@Param("batchIds") Collection<UUID> batchIds);
 }

@@ -58,6 +58,7 @@ public class UpdateRequestController {
             @RequestParam(required = false) Language language,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fromDate,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate toDate,
+            @RequestParam(required = false) UUID batchId,
             @RequestParam(defaultValue = "CREATED_AT") UpdateRequestSortField sortBy,
             @RequestParam(defaultValue = "DESC") Sort.Direction direction,
             @RequestParam(defaultValue = PageDefaults.PAGE) int page,
@@ -66,7 +67,7 @@ public class UpdateRequestController {
         Sort sort = PageDefaults.sortBy(direction, sortBy.getProperty(),
                 UpdateRequestSortField.CREATED_AT.getProperty());
         Pageable pageable = PageRequest.of(PageDefaults.clampPage(page), PageDefaults.clampSize(size), sort);
-        UpdateRequestCriteria criteria = new UpdateRequestCriteria(status, departmentId, language, fromDate, toDate);
+        UpdateRequestCriteria criteria = new UpdateRequestCriteria(status, departmentId, language, fromDate, toDate, batchId);
         return ResponseEntity.ok(updateRequestService.search(criteria, pageable));
     }
 

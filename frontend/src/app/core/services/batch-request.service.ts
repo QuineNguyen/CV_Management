@@ -1,7 +1,7 @@
 import { HttpClient, HttpContext, HttpParams } from "@angular/common/http";
 import { inject, Injectable } from "@angular/core";
 import { environment } from "../../../environments/environment";
-import { BatchFailedItemResponse, BatchListQuery, BatchPageQuery, BatchPreviewQuery, BatchPreviewRequest, BatchPreviewResponse, BatchRequestResponse, CreateBatchRequest } from "../dtos/batch-request.dto";
+import { BatchCancelResponse, BatchFailedItemResponse, BatchListQuery, BatchPageQuery, BatchPreviewQuery, BatchPreviewRequest, BatchPreviewResponse, BatchRequestResponse, CreateBatchRequest } from "../dtos/batch-request.dto";
 import { Observable } from "rxjs";
 import { ApiEndpoint } from "../enums/api-endpoint.enum";
 import { SKIP_ERROR_TOAST } from "../interceptors/skip-error-toast.token";
@@ -60,5 +60,11 @@ export class BatchRequestService {
         }
         const context = new HttpContext().set(SKIP_ERROR_TOAST, silent);
         return this.http.get<PagedResponse<BatchRequestResponse>>(this.url(ApiEndpoint.BatchRequests), { params, context });
+    }
+
+    cancel(id: string): Observable<BatchCancelResponse> {
+        return this.http.post<BatchCancelResponse>(
+            this.url(`${ApiEndpoint.BatchRequests}/${id}${ApiEndpoint.BatchCancel}`), null,
+        );
     }
 }

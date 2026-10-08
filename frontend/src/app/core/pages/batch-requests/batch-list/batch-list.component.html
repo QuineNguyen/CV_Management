@@ -118,6 +118,12 @@
                           (click)="openDetail(batch)">
                     <span class="material-symbols-outlined" aria-hidden="true">visibility</span>
                   </button>
+                  <span class="tooltip-host" [matTooltip]="cancelBatchHint(batch)">
+                    <button type="button" class="icon-btn" [attr.aria-label]="cancelBatchHint(batch)"
+                            [disabled]="!batch.cancellable" (click)="openCancel(batch)">
+                      <span class="material-symbols-outlined" aria-hidden="true">cancel</span>
+                    </button>
+                  </span>
                 </div>
               </td>
             </tr>
@@ -141,6 +147,13 @@
               <button type="button" class="icon-btn" aria-label="View progress" (click)="openDetail(batch)">
                 <span class="material-symbols-outlined" aria-hidden="true">visibility</span>
               </button>
+              <span class="tooltip-host" [matTooltip]="cancelBatchHint(batch)">
+                <button type="button" class="icon-btn"
+                        [attr.aria-label]="cancelBatchHint(batch)" [disabled]="!batch.cancellable"
+                        (click)="openCancel(batch)">
+                  <span class="material-symbols-outlined" aria-hidden="true">cancel</span>
+                </button>
+              </span>
             </div>
           </div>
 
@@ -190,3 +203,7 @@
       (page)="onPageChange($event)" />
   }
 </section>
+
+@if (cancelTarget(); as target) {
+  <app-batch-cancel-dialog [batch]="target" (cancelled)="onCancelled()" (closed)="onCancelClosed()" />
+}

@@ -62,6 +62,9 @@ export interface BatchRequestResponse {
     status: BatchRequestStatus;
     createdAt: string;
     createdByName: string | null;
+    pendingCount: number;
+    completedCount: number;
+    cancellable: boolean;
 }
 
 export interface BatchFailedItemResponse {
@@ -69,4 +72,9 @@ export interface BatchFailedItemResponse {
     fullName: string | null;
     email: string | null;
     profileName: string | null;
+}
+
+export interface BatchCancelResponse {
+    batch: BatchRequestResponse;
+    cancelledCount: number;
 }

@@ -4,5 +4,6 @@ package com.training.cvmanagementbe.enums.cvs;
 public enum BatchRequestStatus {
     PROCESSING,
     COMPLETED,
-    COMPLETED_WITH_ERRORS
+    COMPLETED_WITH_ERRORS,
+    CANCELLED
 }

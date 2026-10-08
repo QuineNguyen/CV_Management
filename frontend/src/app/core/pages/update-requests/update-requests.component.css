@@ -221,6 +221,39 @@
   color: var(--vt-warning);
 }
 
+/* ---------- Batch link ---------- */
+.batch-chip {
+  display: inline-block;
+  margin-block-start: 0.25rem;
+  padding: 0.0625rem 0.5rem;
+  border: 0;
+  border-radius: 100vmax;
+  background: var(--vt-red-tint);
+  color: var(--vt-red-dark);
+  font-family: inherit;
+  font-size: var(--vt-fs-sm);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.batch-chip:hover {
+  text-decoration: underline;
+}
+
+/* ---------- Tooltip host for disabled actions ---------- */
+.tooltip-host {
+  display: inline-flex;
+}
+
+.tooltip-host:has(:disabled) {
+  cursor: not-allowed;
+}
+
+.row-actions .icon-btn-danger:hover:not(:disabled) {
+  background: var(--vt-red-tint);
+  color: var(--vt-red);
+}
+
 /* ---------- iPad and phone ---------- */
 @media (max-width: 64rem) {
   .data-card .reason-clamp {

@@ -27,6 +27,7 @@ import { CreateUpdateRequestDialogComponent } from "./create-update-request-dial
 import { ToastService } from "../../services/toast.service";
 import { error } from "console";
 import { HttpErrorResponse, HttpStatusCode } from "@angular/common/http";
+import { batchShortId } from "../../utils/batch-progress-util";
 
 /*
  * One list for every role; the server narrows rows to the caller.
@@ -82,6 +83,7 @@ export class UpdateRequestsComponent implements OnInit {
     readonly filterKey = UpdateRequestFilter;
     readonly pendingStatus = UpdateRequestStatus.Pending;
     readonly completedStatus = UpdateRequestStatus.Completed;
+    readonly shortBatchId = batchShortId;
 
     readonly requests = signal<UpdateRequestResponse[]>([]);
     readonly departments = signal<DepartmentNode[]>([]);
@@ -123,6 +125,7 @@ export class UpdateRequestsComponent implements OnInit {
     readonly isEmployeeView = computed(() => this.auth.hasRole(UserRole.Employee));
     readonly isTechLeadView = computed(() => this.auth.hasRole(UserRole.TechLead));
     readonly currentUserId = computed(() => this.auth.user()?.id ?? null);
+    readonly isHr = computed(() => this.auth.hasRole(UserRole.HR));
     readonly isEmpty = computed(() => !this.loading() && this.requests().length === 0);
 
     readonly selectedStatusLabel = computed(() => {
@@ -326,6 +329,9 @@ export class UpdateRequestsComponent implements OnInit {
 
     // Offered only where the server set cancellable; it re-checks both scope and status
     askCancel(request: UpdateRequestResponse): void {
+        if (!request.cancellable) {
+            return;
+        }
         this.isCancelClosing.set(false);
         this.cancelTarget.set(request);
     }
@@ -395,7 +401,50 @@ export class UpdateRequestsComponent implements OnInit {
         return request.status === UpdateRequestStatus.Pending && request.employeeId === this.currentUserId();
     }
 
+    // Explains why Open/Update CV is disabled, or names the action when enabled
+    updateCvHint(request: UpdateRequestResponse): string {
+        if (this.canUpdateCv(request)) {
+            return request.cvId ? 'Update this CV' : 'Create this CV';
+        }
+        if (request.status === UpdateRequestStatus.Completed) {
+            return 'This request has already been completed';
+        }
+        if (request.status === UpdateRequestStatus.Cancelled) {
+            return 'This request has been cancelled';
+        }
+        if (request.employeeId !== this.currentUserId()) {
+            return 'Only the assigned employee can update this CV';
+        }
+        return 'Update CV';
+    }
+
+    // Explains why Cancel is disabled, or names the action when enabled
+    cancelHint(request: UpdateRequestResponse): string {
+        if (request.cancellable) {
+            return 'Cancel request';
+        }
+        if (request.status === UpdateRequestStatus.Completed) {
+            return 'Cannot cancel a completed request';
+        }
+        if (request.status === UpdateRequestStatus.Cancelled) {
+            return 'This request has already been cancelled';
+        }
+        if (this.isHr()) {
+            return 'HR can only cancel requests they created';
+        }
+        if (this.isEmployeeView()) {
+            return 'Employees cannot cancel update requests';
+        }
+        if (this.isTechLeadView()) {
+            return 'Tech leads cannot cancel update requests';
+        }
+        return 'You do not have permission to cancel this request';
+    }
+
     updateCv(request: UpdateRequestResponse): void {
+        if (!this.canUpdateCv(request)) {
+            return;
+        }
         if (request.cvId) {
             void this.router.navigate(['/' + AppRoute.Cvs, request.cvId, UpdateRequestsComponent.EDIT_SEGMENT]);
             return;
@@ -422,6 +471,13 @@ export class UpdateRequestsComponent implements OnInit {
     // The batch wizard is its own page; the list only links to it
     openBatchCreate(): void {
         void this.router.navigate(['/' + AppRoute.BatchCreate]);
+    }
+
+    // Admin/HR only: the batch pages are theirs
+    openBatch(request: UpdateRequestResponse): void {
+        if (request.batchRequestId) {
+            void this.router.navigate(['/' + AppRoute.BatchRequests, request.batchRequestId]);
+        }
     }
 
     // ---------- Private helpers ----------

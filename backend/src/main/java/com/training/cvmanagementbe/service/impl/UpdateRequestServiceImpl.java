@@ -178,7 +178,8 @@ public class UpdateRequestServiceImpl implements UpdateRequestService {
                 UpdateRequestSpecifications.hasLanguage(criteria.language()),
                 UpdateRequestSpecifications.inDepartment(criteria.departmentId()),
                 UpdateRequestSpecifications.createdFrom(criteria.fromDate()),
-                UpdateRequestSpecifications.createdTo(criteria.toDate())
+                UpdateRequestSpecifications.createdTo(criteria.toDate()),
+                UpdateRequestSpecifications.inBatch(criteria.batchId())
         );
 
         Page<UpdateRequest> page = updateRequestRepository.findAll(spec, pageable);
@@ -411,7 +412,8 @@ public class UpdateRequestServiceImpl implements UpdateRequestService {
                 notes,
                 request.getCreatedBy() == null ? null : userNames.get(request.getCreatedBy()),
                 request.getCreatedAt(),
-                cancellable
+                cancellable,
+                request.getBatchRequestId()
         );
     }
 

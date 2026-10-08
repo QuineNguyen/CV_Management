@@ -28,6 +28,7 @@ export interface UpdateRequestQuery {
     language?: CvLanguage;
     fromDate?: string;
     toDate?: string;
+    batchId?: string;
     sortBy?: UpdateRequestSortField;
     direction?: SortDirection;
     page: number;
@@ -56,6 +57,7 @@ export interface UpdateRequestResponse {
     createdByName: string | null;
     createdAt: string;
     cancellable: boolean;
+    batchRequestId: string | null;
 }
 
 // A language left out of an ALL request because a request was already pending there

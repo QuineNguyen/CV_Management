@@ -234,6 +234,11 @@
               <td class="col-requested">
                 <span class="cell-date">{{ request.createdAt | date:'dd/MM/yyyy HH:mm' }}</span>
                 <span class="cell-muted">by {{ request.createdByName ?? '—' }}</span>
+                @if (canCreate() && request.batchRequestId) {
+                  <button type="button" class="batch-chip" (click)="openBatch(request)">
+                    Batch #{{ shortBatchId(request.batchRequestId) }}
+                  </button>
+                }
               </td>
               <td class="col-actions">
                 <div class="row-actions">
@@ -241,19 +246,20 @@
                           (click)="openDetail(request)">
                     <span class="material-symbols-outlined" aria-hidden="true">visibility</span>
                   </button>
-                  @if (canUpdateCv(request)) {
-                    <button type="button" class="icon-btn" aria-label="Open the CV"
-                            [matTooltip]="request.cvId ? 'Update this CV' : 'Create this CV'"
-                            (click)="updateCv(request)">
+
+                  <span class="tooltip-host" [matTooltip]="updateCvHint(request)">
+                    <button type="button" class="icon-btn" [attr.aria-label]="updateCvHint(request)"
+                            [disabled]="!canUpdateCv(request)" (click)="updateCv(request)">
                       <span class="material-symbols-outlined" aria-hidden="true">edit_document</span>
                     </button>
-                  }
-                  @if (request.cancellable) {
-                    <button type="button" class="icon-btn" matTooltip="Cancel request"
-                            aria-label="Cancel request" (click)="askCancel(request)">
+                  </span>
+
+                  <span class="tooltip-host" [matTooltip]="cancelHint(request)">
+                    <button type="button" class="icon-btn" [attr.aria-label]="cancelHint(request)"
+                            [disabled]="!request.cancellable" (click)="askCancel(request)">
                       <span class="material-symbols-outlined" aria-hidden="true">cancel</span>
                     </button>
-                  }
+                  </span>
                 </div>
               </td>
             </tr>
@@ -281,17 +287,20 @@
               <button type="button" class="icon-btn" aria-label="View details" (click)="openDetail(request)">
                 <span class="material-symbols-outlined" aria-hidden="true">visibility</span>
               </button>
-              @if (canUpdateCv(request)) {
-                <button type="button" class="icon-btn" aria-label="Open the CV" (click)="updateCv(request)">
+
+              <span class="tooltip-host" [matTooltip]="updateCvHint(request)">
+                <button type="button" class="icon-btn" [attr.aria-label]="updateCvHint(request)"
+                        [disabled]="!canUpdateCv(request)" (click)="updateCv(request)">
                   <span class="material-symbols-outlined" aria-hidden="true">edit_document</span>
                 </button>
-              }
-              @if (request.cancellable) {
-                <button type="button" class="icon-btn" aria-label="Cancel request"
-                        (click)="askCancel(request)">
+              </span>
+
+              <span class="tooltip-host" [matTooltip]="cancelHint(request)">
+                <button type="button" class="icon-btn" [attr.aria-label]="cancelHint(request)"
+                        [disabled]="!request.cancellable" (click)="askCancel(request)">
                   <span class="material-symbols-outlined" aria-hidden="true">cancel</span>
                 </button>
-              }
+              </span>
             </div>
           </div>
 
@@ -319,7 +328,14 @@
             </div>
             <div>
               <dt>Requested</dt>
-              <dd>{{ request.createdAt | date:'dd/MM/yyyy' }} by {{ request.createdByName ?? '—' }}</dd>
+              <dd>
+                {{ request.createdAt | date:'dd/MM/yyyy' }} by {{ request.createdByName ?? '—' }}
+                @if (canCreate() && request.batchRequestId) {
+                  <button type="button" class="batch-chip" (click)="openBatch(request)">
+                    Batch #{{ shortBatchId(request.batchRequestId) }}
+                  </button>
+                }
+              </dd>
             </div>
           </dl>
         </li>
@@ -402,14 +418,16 @@
 
       <div class="modal-footer">
         <button type="button" class="btn btn-ghost" (click)="closeDetail()">Close</button>
-        @if (target.cancellable) {
-          <button type="button" class="btn btn-danger" (click)="askCancel(target)">Cancel request</button>
-        }
-        @if (canUpdateCv(target)) {
-          <button type="button" class="btn btn-primary" (click)="updateCv(target)">
+        <span class="tooltip-host" [matTooltip]="cancelHint(target)">
+          <button type="button" class="btn btn-danger" [disabled]="!target.cancellable" (click)="askCancel(target)">
+            Cancel request
+          </button>
+        </span>
+        <span class="tooltip-host" [matTooltip]="updateCvHint(target)">
+          <button type="button" class="btn btn-primary" [disabled]="!canUpdateCv(target)" (click)="updateCv(target)">
             {{ target.cvId ? 'Update CV' : 'Create CV' }}
           </button>
-        }
+        </span>
       </div>
     </div>
   </div>
