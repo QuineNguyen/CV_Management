@@ -479,7 +479,7 @@ public class ApprovalServiceImpl implements ApprovalService {
         return toResponse(reply, authorName);
     }
 
-    // ---------- Admin oversight list ----------
+    // ---------- Oversight list (Admin manages, HR reads only) ----------
 
     @Override
     public PagedResponse<PendingDraftResponse> getPendingDrafts(Pageable pageable) {
