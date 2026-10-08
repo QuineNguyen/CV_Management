@@ -138,7 +138,7 @@ export const routes: Routes = [
       },
       {
         path: AppRoute.PendingDrafts,
-        canActivate: [roleGuard(UserRole.Admin)],
+        canActivate: [roleGuard(UserRole.Admin, UserRole.HR)],
         title: 'Draft Under Review',
         loadComponent: () =>
           import('./core/pages/approvals/pending-drafts/pending-drafts.component')

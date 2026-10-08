@@ -73,12 +73,15 @@ public class SlaDigestStep {
                 .toList();
     }
 
+    /*
+     * One digest per ACTIVE Admin/HR per day, listing overdue approval assignments.
+     * Same rows for everyone - an overdue HR sees their own line.
+     * Everyone lands on Drafts Under Review: Admin to act, HR to follow up (read-only).
+     */
     private ReminderNotice toNotice(User recipient, String subject, String content,
                                     Map<String, Object> vars, LocalDate today) {
-        // Admin lands on the oversight list to reassign; HR on their own queue
-        String link = recipient.getRole() == Role.ADMIN
-                ? NotificationLink.PENDING_DRAFTS.path()
-                : NotificationLink.APPROVAL_QUEUE.path();
+        // Admin and HR both land on the oversight list; only Admin sees its actions
+        String link = NotificationLink.PENDING_DRAFTS.path();
 
         NotificationCommand command = new NotificationCommand(
                 recipient.getId(), null, NotificationEventType.SLA_DIGEST, content, link, subject, vars

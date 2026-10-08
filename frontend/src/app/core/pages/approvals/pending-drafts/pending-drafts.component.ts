@@ -12,15 +12,20 @@ import { ROLE_LABELS } from "../../../models/user.model";
 import { PendingDraftItem, ReassignCandidate } from "../../../dtos/approval.dto";
 import { ApprovalQueuePageState, slaLabelOf, slaToneOf } from "../../../models/approval-queue.model";
 import { PendingDraftSortField, SortDirection } from "../../../enums/sort-field.enum";
+import { AuthService } from "../../../services/auth.service";
+import { UserRole } from "../../../enums/user-role.enum";
 
 /*
- * The administrator's oversight list.
+ * Oversight list of every draft under review.
  *
  * Deliberately the opposite of the approval queue: that one is scoped to a single assignee because
  * exclusive assignment is what stops two reviewers deciding the same CV, while this one shows every
  * draft in flight because the two actions offered here - cancel and handover - only make sense on
  * work belonging to somebody else. Both actions demand a reason: each stops or moves the work of
  * two other people and that sentence is what they are told.
+ * - Admin: sees the list and both actions.
+ * - HR: read-only - same rows as the SLA digest, so they can ask an Admin to act.
+ * Hiding the actions is presentation only; the API answers 403 either way.
  */
 @Component({
     selector: 'app-pending-drafts',
@@ -37,6 +42,7 @@ export class PendingDraftsComponent implements OnInit {
     private static readonly CLOSE_ANIMATION_MS = 500;
 
     private readonly approvalService = inject(ApprovalService);
+    private readonly auth = inject(AuthService);
     private readonly toast = inject(ToastService);
 
     readonly Action = AdminDraftAction;
@@ -79,6 +85,8 @@ export class PendingDraftsComponent implements OnInit {
     readonly canReassign = computed(() =>
         !!this.selectedCandidateId() && this.reason().trim().length > 0 && !this.submitting());
 
+    readonly canManage = computed(() => this.auth.hasRole(UserRole.Admin));
+
     ngOnInit(): void {
         this.load(true);
     }
@@ -115,12 +123,18 @@ export class PendingDraftsComponent implements OnInit {
     // ---------- Dialogs ----------
 
     askCancel(item: PendingDraftItem): void {
+        if (!this.canManage()) {
+            return;
+        }
         this.resetDialog();
         this.target.set(item);
         this.action.set(AdminDraftAction.Cancel);
     }
 
     askReassign(item: PendingDraftItem): void {
+        if (!this.canManage()) {
+            return;
+        }
         this.resetDialog();
         this.target.set(item);
         this.action.set(AdminDraftAction.Reassign);
@@ -186,7 +200,7 @@ export class PendingDraftsComponent implements OnInit {
 
     confirmCancel(): void {
         const target = this.target();
-        if (!target || !this.canCancel()) {
+        if (!this.canManage() || !target || !this.canCancel()) {
             return;
         }
         this.submitting.set(true);
@@ -214,7 +228,7 @@ export class PendingDraftsComponent implements OnInit {
     confirmReassign(): void {
         const target = this.target();
         const newAssigneeId = this.selectedCandidateId();
-        if (!target || !newAssigneeId || !this.canReassign()) {
+        if (!this.canManage() || !target || !newAssigneeId || !this.canReassign()) {
             return;
         }
         this.submitting.set(true);

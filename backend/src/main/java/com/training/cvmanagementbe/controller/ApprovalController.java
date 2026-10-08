@@ -98,15 +98,15 @@ public class ApprovalController {
     }
 
     @GetMapping(ApiPath.PENDING_DRAFTS)
-    @PreAuthorize(AuthorityExpression.ADMIN)
-    @Operation(summary = "List every draft under review, for supervision")
+    @PreAuthorize(AuthorityExpression.ADMIN_OR_HR)
+    @Operation(summary = "List every draft under review; Admin manages, HR reads only")
     public ResponseEntity<PagedResponse<PendingDraftResponse>> getPendingDrafts(
             @RequestParam(defaultValue = PageDefaults.PAGE) int page,
             @RequestParam(defaultValue = PageDefaults.SIZE) int size,
             @RequestParam(defaultValue = "SUBMITTED_AT") PendingDraftSortField sortBy,
             @RequestParam(defaultValue = "ASC") Sort.Direction direction
     ) {
-        // Oldest submission first: supervision starts with whoever has waited long waited longest.
+        // Oldest submission first: supervision starts with whoever has waited longest.
         Sort sort = PageDefaults.sortBy(direction, sortBy.getProperty(),
                 PendingDraftSortField.SUBMITTED_AT.getProperty());
         Pageable pageable = PageRequest.of(PageDefaults.clampPage(page), PageDefaults.clampSize(size), sort);

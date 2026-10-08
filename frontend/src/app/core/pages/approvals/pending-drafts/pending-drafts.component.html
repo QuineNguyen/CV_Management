@@ -30,6 +30,15 @@
     </div>
   } @else {
 
+    <!-- HR: read-only oversight -->
+    @if (!canManage()) {
+      <div class="notice" role="note">
+        <strong>View only.</strong>
+        Only an administrator can transfer or cancel a review. If a draft is stuck,
+        ask an administrator to move it
+      </div>
+    }
+
     <!-- Table: desktop -->
     <div class="data-table-wrap">
       <table class="data-table">
@@ -41,7 +50,9 @@
             <th scope="col" class="col-stage">Waiting at</th>
             <th scope="col" class="col-assignee">Reviewer</th>
             <th scope="col" class="col-deadline">Deadline</th>
-            <th scope="col" class="col-actions">Actions</th>
+            @if (canManage()) {
+              <th scope="col" class="col-actions">Actions</th>
+            }
           </tr>
         </thead>
         <tbody>
@@ -73,16 +84,18 @@
                 <span class="sla-badge" [class]="slaTone(item)">{{ slaLabel(item) }}</span>
                 <span class="cell-muted">{{ item.dueAt | date:'dd/MM/yyyy HH:mm' }}</span>
               </td>
-              <td class="col-actions">
-                <div class="row-actions">
-                  <button type="button" class="btn btn-danger btn-compact"
-                          matTooltip="Hand this draft to another reviewer"
-                          (click)="askReassign(item)">Transfer</button>
-                  <button type="button" class="btn btn-ghost btn-compact"
-                          matTooltip="Stop this review for good"
-                          (click)="askCancel(item)">Cancel</button>
-                </div>
-              </td>
+              @if (canManage()) {
+                <td class="col-actions">
+                  <div class="row-actions">
+                    <button type="button" class="btn btn-danger btn-compact"
+                            matTooltip="Hand this draft to another reviewer"
+                            (click)="askReassign(item)">Transfer</button>
+                    <button type="button" class="btn btn-ghost btn-compact"
+                            matTooltip="Stop this review for good"
+                            (click)="askCancel(item)">Cancel</button>
+                  </div>
+                </td>
+              }
             </tr>
           }
         </tbody>
@@ -131,10 +144,12 @@
             </div>
           </dl>
 
-          <div class="row-actions card-actions">
-            <button type="button" class="btn btn-ghost" (click)="askReassign(item)">Transfer</button>
-            <button type="button" class="btn btn-danger" (click)="askCancel(item)">Cancel</button>
-          </div>
+          @if (canManage()) {
+            <div class="row-actions card-actions">
+              <button type="button" class="btn btn-ghost" (click)="askReassign(item)">Transfer</button>
+              <button type="button" class="btn btn-danger" (click)="askCancel(item)">Cancel</button>
+            </div>
+          }
         </li>
       }
     </ul>
@@ -148,10 +163,13 @@
       showFirstLastButtons
       (page)="onPageChange($event)" />
 
-    <p class="text-muted">
-      Cancelling is final — the published version is untouched, but the draft cannot come back.
-      Transferring keeps every comment in place and restarts the three-day deadline
-    </p>
+    <!-- Explains the two actions, so only shown to whoever can use them -->
+    @if (canManage()) {
+      <p class="text-muted">
+        Cancelling is final — the published version is untouched, but the draft cannot come back.
+        Transferring keeps every comment in place and restarts the three-day deadline
+      </p>
+    }
   }
 </section>
 

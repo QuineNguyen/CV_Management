@@ -116,7 +116,7 @@ export class ShellComponent {
       icon: NavIconEnum.ApprovalsGroup,
       children: [
         { label: 'Approval Queue', icon: NavIconEnum.ApprovalQueue, route: AppRoute.ApprovalQueue, roles: [UserRole.Admin, UserRole.HR, UserRole.TechLead] },
-        { label: 'Drafts Under Review', icon: NavIconEnum.Supervision, route: AppRoute.PendingDrafts, roles: [UserRole.Admin] },
+        { label: 'Drafts Under Review', icon: NavIconEnum.Supervision, route: AppRoute.PendingDrafts, roles: [UserRole.Admin, UserRole.HR] },
       ],
     },
     {
