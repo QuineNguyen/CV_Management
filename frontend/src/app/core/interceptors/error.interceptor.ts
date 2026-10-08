@@ -15,7 +15,7 @@ import { SKIP_ERROR_TOAST } from './skip-error-toast.token';
  * Turns every failed request into one visible, consistent outcome.
  *
  * - The rule this enforces: a screen only handles a failure itself when it can do something
- * specific about it — highlight a field, roll back an optimistic edit, offer a reload. Everything
+ * specific about it — highlight a field, rollback an optimistic edit, offer a reload. Everything
  * else is announced here once. Without a central handler, each screen grows its own half of the
  * error matrix and the halves drift.
  *

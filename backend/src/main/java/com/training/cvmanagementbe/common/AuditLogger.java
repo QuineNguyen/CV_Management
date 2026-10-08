@@ -78,7 +78,7 @@ public class AuditLogger {
         try {
             return mapper.writeValueAsString(value);
         } catch (JsonProcessingException e) {
-            // A serialisation problem must not roll back the business change it describes.
+            // A serialisation problem must not rollback the business change it describes.
             // Degrading to toString keeps the entry, which is the part that matters.
             logger.warn("Could not serialise an audit value ({}); falling back to toString",
                     e.getMessage());

@@ -32,7 +32,7 @@ import java.util.Optional;
  * caller is how three of the four end up subtly different.
  *
  * - Requires an existing transaction: a published version and the state changes that accompany it
- * must commit or roll back together.
+ * must commit or rollback together.
  */
 @Service
 @RequiredArgsConstructor

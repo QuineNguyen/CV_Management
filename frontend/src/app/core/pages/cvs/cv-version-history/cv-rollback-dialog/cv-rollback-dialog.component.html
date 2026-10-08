@@ -4,7 +4,7 @@
        aria-labelledby="rollback-title" aria-describedby="rollback-intro"
        (click)="$event.stopPropagation()">
 
-    <h2 id="rollback-title" class="modal-title">Roll back to v{{ target().versionNumber }}?</h2>
+    <h2 id="rollback-title" class="modal-title">Rollback to v{{ target().versionNumber }}?</h2>
 
     <p id="rollback-intro" class="modal-body">
       A new version is published with the exact content of v{{ target().versionNumber }}.
@@ -79,7 +79,7 @@
     <div class="modal-footer">
       <button type="button" class="btn btn-ghost" (click)="cancel()" [disabled]="rolling()">Cancel</button>
       <button type="button" class="btn btn-primary" (click)="confirm()" [disabled]="rolling()">
-        {{ rolling() ? 'Rolling back...' : 'Roll back to v' + target().versionNumber }}
+        {{ rolling() ? 'Rolling back...' : 'Rollback to v' + target().versionNumber }}
       </button>
     </div>
   </div>

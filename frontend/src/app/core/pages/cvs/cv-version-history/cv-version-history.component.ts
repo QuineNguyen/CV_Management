@@ -25,7 +25,7 @@ import { UserRole } from "../../../enums/user-role.enum";
  * on page 1 is still picked on page 3.
  * - Each row compares with its predecessor in one click; v1 compares with an empty CV.
  * - ROLLBACK rows say their author and reviewers are inherited from the source version.
- * - Admin/HR can roll back to any non-current version, except while a draft is under review.
+ * - Admin/HR can rollback to any non-current version, except while a draft is under review.
  */
 @Component({
     selector: 'app-cv-version-history',
@@ -199,7 +199,7 @@ export class CvVersionHistoryComponent implements OnInit {
     rollbackTooltip(version: CvVersionHistoryItem): string {
         return this.reviewInProgress()
             ? 'Unavailable while a draft is awaiting approval'
-            : `Roll back to v${version.versionNumber}`;
+            : `Rollback to v${version.versionNumber}`;
     }
 
     askRollback(version: CvVersionHistoryItem): void {

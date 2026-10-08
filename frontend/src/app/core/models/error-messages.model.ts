@@ -32,7 +32,7 @@ export const ERROR_MESSAGES: Readonly<Record<ClientErrorCode, string>> = {
   CV_HAS_PENDING_DRAFTS: 'This CV has a draft awaiting approval. Finish or cancel that review first',
   CV_HAS_NO_VERSION: 'This CV has no published version yet',
   DIFF_SAME_VERSION: 'Pick two different versions to compare',
-  ROLLBACK_TO_CURRENT: 'This is already the current version. Pick an older version to roll back to',
+  ROLLBACK_TO_CURRENT: 'This is already the current version. Pick an older version to rollback to',
   DUPLICATE_CV_ITEM_ID: 'Two entries in this CV share the same identifier. Reload the editor and try again',
   ITEM_ID_FOREIGN_TO_PROFILE: 'This content references an entry from another profile. Reload the editor and try again',
 

@@ -141,7 +141,7 @@ public enum ErrorCode {
 
     // ---------- CV versions ----------
     DIFF_SAME_VERSION("Choose two different versions to compare"),
-    ROLLBACK_TO_CURRENT("This is already the current version; pick an older version to roll back to"),
+    ROLLBACK_TO_CURRENT("This is already the current version; pick an older version to rollback to"),
 
     // ---------- Image upload ----------
     IMAGE_EMPTY("The uploaded file is empty"),
