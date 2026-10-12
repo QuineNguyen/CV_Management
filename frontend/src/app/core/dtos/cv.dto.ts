@@ -1,7 +1,8 @@
 import { CvLanguage } from "../enums/cv-language.enum";
+import { CvUpdateStatus } from "../enums/cv-search.enum";
 import { DraftStatus } from "../enums/draft-status.enum";
 import { LifecycleStatus } from "../enums/lifecycle-status.enum";
-import { CvSortField, SortDirection } from "../enums/sort-field.enum";
+import { CvSearchSortField, CvSortField, SortDirection } from "../enums/sort-field.enum";
 import { VersionSource } from "../enums/version-source.enum";
 import { CvContent } from "../models/cv-content.model";
 import { InlineCommentResponse } from "./inline-comment.dto";
@@ -97,4 +98,64 @@ export interface DraftCancellation {
     reason: string | null;
     cancelledByName: string | null;
     cancelledAt: string;
+}
+
+export interface CvSearchQuery {
+    employeeName?: string;
+    profileName?: string;
+    departmentId?: string;
+    teamId?: string;
+    language?: CvLanguage;
+    updateStatus?: CvUpdateStatus;
+    allProfiles?: boolean;
+    keyword?: string;
+    skillIds?: readonly string[];
+    sortBy?: CvSearchSortField;
+    direction?: SortDirection;
+    page: number;
+    size: number;
+}
+
+export interface CvSearchTeamTag {
+    code: string;
+    name: string;
+    primary: boolean;
+}
+
+export interface CvSearchSkillTag {
+    id: string;
+    name: string;
+}
+
+// hasPublishedVersion = false is a CV that only matched organization criteria
+export interface CvSearchItemResponse {
+    cvId: string;
+    employeeId: string;
+    employeeName: string;
+    employeeEmail: string;
+    avatarUrl: string | null;
+    profileName: string;
+    primaryProfile: boolean;
+    departmentCode: string;
+    departmentName: string;
+    teams: CvSearchTeamTag[];
+    language: CvLanguage;
+    updateStatus: CvUpdateStatus;
+    hasPublishedVersion: boolean;
+    currentVersionNumber: number | null;
+    publishedAt: string | null;
+    skills: CvSearchSkillTag[];
+}
+
+// depth indents departments so the dropdown reads as the tree
+export interface CvSearchFilterOption {
+    id: string;
+    code: string;
+    name: string;
+    depth: number;
+}
+
+export interface CvSearchFiltersResponse {
+    departments: CvSearchFilterOption[];
+    teams: CvSearchFilterOption[];
 }

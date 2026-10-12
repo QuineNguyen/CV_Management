@@ -1,0 +1,16 @@
+.modal {
+  --vt-modal-w: min(38rem, 100%);
+}
+
+.skill-code-input {
+  font-family: ui-monospace, 'SFMono-Regular', Menlo, monospace;
+  letter-spacing: 0.02em;
+}
+
+.notice {
+  margin: 0;
+}
+
+.text-muted {
+  margin: 0;
+}

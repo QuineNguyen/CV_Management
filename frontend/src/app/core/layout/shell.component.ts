@@ -95,6 +95,7 @@ export class ShellComponent {
       label: 'CVs',
       icon: NavIconEnum.CvsGroup,
       children: [
+        { label: 'Search CVs', icon: NavIconEnum.CvSearch, route: AppRoute.CvsSearch },
         { label: 'Competency Profiles', icon: NavIconEnum.Profiles, route: AppRoute.Profiles },
         { label: 'Create CV', icon: NavIconEnum.AddCv, route: AppRoute.CvsNew },
         { label: 'Deleted CVs', icon: NavIconEnum.Deleted, route: AppRoute.CvsDeleted, roles: [UserRole.Admin, UserRole.HR] },
@@ -127,6 +128,14 @@ export class ShellComponent {
         { label: 'Users', icon: NavIconEnum.People, route: AppRoute.Users, roles: [UserRole.Admin, UserRole.HR, UserRole.TechLead] },
         { label: 'Departments', icon: NavIconEnum.Departments, route: AppRoute.Departments, roles: [UserRole.Admin, UserRole.HR] },
         { label: 'Teams', icon: NavIconEnum.Teams, route: AppRoute.Teams, roles: [UserRole.Admin, UserRole.HR] },
+      ],
+    },
+    {
+      key: NavGroupKey.Settings,
+      label: 'Settings',
+      icon: NavIconEnum.SettingsGroup,
+      children: [
+        { label: 'Skill Catalog', icon: NavIconEnum.SkillCatalog, route: AppRoute.Skills, roles: [UserRole.Admin, UserRole.HR] },
       ],
     },
   ];

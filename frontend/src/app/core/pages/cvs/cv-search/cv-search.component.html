@@ -1,0 +1,543 @@
+<section class="page">
+
+  <!-- Toolbar -->
+  <header class="page-toolbar">
+    <div class="page-heading">
+      <h1 class="page-title">Search CVs</h1>
+      <p class="page-subtitle">{{ subtitle() }}</p>
+    </div>
+  </header>
+
+  <!-- Main criteria: people and content -->
+  <div class="page-filters">
+    @if (showPeopleFilters()) {
+      <label class="field field-grow">
+        <span class="field-label">Employee</span>
+        <div class="search-input-wrap">
+          <span class="material-symbols-outlined search-icon" aria-hidden="true">person_search</span>
+          <input type="search"
+                 class="field-input search-input"
+                 placeholder="Employee name"
+                 [formControl]="employeeNameInput"
+                 autocomplete="off" />
+        </div>
+      </label>
+    }
+
+    <label class="field field-grow">
+      <span class="field-label">CV content</span>
+      <div class="search-input-wrap">
+        <span class="material-symbols-outlined search-icon" aria-hidden="true">search</span>
+        <input type="search"
+               class="field-input search-input"
+               placeholder="e.g. Spring Boot, Kubernetes"
+               [formControl]="keywordInput"
+               autocomplete="off" />
+      </div>
+    </label>
+
+    <app-skill-filter class="field field-grow"
+                      [selected]="selectedSkills()"
+                      (selectedChange)="onSkillsChange($event)" />
+  </div>
+
+  <!-- Organisation criteria -->
+  <div class="page-filters">
+    <label class="field">
+      <span class="field-label">Profile</span>
+      <input type="search"
+             class="field-input"
+             placeholder="e.g. AI Engineer"
+             [formControl]="profileNameInput"
+             autocomplete="off" />
+    </label>
+
+    @if (showPeopleFilters()) {
+      <!-- Department -->
+      <div class="field custom-select-wrap">
+        <span class="field-label">Department</span>
+        <button type="button"
+                class="field-input custom-select-trigger"
+                [class.is-open]="openDropdown() === dropdown.Department"
+                (click)="toggleDropdown(dropdown.Department, $event)"
+                aria-haspopup="listbox"
+                [attr.aria-expanded]="openDropdown() === dropdown.Department">
+          <span class="custom-select-label">{{ departmentLabel() }}</span>
+        </button>
+
+        @if (openDropdown() === dropdown.Department) {
+          <div class="custom-select-panel" (click)="$event.stopPropagation()">
+            <ul class="custom-select-list" role="listbox">
+              <li role="option" [attr.aria-selected]="departmentFilter() === null">
+                <button type="button"
+                        class="custom-select-option"
+                        [class.is-selected]="departmentFilter() === null"
+                        (click)="selectDepartment(null)">
+                  All departments
+                </button>
+              </li>
+              @for (department of departments(); track department.id) {
+                <li role="option" [attr.aria-selected]="departmentFilter() === department.id">
+                  <button type="button"
+                          class="custom-select-option"
+                          [class.is-selected]="departmentFilter() === department.id"
+                          (click)="selectDepartment(department.id)">
+                    {{ department.code }} — {{ department.name }}
+                  </button>
+                </li>
+              }
+            </ul>
+          </div>
+        }
+      </div>
+
+      <!-- Team -->
+      <div class="field custom-select-wrap">
+        <span class="field-label">Team</span>
+        <button type="button"
+                class="field-input custom-select-trigger"
+                [class.is-open]="openDropdown() === dropdown.Team"
+                (click)="toggleDropdown(dropdown.Team, $event)"
+                aria-haspopup="listbox"
+                [attr.aria-expanded]="openDropdown() === dropdown.Team">
+          <span class="custom-select-label">{{ teamLabel() }}</span>
+        </button>
+
+        @if (openDropdown() === dropdown.Team) {
+          <div class="custom-select-panel" (click)="$event.stopPropagation()">
+            <ul class="custom-select-list" role="listbox">
+              <li role="option" [attr.aria-selected]="teamFilter() === null">
+                <button type="button"
+                        class="custom-select-option"
+                        [class.is-selected]="teamFilter() === null"
+                        (click)="selectTeam(null)">
+                  All teams
+                </button>
+              </li>
+              @for (team of teams(); track team.id) {
+                <li role="option" [attr.aria-selected]="teamFilter() === team.id">
+                  <button type="button"
+                          class="custom-select-option"
+                          [class.is-selected]="teamFilter() === team.id"
+                          (click)="selectTeam(team.id)">
+                    {{ team.code }} — {{ team.name }}
+                  </button>
+                </li>
+              }
+            </ul>
+          </div>
+        }
+      </div>
+    }
+
+    <!-- Language -->
+    <div class="field custom-select-wrap">
+      <span class="field-label">Language</span>
+      <button type="button"
+              class="field-input custom-select-trigger"
+              [class.is-open]="openDropdown() === dropdown.Language"
+              (click)="toggleDropdown(dropdown.Language, $event)"
+              aria-haspopup="listbox"
+              [attr.aria-expanded]="openDropdown() === dropdown.Language">
+        <span class="custom-select-label">{{ languageLabel() }}</span>
+      </button>
+
+      @if (openDropdown() === dropdown.Language) {
+        <div class="custom-select-panel" (click)="$event.stopPropagation()">
+          <ul class="custom-select-list" role="listbox">
+            <li role="option" [attr.aria-selected]="languageFilter() === null">
+              <button type="button"
+                      class="custom-select-option"
+                      [class.is-selected]="languageFilter() === null"
+                      (click)="selectLanguage(null)">
+                All languages
+              </button>
+            </li>
+            @for (language of languageOptions; track language) {
+              <li role="option" [attr.aria-selected]="languageFilter() === language">
+                <button type="button"
+                        class="custom-select-option"
+                        [class.is-selected]="languageFilter() === language"
+                        (click)="selectLanguage(language)">
+                  {{ languageLabels[language] }}
+                </button>
+              </li>
+            }
+          </ul>
+        </div>
+      }
+    </div>
+
+    <!-- Update status -->
+    <div class="field custom-select-wrap">
+      <span class="field-label">Update status</span>
+      <button type="button"
+              class="field-input custom-select-trigger"
+              [class.is-open]="openDropdown() === dropdown.UpdateStatus"
+              (click)="toggleDropdown(dropdown.UpdateStatus, $event)"
+              aria-haspopup="listbox"
+              [attr.aria-expanded]="openDropdown() === dropdown.UpdateStatus">
+        <span class="custom-select-label">{{ updateStatusLabel() }}</span>
+      </button>
+
+      @if (openDropdown() === dropdown.UpdateStatus) {
+        <div class="custom-select-panel" (click)="$event.stopPropagation()">
+          <ul class="custom-select-list" role="listbox">
+            <li role="option" [attr.aria-selected]="updateStatusFilter() === null">
+              <button type="button"
+                      class="custom-select-option"
+                      [class.is-selected]="updateStatusFilter() === null"
+                      (click)="selectUpdateStatus(null)">
+                All statuses
+              </button>
+            </li>
+            @for (status of updateStatusOptions; track status) {
+              <li role="option" [attr.aria-selected]="updateStatusFilter() === status">
+                <button type="button"
+                        class="custom-select-option"
+                        [class.is-selected]="updateStatusFilter() === status"
+                        (click)="selectUpdateStatus(status)">
+                  {{ updateStatusLabels[status] }}
+                </button>
+              </li>
+            }
+          </ul>
+        </div>
+      }
+    </div>
+  </div>
+
+  <!-- Profile scope + clear -->
+  <div class="search-options">
+    <div class="view-toggle" role="group" aria-label="Profiles to search">
+      <button type="button"
+              class="view-toggle-btn"
+              [class.is-active]="profileScopeFilter() === profileScope.Primary"
+              [attr.aria-pressed]="profileScopeFilter() === profileScope.Primary"
+              [disabled]="profileNameActive()"
+              (click)="setProfileScope(profileScope.Primary)">
+        Primary profile
+      </button>
+      <button type="button"
+              class="view-toggle-btn"
+              [class.is-active]="profileScopeFilter() === profileScope.All"
+              [attr.aria-pressed]="profileScopeFilter() === profileScope.All"
+              [disabled]="profileNameActive()"
+              (click)="setProfileScope(profileScope.All)">
+        All profiles
+      </button>
+    </div>
+
+    @if (profileNameActive()) {
+      <span class="field-hint">A profile name searches every profile</span>
+    }
+
+    @if (activeFilterCount() > 0) {
+      <button type="button" class="btn btn-ghost search-clear" (click)="clearFilters()">
+        Clear filters ({{ activeFilterCount() }})
+      </button>
+    }
+  </div>
+
+  @if (hasContentCriteria()) {
+    <p class="notice notice-warning search-notice">
+      Skills and content are matched against the latest published version only —
+      CVs without an official version are left out of these results
+    </p>
+  }
+
+  <!-- Body -->
+  @if (loading()) {
+    <div class="skeleton-stack" aria-busy="true">
+      @for (row of [1, 2, 3, 4, 5]; track row) {
+        <div class="skeleton-row"></div>
+      }
+    </div>
+  } @else if (isEmpty()) {
+    <div class="empty-state">
+      @if (hasContentCriteria()) {
+        <p class="empty-state-title">No CV has these skills or this content</p>
+        <p class="empty-state-hint">
+          Only the latest published version of each CV is searched, never an older version or a draft
+        </p>
+      } @else {
+        <p class="empty-state-title">No CV found</p>
+        <p class="empty-state-hint">No CV in your access scope matches the current filters</p>
+      }
+      @if (activeFilterCount() > 0) {
+        <button type="button" class="btn btn-ghost" (click)="clearFilters()">Clear filters</button>
+      }
+    </div>
+  } @else {
+
+    <!-- Table: laptop and desktop -->
+    <div class="data-table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th scope="col" class="col-employee" [attr.aria-sort]="ariaSort(sortField.EmployeeName)">
+              <button type="button" class="sort-header" (click)="toggleSort(sortField.EmployeeName)">
+                Employee
+                <span class="material-symbols-outlined sort-icon" aria-hidden="true">
+                  {{ sortIcon(sortField.EmployeeName) }}
+                </span>
+              </button>
+            </th>
+            <th scope="col" class="col-profile">Profile</th>
+            <th scope="col" class="col-org">Organization</th>
+            <th scope="col" class="col-language">Language</th>
+            <th scope="col" class="col-version" [attr.aria-sort]="ariaSort(sortField.PublishedAt)">
+              <button type="button" class="sort-header" (click)="toggleSort(sortField.PublishedAt)">
+                Official version
+                <span class="material-symbols-outlined sort-icon" aria-hidden="true">
+                  {{ sortIcon(sortField.PublishedAt) }}
+                </span>
+              </button>
+            </th>
+            <th scope="col" class="col-skills">Skills</th>
+            <th scope="col" class="col-status">Update status</th>
+            <th scope="col" class="col-actions">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (item of results(); track item.cvId) {
+            <tr>
+              <td class="col-employee">
+                <div class="employee-cell">
+                  @if (avatarUrlOf(item); as avatarUrl) {
+                    <img class="avatar avatar-img" [src]="avatarUrl" alt="" loading="lazy"
+                         (error)="onAvatarError(item)" />
+                  } @else {
+                    <span class="avatar" [attr.data-tone]="avatarOf(item).tone" aria-hidden="true">{{ avatarOf(item).initials }}</span>
+                  }
+                  <div class="employee-text">
+                    <span class="cell-strong">{{ item.employeeName }}</span>
+                    <span class="cell-muted">{{ item.employeeEmail }}</span>
+                  </div>
+                </div>
+              </td>
+
+              <td class="col-profile">
+                <span class="cell-strong">{{ item.profileName }}</span>
+                @if (item.primaryProfile) {
+                  <span class="status-badge">Primary</span>
+                }
+              </td>
+
+              <td class="col-org">
+                <div class="org-cell">
+                  <div class="org-group">
+                    <span class="org-label">Department:</span>
+                    <span class="org-value"
+                          [matTooltip]="item.departmentCode && item.departmentCode !== item.departmentName ? (item.departmentCode + ' — ' + item.departmentName) : (item.departmentName || item.departmentCode)">
+                      {{ item.departmentName || item.departmentCode || '—' }}
+                    </span>
+                  </div>
+                  <div class="org-group org-teams-group">
+                    <span class="org-label">Teams:</span>
+                    <div class="chip-list">
+                      @for (team of item.teams; track team.code) {
+                        <span class="code-chip" [class.is-primary]="team.primary" [matTooltip]="team.name">
+                          {{ team.code }}
+                        </span>
+                      } @empty {
+                        <span class="cell-muted">—</span>
+                      }
+                    </div>
+                  </div>
+                </div>
+              </td>
+
+              <td class="col-language">
+                <div class="language-cell">
+                  <span class="code-chip is-primary">{{ item.language }}</span>
+                  <span class="language-name">{{ languageName(item.language) }}</span>
+                </div>
+              </td>
+
+              <td class="col-version">
+                @if (item.hasPublishedVersion) {
+                  <span class="cell-strong">v{{ item.currentVersionNumber }}</span>
+                  <span class="cell-muted">{{ item.publishedAt | date:'dd/MM/yyyy' }}</span>
+                } @else {
+                  <span class="status-badge is-warning">No official version yet</span>
+                }
+              </td>
+
+              <td class="col-skills">
+                <div class="chip-list">
+                  @for (skill of visibleSkills(item); track skill.id) {
+                    <span class="code-chip" [class.is-primary]="isMatchedSkill(skill)">{{ skill.name }}</span>
+                  } @empty {
+                    <span class="cell-muted">—</span>
+                  }
+                  @if (hiddenSkillCount(item) > 0) {
+                    <span class="code-chip" [matTooltip]="hiddenSkillNames(item)">+{{ hiddenSkillCount(item) }}</span>
+                  }
+                </div>
+              </td>
+
+              <td class="col-status">
+                <span class="status-badge"
+                      [class.is-active]="item.updateStatus === updatedStatus"
+                      [class.is-changed]="item.updateStatus !== updatedStatus">
+                  {{ updateStatusLabels[item.updateStatus] }}
+                </span>
+              </td>
+
+              <td class="col-actions">
+                <div class="row-actions">
+                  <button type="button" class="icon-btn" matTooltip="View CV" aria-label="View CV"
+                          (click)="view(item)">
+                    <span class="material-symbols-outlined" aria-hidden="true">visibility</span>
+                  </button>
+
+                  <span class="tooltip-host" [matTooltip]="editCvHint(item)">
+                    <button type="button" class="icon-btn" [attr.aria-label]="editCvHint(item)"
+                            [disabled]="!isOwn(item)"
+                            (click)="edit(item)">
+                      <span class="material-symbols-outlined" aria-hidden="true">edit</span>
+                    </button>
+                  </span>
+
+                  <span class="tooltip-host" [matTooltip]="historyHint(item)">
+                    <button type="button" class="icon-btn" [attr.aria-label]="historyHint(item)"
+                            [disabled]="!item.hasPublishedVersion"
+                            (click)="history(item)">
+                      <span class="material-symbols-outlined" aria-hidden="true">history</span>
+                    </button>
+                  </span>
+                </div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Cards: iPad and phone -->
+    <ul class="data-cards">
+      @for (item of results(); track item.cvId) {
+        <li class="data-card">
+          <div class="data-card-head">
+            <div class="data-card-identity">
+              @if (avatarUrlOf(item); as avatarUrl) {
+                <img class="avatar avatar-lg avatar-img" [src]="avatarUrl" alt="" loading="lazy"
+                     (error)="onAvatarError(item)" />
+              } @else {
+                <span class="avatar avatar-lg" [attr.data-tone]="avatarOf(item).tone" aria-hidden="true">{{ avatarOf(item).initials }}</span>
+              }
+              <div class="data-card-text">
+                <p class="data-card-title">{{ item.employeeName }}</p>
+                <p class="data-card-line">{{ item.employeeEmail }}</p>
+              </div>
+            </div>
+
+            <div class="row-actions">
+              <button type="button" class="icon-btn" matTooltip="View CV" aria-label="View CV"
+                      (click)="view(item)">
+                <span class="material-symbols-outlined" aria-hidden="true">visibility</span>
+              </button>
+
+              <span class="tooltip-host" [matTooltip]="editCvHint(item)">
+                <button type="button" class="icon-btn" [attr.aria-label]="editCvHint(item)"
+                        [disabled]="!isOwn(item)"
+                        (click)="edit(item)">
+                  <span class="material-symbols-outlined" aria-hidden="true">edit</span>
+                </button>
+              </span>
+
+              <span class="tooltip-host" [matTooltip]="historyHint(item)">
+                <button type="button" class="icon-btn" [attr.aria-label]="historyHint(item)"
+                        [disabled]="!item.hasPublishedVersion"
+                        (click)="history(item)">
+                  <span class="material-symbols-outlined" aria-hidden="true">history</span>
+                </button>
+              </span>
+            </div>
+          </div>
+
+          @if (!item.hasPublishedVersion) {
+            <span class="status-badge is-warning">No official version yet</span>
+          }
+
+          <dl class="data-card-facts">
+            <div>
+              <dt>Profile</dt>
+              <dd>
+                {{ item.profileName }}
+                @if (item.primaryProfile) {
+                  <span class="status-badge">Primary</span>
+                }
+              </dd>
+            </div>
+            <div>
+              <dt>Department</dt>
+              <dd>{{ item.departmentCode }} — {{ item.departmentName }}</dd>
+            </div>
+            <div>
+              <dt>Language</dt>
+              <dd>
+                <div class="language-cell is-start">
+                  <span class="code-chip is-primary">{{ item.language }}</span>
+                  <span class="language-name">{{ languageName(item.language) }}</span>
+                </div>
+              </dd>
+            </div>
+            <div>
+              <dt>Official version</dt>
+              <dd>
+                @if (item.hasPublishedVersion) {
+                  v{{ item.currentVersionNumber }} · {{ item.publishedAt | date:'dd/MM/yyyy' }}
+                } @else {
+                  —
+                }
+              </dd>
+            </div>
+            <div>
+              <dt>Update status</dt>
+              <dd>
+                <span class="status-badge"
+                      [class.is-active]="item.updateStatus === updatedStatus"
+                      [class.is-changed]="item.updateStatus !== updatedStatus">
+                  {{ updateStatusLabels[item.updateStatus] }}
+                </span>
+              </dd>
+            </div>
+          </dl>
+
+          @if (item.teams.length) {
+            <div class="card-skills">
+              <span class="card-skills-label">Teams</span>
+              <div class="chip-list">
+                @for (team of item.teams; track team.code) {
+                  <span class="code-chip" [class.is-primary]="team.primary" [matTooltip]="team.name">{{ team.code }}</span>
+                }
+              </div>
+            </div>
+          }
+
+          @if (item.skills.length) {
+            <div class="card-skills">
+              <span class="card-skills-label">Skills</span>
+              <div class="chip-list">
+                @for (skill of item.skills; track skill.id) {
+                  <span class="code-chip" [class.is-primary]="isMatchedSkill(skill)">{{ skill.name }}</span>
+                }
+              </div>
+            </div>
+          }
+        </li>
+      }
+    </ul>
+
+    <mat-paginator
+      class="page-paginator"
+      [length]="pageState().total"
+      [pageIndex]="pageState().index"
+      [pageSize]="pageState().size"
+      [pageSizeOptions]="pageSizeOptions"
+      showFirstLastButtons
+      (page)="onPageChange($event)" />
+  }
+</section>

@@ -1,0 +1,90 @@
+/* Host carries .field from the parent, so it is already a positioned flex column */
+
+/* ---------- Field box: chips + input ---------- */
+.skill-box {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem;
+  cursor: text;
+}
+
+.skill-box.is-open {
+  border-color: var(--vt-red);
+  box-shadow: 0 0 0 0.1875rem var(--vt-red-tint);
+}
+
+.skill-input {
+  flex: 1 1 min(8rem, 100%);
+  min-width: 0;
+  min-height: calc(var(--vt-touch-target) - 0.75rem);
+  padding: 0;
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: var(--vt-ink);
+  font-family: inherit;
+  /* 1rem floor keeps iOS from zooming on focus */
+  font-size: max(1rem, var(--vt-fs-md));
+}
+
+/* ---------- Selected chips ---------- */
+.skill-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.125rem;
+  max-width: 100%;
+  padding: 0.125rem 0.125rem 0.125rem 0.5rem;
+  border-radius: var(--vt-radius-sm);
+  background: var(--vt-red-tint);
+  color: var(--vt-red);
+  font-size: var(--vt-fs-sm);
+  font-weight: 700;
+}
+
+.skill-chip-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.skill-chip-remove {
+  display: inline-grid;
+  place-items: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: inherit;
+  font-size: var(--vt-fs-md);
+  line-height: 1;
+  cursor: pointer;
+}
+
+.skill-chip-remove:hover {
+  background: var(--vt-red);
+  color: var(--vt-surface);
+}
+
+/* ---------- Options ---------- */
+.skill-check {
+  flex: 0 0 auto;
+  font-size: 1.25rem;
+  color: var(--vt-ink-muted);
+}
+
+.picker-option.is-selected .skill-check {
+  color: var(--vt-red);
+}
+
+.picker-name {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.skill-code {
+  flex: 0 0 auto;
+  margin-inline-start: auto;
+}

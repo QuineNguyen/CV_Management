@@ -57,6 +57,17 @@ export enum CvVersionSortField {
     PublishedAt = 'PUBLISHED_AT',
 }
 
+export enum CvSearchSortField {
+    EmployeeName = 'EMPLOYEE_NAME',
+    PublishedAt = 'PUBLISHED_AT',
+}
+
+export enum SkillSortField {
+    DisplayOrder = 'DISPLAY_ORDER',
+    Name = 'NAME',
+    Code = 'CODE',
+}
+
 export enum SortDirection {
     Asc = 'ASC',
     Desc = 'DESC',

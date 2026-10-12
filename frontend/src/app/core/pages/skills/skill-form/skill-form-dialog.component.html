@@ -1,0 +1,82 @@
+<div class="modal-backdrop" [class.is-closing]="isClosing()"
+     (mousedown)="onBackdropMouseDown($event)" (click)="onBackdropClick($event)">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="skill-dialog-title"
+       (click)="$event.stopPropagation()">
+    <h2 class="modal-title" id="skill-dialog-title">{{ title() }}</h2>
+
+    <form class="form" [formGroup]="form" (ngSubmit)="submit()" novalidate>
+      <div class="form-grid">
+        <label class="field">
+          <span class="field-label">Code <span class="field-required">*</span></span>
+          <input type="text"
+                 class="field-input skill-code-input"
+                 formControlName="code"
+                 placeholder="SPRING_BOOT"
+                 [attr.maxlength]="codeMaxLength"
+                 autocomplete="off"
+                 (input)="normaliseCode()" />
+          @if (hasError('code', 'required')) {
+            <span class="field-error">Code is required</span>
+          }
+          @if (hasError('code', 'pattern')) {
+            <span class="field-error">Use capital letters, digits and single underscores, e.g. SPRING_BOOT</span>
+          }
+          @if (hasError('code', 'maxlength')) {
+            <span class="field-error">Code must be at most {{ codeMaxLength }} characters</span>
+          }
+        </label>
+
+        <label class="field">
+          <span class="field-label">Name <span class="field-required">*</span></span>
+          <input type="text"
+                 class="field-input"
+                 formControlName="name"
+                 placeholder="Spring Boot"
+                 [attr.maxlength]="nameMaxLength"
+                 autocomplete="off" />
+          @if (hasError('name', 'required')) {
+            <span class="field-error">Name is required</span>
+          }
+          @if (hasError('name', 'maxlength')) {
+            <span class="field-error">Name must be at most {{ nameMaxLength }} characters</span>
+          }
+        </label>
+
+        <label class="field">
+          <span class="field-label">Display order <span class="field-required">*</span></span>
+          <input type="number"
+                 class="field-input"
+                 formControlName="displayOrder"
+                 min="0"
+                 step="10" />
+          <span class="field-hint">Lists sort by this number, then by name. Step by 10 to leave room</span>
+          @if (hasError('displayOrder', 'required')) {
+            <span class="field-error">Display order is required</span>
+          }
+          @if (hasError('displayOrder', 'min') || hasError('displayOrder', 'max')) {
+            <span class="field-error">Use a number from 0 to 1,000,000</span>
+          }
+        </label>
+      </div>
+
+      @if (renameImpact() > 0) {
+        <div class="notice notice-warning" role="status">
+          <strong>Renaming changes {{ renameImpact() }} CV(s).</strong>
+          CVs store the skill, not its name, so every version that uses it — including versions
+          already sent to customers — will show the new name
+        </div>
+      } @else if (isEdit() && usedBy() > 0) {
+        <p class="text-muted">Used by {{ usedBy() }} CV(s) in their latest published version</p>
+      }
+
+      <p class="text-muted">Skills cannot be deleted. Move one that is no longer used down the list instead</p>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-ghost" (click)="cancel()" [disabled]="submitting()">Cancel</button>
+        <button type="submit" class="btn btn-primary" [disabled]="submitting()">
+          {{ submitting() ? 'Saving...' : (isEdit() ? 'Save changes' : 'Add skill') }}
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

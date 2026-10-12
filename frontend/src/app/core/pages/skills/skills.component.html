@@ -1,0 +1,166 @@
+<section class="page">
+
+  <!-- Toolbar -->
+  <header class="page-toolbar">
+    <div class="page-heading">
+      <h1 class="page-title">Skill Catalog</h1>
+      <p class="page-subtitle">
+        {{ pageState().total }} skill(s) · shared by every CV, listed by display order, then name
+      </p>
+    </div>
+
+    <div class="page-toolbar-actions">
+      <button type="button" class="btn btn-primary" (click)="openCreate()">
+        <span aria-hidden="true">＋</span> Add Skill
+      </button>
+    </div>
+  </header>
+
+  <!-- Filters -->
+  <div class="page-filters">
+    <label class="field field-grow">
+      <span class="field-label">Search</span>
+      <div class="search-input-wrap">
+        <span class="material-symbols-outlined search-icon" aria-hidden="true">search</span>
+        <input type="search"
+               class="field-input search-input"
+               placeholder="Skill name or code"
+               [formControl]="keywordInput"
+               autocomplete="off" />
+      </div>
+    </label>
+
+    <button type="button" class="btn btn-ghost" (click)="clearFilters()">Clear</button>
+  </div>
+
+  <p class="notice catalog-notice">
+    Skills cannot be deleted — CVs already sent to customers point at them.
+    To retire a skill, give it a large display order so it sinks to the bottom
+  </p>
+
+  <!-- Body -->
+  @if (loading()) {
+    <div class="skeleton-stack" aria-busy="true">
+      @for (row of [1, 2, 3, 4, 5]; track row) {
+        <div class="skeleton-row"></div>
+      }
+    </div>
+  } @else if (isEmpty()) {
+    <div class="empty-state">
+      @if (hasFilters()) {
+        <p class="empty-state-title">No skill matches</p>
+        <p class="empty-state-hint">Try another name or code</p>
+      } @else {
+        <p class="empty-state-title">The catalogue is empty</p>
+        <p class="empty-state-hint">
+          It grows as employees type skills into their CVs. You can also add the company's key skills here
+        </p>
+      }
+      <button type="button" class="btn btn-primary" (click)="openCreate()">Add skill</button>
+    </div>
+  } @else {
+
+    <!-- Table: laptop and desktop -->
+    <div class="data-table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th scope="col" class="col-order" [attr.aria-sort]="ariaSort(sortField.DisplayOrder)">
+              <button type="button" class="sort-header" (click)="toggleSort(sortField.DisplayOrder)">
+                Order
+                <span class="material-symbols-outlined sort-icon" aria-hidden="true">{{ sortIcon(sortField.DisplayOrder) }}</span>
+              </button>
+            </th>
+            <th scope="col" class="col-code" [attr.aria-sort]="ariaSort(sortField.Code)">
+              <button type="button" class="sort-header" (click)="toggleSort(sortField.Code)">
+                Code
+                <span class="material-symbols-outlined sort-icon" aria-hidden="true">{{ sortIcon(sortField.Code) }}</span>
+              </button>
+            </th>
+            <th scope="col" class="col-name" [attr.aria-sort]="ariaSort(sortField.Name)">
+              <button type="button" class="sort-header" (click)="toggleSort(sortField.Name)">
+                Name
+                <span class="material-symbols-outlined sort-icon" aria-hidden="true">{{ sortIcon(sortField.Name) }}</span>
+              </button>
+            </th>
+            <!-- Computed per page, so not sortable -->
+            <th scope="col" class="col-usage">CVs using</th>
+            <th scope="col" class="col-created">Created</th>
+            <th scope="col" class="col-actions">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (skill of skills(); track skill.id) {
+            <tr>
+              <td class="col-order">{{ skill.displayOrder }}</td>
+              <td class="col-code"><span class="code-chip">{{ skill.code }}</span></td>
+              <td class="col-name"><span class="cell-strong">{{ skill.name }}</span></td>
+              <td class="col-usage">
+                <span class="usage-count" [class.is-unused]="skill.cvCount === 0">{{ skill.cvCount }}</span>
+              </td>
+              <td class="col-created">
+                <span class="cell-date">{{ skill.createdAt | date:'dd/MM/yyyy' }}</span>
+                <span class="cell-muted">by {{ skill.createdByName ?? '—' }}</span>
+              </td>
+              <td class="col-actions">
+                <div class="row-actions">
+                  <button type="button" class="icon-btn" matTooltip="Edit skill" (click)="openEdit(skill)">✎</button>
+                </div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Cards: iPad and phone -->
+    <ul class="data-cards">
+      @for (skill of skills(); track skill.id) {
+        <li class="data-card">
+          <div class="data-card-head">
+            <div class="data-card-text">
+              <p class="data-card-title">{{ skill.name }}</p>
+              <p class="data-card-line is-mono">{{ skill.code }}</p>
+            </div>
+            <div class="row-actions">
+              <button type="button" class="icon-btn" matTooltip="Edit skill" (click)="openEdit(skill)">✎</button>
+            </div>
+          </div>
+
+          <dl class="data-card-facts">
+            <div>
+              <dt>Display order</dt>
+              <dd>{{ skill.displayOrder }}</dd>
+            </div>
+            <div>
+              <dt>CVs using</dt>
+              <dd>{{ skill.cvCount }}</dd>
+            </div>
+            <div>
+              <dt>Created</dt>
+              <dd>{{ skill.createdAt | date:'dd/MM/yyyy' }} by {{ skill.createdByName ?? '—' }}</dd>
+            </div>
+          </dl>
+        </li>
+      }
+    </ul>
+
+    <mat-paginator
+      class="page-paginator"
+      [length]="pageState().total"
+      [pageIndex]="pageState().index"
+      [pageSize]="pageState().size"
+      [pageSizeOptions]="pageSizeOptions"
+      showFirstLastButtons
+      (page)="onPageChange($event)" />
+  }
+</section>
+
+<!-- Add / edit dialog -->
+@if (dialogState(); as state) {
+  <app-skill-form-dialog
+    [state]="state"
+    [submitting]="saving()"
+    (saved)="submit($event)"
+    (cancelled)="closeDialog()" />
+}

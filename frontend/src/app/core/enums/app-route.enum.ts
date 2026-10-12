@@ -13,6 +13,8 @@ export enum AppRoute {
     Cvs = 'cvs',
     CvsNew = 'cvs/new',
     CvsDeleted = 'cvs/deleted',
+    CvsSearch = 'cvs/search',
+    Skills = 'settings/skills',
     MyProfile = 'my-profile',
     ProfileUpdateRequests = 'profile-update-requests',
     Approvals = 'approvals',

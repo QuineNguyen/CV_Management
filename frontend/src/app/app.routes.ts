@@ -84,6 +84,21 @@ export const routes: Routes = [
             .then(m => m.CvDeletedListComponent),
       },
       {
+        path: AppRoute.CvsSearch,
+        title: 'CV Search',
+        loadComponent: () =>
+          import('./core/pages/cvs/cv-search/cv-search.component')
+            .then(m => m.CvSearchComponent),
+      },
+      {
+        path: AppRoute.Skills,
+        canActivate: [roleGuard(UserRole.Admin, UserRole.HR)],
+        title: 'Skill',
+        loadComponent: () =>
+          import('./core/pages/skills/skills.component')
+            .then(m => m.SkillsComponent),
+      },
+      {
         path: `${AppRoute.Cvs}/:id`,
         title: 'CV Detail',
         loadComponent: () =>

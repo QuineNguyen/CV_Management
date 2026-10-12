@@ -1,0 +1,61 @@
+<span class="field-label" id="skill-filter-label">Skills</span>
+
+<!-- Chips + input share one field box -->
+<div class="field-input skill-box" [class.is-open]="open()" (click)="input.focus(); openPanel()">
+  @for (skill of selected(); track skill.id) {
+    <span class="skill-chip">
+      <span class="skill-chip-name">{{ skill.name }}</span>
+      <button type="button" class="skill-chip-remove"
+              [attr.aria-label]="'Remove ' + skill.name"
+              (click)="remove(skill); $event.stopPropagation()">×</button>
+    </span>
+  }
+  <input #input
+         type="text"
+         class="skill-input"
+         role="combobox"
+         aria-labelledby="skill-filter-label"
+         aria-autocomplete="list"
+         [attr.aria-expanded]="open()"
+         [placeholder]="placeholder()"
+         [formControl]="query"
+         (focus)="openPanel()"
+         autocomplete="off" />
+</div>
+
+@if (open()) {
+  <div class="picker-panel picker-panel--float" (click)="$event.stopPropagation()">
+    @if (atLimit()) {
+      <p class="picker-status">Up to {{ maxSelected }} skills at a time</p>
+    }
+    @if (loading() && !options().length) {
+      <p class="picker-status">Loading…</p>
+    }
+
+    <ul class="picker-list" role="listbox" aria-multiselectable="true">
+      @for (option of options(); track option.id) {
+        <li role="option" [attr.aria-selected]="isSelected(option)">
+          <button type="button"
+                  class="picker-option"
+                  [class.is-selected]="isSelected(option)"
+                  [disabled]="atLimit() && !isSelected(option)"
+                  (click)="toggle(option)">
+            <span class="material-symbols-outlined skill-check" aria-hidden="true">
+              {{ isSelected(option) ? 'check_box' : 'check_box_outline_blank' }}
+            </span>
+            <span class="picker-name">{{ option.name }}</span>
+            <span class="code-chip skill-code">{{ option.code }}</span>
+          </button>
+        </li>
+      } @empty {
+        @if (!loading()) {
+          <li><p class="picker-status">No skill matches “{{ query.value }}”</p></li>
+        }
+      }
+    </ul>
+
+    @if (total() > options().length) {
+      <p class="picker-status">Showing {{ options().length }} of {{ total() }} — keep typing to narrow down</p>
+    }
+  </div>
+}

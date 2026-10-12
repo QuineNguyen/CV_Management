@@ -21,4 +21,7 @@ export enum NavIconEnum {
   Supervision = 'supervisor_account',
   UpdateRequests = 'assignment',
   BatchRequest = 'group_add',
+  CvSearch = 'manage_search',
+  SkillCatalog = 'psychology',
+  SettingsGroup = 'settings'
 }
