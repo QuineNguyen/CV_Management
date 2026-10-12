@@ -29,6 +29,7 @@ import com.training.cvmanagementbe.repository.*;
 import com.training.cvmanagementbe.repository.projection.CvVersionRef;
 import com.training.cvmanagementbe.service.CvService;
 import com.training.cvmanagementbe.service.DiffService;
+import com.training.cvmanagementbe.service.SkillService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
@@ -54,6 +55,7 @@ public class CvServiceImpl implements CvService {
     private final UserRepository userRepository;
     private final InlineCommentRepository inlineCommentRepository;
     private final UpdateRequestRepository updateRequestRepository;
+    private final CvSearchRepository cvSearchRepository;
     private final AnchoredNoteCodec anchoredNoteCodec;
     private final UpdateRequestCanceller updateRequestCanceller;
     private final VersionPublisher versionPublisher;
@@ -63,6 +65,7 @@ public class CvServiceImpl implements CvService {
     private final AuditLogger auditLogger;
     private final ApplicationEventPublisher eventPublisher;
     private final DiffService diffService;
+    private final SkillService skillService;
 
     // ---------- Queries ----------
 
@@ -259,6 +262,9 @@ public class CvServiceImpl implements CvService {
         // Checked after ids are filled in, so a generated id is validated like any other.
         itemIdGuard.requireOwnedOrNew(profileId, content);
 
+        // Typed skill names join the shared catalogue here.
+        content = skillService.linkCatalog(content);
+
         /*
          * Linked before publishing, not after. An Admin/HR owner publishes v1 inside
          * publishOrDraft and that is the moment a pending request becomes COMPLETED - a request
@@ -295,6 +301,7 @@ public class CvServiceImpl implements CvService {
         if (publishedDirectly()) {
             CvContent content = codec.normaliseItemIds(request.content());
             itemIdGuard.requireOwnedOrNew(profile.getId(), content);
+            content = skillService.linkCatalog(content);
 
             CvVersion version = versionPublisher.publish(PublishCommand.directEdit(
                     cv.getId(),
@@ -575,6 +582,9 @@ public class CvServiceImpl implements CvService {
 
         itemIdGuard.requireOwnedOrNew(profile.getId(), normalised);
 
+        // Linked while drafting, so the approved version already carries catalogue ids
+        normalised = skillService.linkCatalog(normalised);
+
         draft.setContentJson(codec.write(normalised));
         draft.setAvatarImageId(request.avatarImageId());
         CvDraft saved = cvDraftRepository.save(draft);
@@ -601,16 +611,25 @@ public class CvServiceImpl implements CvService {
 
     // ---------- Access control ----------
 
-    // Admin/HR read everything; everyone else reads only their own. Tech Lead scope: Phase 3.
+    /*
+     * Admin/HR read everything; a tech lead reads members of the teams they lead, resolved through
+     * team membership rather than the profile's team; everyone reads their own.
+     * Same rule as the CV search scope, so a search result always opens.
+     */
     private void requireCanRead(UUID employeeId) {
         Role role = CurrentActor.requireRole();
         if (role == Role.ADMIN || role == Role.HR) {
             return;
         }
-        // Reads are refused as out of scope; NOT_CV_OWNER would tell a reader they tried to edit
-        if (!CurrentActor.requireUserId().equals(employeeId)) {
-            throw new ApiException.ForbiddenException(ErrorCode.OUT_OF_SCOPE);
+        UUID actorId = CurrentActor.requireUserId();
+        if (actorId.equals(employeeId)) {
+            return;
         }
+        if (role == Role.TECH_LEAD && cvSearchRepository.isMemberOfLedTeam(actorId, employeeId)) {
+            return;
+        }
+        // Reads are refused as out of scope; NOT_CV_OWNER would tell a reader they tried to edit
+        throw new ApiException.ForbiddenException(ErrorCode.OUT_OF_SCOPE);
     }
 
     private boolean isOwner(UUID employeeId) {

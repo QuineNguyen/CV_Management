@@ -5,6 +5,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.training.cvmanagementbe.constant.CvContentKeys;
 import com.training.cvmanagementbe.entity.models.User;
 import com.training.cvmanagementbe.enums.cvs.CvSectionKey;
 import com.training.cvmanagementbe.enums.configs.ErrorCode;
@@ -12,11 +13,14 @@ import com.training.cvmanagementbe.exception.ApiException;
 import com.training.cvmanagementbe.record.cvs.CvContent;
 import com.training.cvmanagementbe.record.cvs.PersonalInfo;
 import com.training.cvmanagementbe.record.cvs.RepeatedEntry;
+import com.training.cvmanagementbe.record.cvs.SkillRef;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 /*
  * Serialises CV content and exposes the flat views the diff needs.
@@ -35,8 +39,10 @@ public class CvContentCodec {
      * Structural keys of a repeated entry. item_id is identity, not content: "the item id changed"
      * is not a change a reader of the change log can act on and reporting it would drown the real
      * edits.
+     * skill_id is a catalogue reference: Linking an entry to the catalogue is not an edit either
+     * and a real change of skill already shows as a change of its name.
      */
-    private static final Set<String> IDENTITY_KEYS = Set.of("item_id");
+    private static final Set<String> IDENTITY_KEYS = Set.of(ITEM_ID, CvContentKeys.SKILL_ID);
 
     private final ObjectMapper objectMapper;
 
@@ -151,6 +157,63 @@ public class CvContentCodec {
         return sectionKey.key();
     }
 
+    // ---------- Skill catalogue references ----------
+
+    // skill_id and typed name of every skills entry, in CV order
+    public List<SkillRef> skillRefsOf(CvContent content) {
+        if (content == null) {
+            return List.of();
+        }
+        JsonNode section = objectMapper.valueToTree(content).get(jsonKeyOf(CvSectionKey.SKILLS));
+        if (section == null || !section.isArray()) {
+            return List.of();
+        }
+        return StreamSupport.stream(section.spliterator(), false)
+                .map(this::skillRefOf)
+                .toList();
+    }
+
+    /*
+     * Writes back whatever the resolver returns as each entry's skill_id; nothing else is touched.
+     * Tree-based for the same reason as normaliseItemIds.
+     */
+    public CvContent mapSkillIds(CvContent content, Function<SkillRef, UUID> resolver) {
+        ObjectNode root = objectMapper.valueToTree(content);
+        JsonNode section = root.get(jsonKeyOf(CvSectionKey.SKILLS));
+        if (section == null || !section.isArray()) {
+            return content;
+        }
+
+        for (JsonNode entry : section) {
+            UUID skillId = resolver.apply(skillRefOf(entry));
+            if (skillId == null) {
+                ((ObjectNode) entry).putNull(CvContentKeys.SKILL_ID);
+            } else {
+                ((ObjectNode) entry).put(CvContentKeys.SKILL_ID, skillId.toString());
+            }
+        }
+        return objectMapper.convertValue(root, CvContent.class);
+    }
+
+    private SkillRef skillRefOf(JsonNode entry) {
+        return new SkillRef(
+                parseUuid(entry.path(CvContentKeys.SKILL_ID).asText(null)),
+                entry.path(CvContentKeys.SKILL_NAME).asText(null)
+        );
+    }
+
+    // A malformed id from the client is treated as "not linked" and re-resolved by name
+    private static UUID parseUuid(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        try {
+            return UUID.fromString(value);
+        } catch (IllegalArgumentException e) {
+            return null;
+        }
+    }
+
     // ---------- Search support ----------
 
     // Flattens every text value into one string, so full-text search has something to index.
@@ -160,7 +223,7 @@ public class CvContentCodec {
         return builder.toString().trim();
     }
 
-    // ---------- Flat views (used by ChangeLogGenerator and DiffServiceImpl) ----------
+    // ---------- Flat views (used by ChangeLogGenerator) ----------
 
     /*
      * The SINGLE section of a key, as a record - or null for repeated sections.

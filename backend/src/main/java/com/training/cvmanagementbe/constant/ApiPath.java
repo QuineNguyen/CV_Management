@@ -34,6 +34,9 @@ public final class ApiPath {
     public static final String VERSIONS = "/{id}/versions";
     public static final String VERSION_DIFF = "/{id}/versions/diff";
     public static final String CV_ROLLBACK = "/{id}/rollback";
+    public static final String SKILLS = "/skills";
+    public static final String OPTIONS = "/options";
+    public static final String SEARCH_FILTERS = "/search-filters";
 
     // Images
     public static final String IMAGES = "/images";
