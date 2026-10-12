@@ -2,20 +2,20 @@ package com.training.cvmanagementbe.controller;
 
 import com.training.cvmanagementbe.constant.ApiPath;
 import com.training.cvmanagementbe.constant.PageDefaults;
-import com.training.cvmanagementbe.dto.request.cvs.CvCreateRequest;
-import com.training.cvmanagementbe.dto.request.cvs.CvDeleteRequest;
-import com.training.cvmanagementbe.dto.request.cvs.CvEditRequest;
-import com.training.cvmanagementbe.dto.request.cvs.CvRollbackRequest;
+import com.training.cvmanagementbe.dto.request.cvs.*;
 import com.training.cvmanagementbe.dto.response.configs.ApiResponse;
 import com.training.cvmanagementbe.dto.response.configs.PagedResponse;
 import com.training.cvmanagementbe.dto.response.cvs.*;
+import com.training.cvmanagementbe.enums.cvs.CvSearchSortField;
 import com.training.cvmanagementbe.enums.cvs.CvSortField;
 import com.training.cvmanagementbe.enums.cvs.CvVersionSortField;
+import com.training.cvmanagementbe.service.CvSearchService;
 import com.training.cvmanagementbe.service.CvService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -39,6 +39,7 @@ import java.util.UUID;
 public class CvController {
 
     private final CvService cvService;
+    private final CvSearchService cvSearchService;
 
     @PostMapping(ApiPath.PROFILES + ApiPath.CVS_BY_PROFILE)
     @Operation(summary = "Create a CV in one profile and language")
@@ -57,6 +58,31 @@ public class CvController {
             @RequestParam(defaultValue = "false") boolean includeDeleted
     ) {
         return ResponseEntity.ok(cvService.listByProfile(profileId, includeDeleted));
+    }
+
+    // Scope by role, organization + content criteria, paged on the server
+    @GetMapping(ApiPath.CVS)
+    @Operation(summary = "Search CVs; skills and full text read the latest published version only")
+    public ResponseEntity<PagedResponse<CvSearchItemResponse>> search(
+            @ParameterObject @Valid CvSearchFilterRequest filter,
+            @RequestParam(defaultValue = PageDefaults.PAGE) int page,
+            @RequestParam(defaultValue = PageDefaults.SIZE) int size,
+            @RequestParam(defaultValue = "EMPLOYEE_NAME") CvSearchSortField sortBy,
+            @RequestParam(defaultValue = "ASC") Sort.Direction direction
+    ) {
+        Pageable pageable = PageRequest.of(
+                PageDefaults.clampPage(page),
+                PageDefaults.clampSize(size),
+                Sort.by(direction, sortBy.getProperty())
+        );
+
+        return ResponseEntity.ok(cvSearchService.search(filter, pageable));
+    }
+
+    @GetMapping(ApiPath.CVS + ApiPath.SEARCH_FILTERS)
+    @Operation(summary = "Department tree and teams for the CV search filters")
+    public ResponseEntity<CvSearchFiltersResponse> getSearchFilters() {
+        return ResponseEntity.ok(cvSearchService.getFilterOptions());
     }
 
     @GetMapping(ApiPath.CVS + ApiPath.DELETED)
