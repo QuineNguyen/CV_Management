@@ -26,6 +26,7 @@ export enum ApiEndpoint {
 
     // CV routes
     Cvs = '/cvs',
+    CvSearchFilters = '/cvs/search-filters',
 
     // Image routes
     Images = '/images',
@@ -56,4 +57,8 @@ export enum ApiEndpoint {
     BatchFailedItems = '/failed-items',
     BatchResendFailed = '/resend-failed',
     BatchCancel = '/cancel',
+
+    // Skill routes
+    Skill = '/skills',
+    SkillOptions = '/skills/options',
 }

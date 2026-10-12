@@ -1,0 +1,59 @@
+:host {
+  display: block;
+  color: var(--vt-ink);
+}
+
+.catalog-notice {
+  margin: 0;
+}
+
+/* ---------- Column widths ---------- */
+.col-order   { width: 7rem; }
+.col-code    { width: 22%; min-width: 10rem; }
+.col-name    { width: 30%; min-width: 12rem; }
+.col-usage   { width: 8rem; }
+.col-created { width: 13rem; }
+.col-actions { width: 6rem; }
+
+.data-table td.col-order,
+.data-table td.col-usage,
+.data-table td.col-created,
+.data-table td.col-actions {
+  text-align: center;
+  white-space: nowrap;
+}
+
+.data-table td.col-actions .row-actions {
+  justify-content: center;
+}
+
+/* ---------- Usage count ---------- */
+.usage-count {
+  display: inline-grid;
+  place-items: center;
+  min-width: 2rem;
+  padding: 0.0625rem 0.5rem;
+  border-radius: 999px;
+  background: var(--vt-red-tint);
+  color: var(--vt-red);
+  font-size: var(--vt-fs-sm);
+  font-weight: 700;
+}
+
+/* An unused skill is a candidate to push down the list */
+.usage-count.is-unused {
+  background: var(--vt-canvas);
+  color: var(--vt-ink-muted);
+}
+
+/* ---------- Created cell: date over author ---------- */
+.col-created .cell-date {
+  display: block;
+  font-size: var(--vt-fs-md);
+  color: var(--vt-ink-muted);
+}
+
+.col-created .cell-muted {
+  display: block;
+  margin-inline: auto;
+}

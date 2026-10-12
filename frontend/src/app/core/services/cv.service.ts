@@ -2,7 +2,7 @@ import { HttpClient, HttpParams } from "@angular/common/http";
 import { inject, Injectable } from "@angular/core";
 import { environment } from "../../../environments/environment";
 import { Observable } from "rxjs";
-import { CvCreateRequest, CvDeleteRequest, CvDetailResponse, CvEditRequest, CvEditResponse, CvResponse, CvVersionSummary, DeletedCvQuery } from "../dtos/cv.dto";
+import { CvCreateRequest, CvDeleteRequest, CvDetailResponse, CvEditRequest, CvEditResponse, CvResponse, CvSearchFiltersResponse, CvSearchItemResponse, CvSearchQuery, CvVersionSummary, DeletedCvQuery } from "../dtos/cv.dto";
 import { ApiEndpoint } from "../enums/api-endpoint.enum";
 import { PagedResponse } from "../dtos/page.dto";
 import { PendingNoteResponse } from "../dtos/update-request.dto";
@@ -96,5 +96,52 @@ export class CvService {
     // Feedback notes of the pending update request, flat per anchor
     getPendingNotes(id: string): Observable<PendingNoteResponse[]> {
         return this.http.get<PendingNoteResponse[]>(this.url(`${ApiEndpoint.Cvs}/${id}/pending-notes`))
+    }
+
+    // Scope and filtering happen on the server; the page shows what comes back as-is
+    search(query: CvSearchQuery): Observable<PagedResponse<CvSearchItemResponse>> {
+        let params = new HttpParams()
+            .set('page', query.page)
+            .set('size', query.size);
+
+        if (query.employeeName) {
+            params = params.set('employeeName', query.employeeName);
+        }
+        if (query.profileName) {
+            params = params.set('profileName', query.profileName);
+        }
+        if (query.departmentId) {
+            params = params.set('departmentId', query.departmentId);
+        }
+        if (query.teamId) {
+            params = params.set('teamId', query.teamId);
+        }
+        if (query.language) {
+            params = params.set('language', query.language);
+        }
+        if (query.updateStatus) {
+            params = params.set('updateStatus', query.updateStatus);
+        }
+        if (query.allProfiles) {
+            params = params.set('allProfiles', true);
+        }
+        if (query.keyword) {
+            params = params.set('keyword', query.keyword);
+        }
+        // Repeated key: skillIds=a&skillIds=b
+        for (const skillId of query.skillIds ?? []) {
+            params = params.append('skillIds', skillId);
+        }
+        if (query.sortBy) {
+            params = params.set('sortBy', query.sortBy);
+        }
+        if (query.direction) {
+            params = params.set('direction', query.direction);
+        }
+        return this.http.get<PagedResponse<CvSearchItemResponse>>(this.url(ApiEndpoint.Cvs), { params });
+    }
+
+    getFilterOptions(): Observable<CvSearchFiltersResponse>{
+        return this.http.get<CvSearchFiltersResponse>(this.url(ApiEndpoint.CvSearchFilters));
     }
 }

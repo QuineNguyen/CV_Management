@@ -36,6 +36,9 @@ import { PendingNoteResponse } from "../../../dtos/update-request.dto";
 })
 export class CvContentEditorComponent {
 
+    // Section whose entries reference the skill catalogue
+    private static readonly SKILLS_SECTION_KEY = 'skills';
+
     private readonly fb = inject(FormBuilder);
     private readonly commentStore = inject(InlineCommentStore);
     private readonly noteStore = inject(PendingNoteStore);
@@ -183,6 +186,18 @@ export class CvContentEditorComponent {
 
         // skill_id points at the catalogue; kept as-is so re-editing never breaks the reference.
         group.addControl('skill_id', this.fb.control(null));
+
+        /*
+         * Retyping the skill name means another skill, so the old reference is dropped and the
+         * server resolves the new name against the catalogue. patch() writes with
+         * emitEvent: false, so loading a CV never clears a stored reference.
+         */
+        if (section.key === CvContentEditorComponent.SKILLS_SECTION_KEY && section.titleField) {
+            const skillId = group.get('skill_id');
+            group.get(section.titleField)?.valueChanges
+                .subscribe(() => skillId?.setValue(null, { emitEvent: false }));
+        }
+
         return group;
     }
 
@@ -264,7 +279,7 @@ export class CvContentEditorComponent {
             deleted_in_master: group.get('deleted_in_master')?.value === true,
         };
 
-        if (section.key === 'skills') {
+        if (section.key === CvContentEditorComponent.SKILLS_SECTION_KEY) {
             result['skill_id'] = group.get('skill_id')?.value ?? null;
         }
 

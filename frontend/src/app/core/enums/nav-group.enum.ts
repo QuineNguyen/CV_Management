@@ -4,4 +4,5 @@ export enum NavGroupKey {
     Requests = 'requests',
     Approvals = 'approvals',
     Organization = 'organization',
+    Settings = 'settings',
 }
