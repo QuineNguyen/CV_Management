@@ -20,7 +20,6 @@ public record CvSearchRow(
         String departmentName,
         Integer versionNumber,
         LocalDateTime publishedAt,
-        List<UUID> skillIds,
-        boolean pendingRequest
+        List<UUID> skillIds
 ) {
 }

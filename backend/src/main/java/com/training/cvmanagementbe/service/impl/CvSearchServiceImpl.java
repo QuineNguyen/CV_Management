@@ -5,7 +5,6 @@ import com.training.cvmanagementbe.dto.response.configs.PagedResponse;
 import com.training.cvmanagementbe.dto.response.cvs.*;
 import com.training.cvmanagementbe.entity.models.CurrentActor;
 import com.training.cvmanagementbe.enums.cvs.CvReadScope;
-import com.training.cvmanagementbe.enums.cvs.CvUpdateStatus;
 import com.training.cvmanagementbe.enums.users.Role;
 import com.training.cvmanagementbe.record.cvs.CvSearchCriteria;
 import com.training.cvmanagementbe.repository.CvSearchRepository;
@@ -24,8 +23,8 @@ import java.util.stream.Collectors;
 
 /*
  * Two criteria groups, two behaviours:
- * - Organization (name, profile, department, team, language, update status): Read from organization
- * data, so a never-published CV still appears - the client labels it.
+ * - Organization (name, profile, department, team, language): Read from organization
+ * data, so a never-published CV still appears - the version column labels it.
  * - Content (skills, full text): Read the latest published version only, so such a CV drops out.
  */
 @Service
@@ -81,7 +80,6 @@ public class CvSearchServiceImpl implements CvSearchService {
                 filter.departmentId() == null ? List.of() : withSubDepartments(filter.departmentId()),
                 filter.teamId(),
                 filter.language(),
-                filter.updateStatus(),
                 termsOf(filter.keyword()),
                 filter.skillIds() == null
                         ? List.of()
@@ -195,7 +193,6 @@ public class CvSearchServiceImpl implements CvSearchService {
                 row.departmentName(),
                 teams.getOrDefault(row.employeeId(), List.of()),
                 row.language(),
-                row.pendingRequest() ? CvUpdateStatus.NOT_UPDATED : CvUpdateStatus.UPDATED,
                 row.versionNumber() != null,
                 row.versionNumber(),
                 row.publishedAt(),

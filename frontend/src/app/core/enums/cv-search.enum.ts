@@ -1,13 +1,3 @@
-export enum CvUpdateStatus {
-    Updated = 'UPDATED',
-    NotUpdated = 'NOT_UPDATED',
-}
-
-export const CV_UPDATE_STATUS_LABELS: Record<CvUpdateStatus, string> = {
-    [CvUpdateStatus.Updated]: 'Updated',
-    [CvUpdateStatus.NotUpdated]: 'Not updated',
-};
-
 // Dropdowns of the CV search filter bar; only one is open at a time
 export enum CvSearchDropdown {
     Department = 'department',

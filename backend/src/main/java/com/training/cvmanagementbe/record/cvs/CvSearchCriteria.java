@@ -1,7 +1,6 @@
 package com.training.cvmanagementbe.record.cvs;
 
 import com.training.cvmanagementbe.enums.cvs.CvReadScope;
-import com.training.cvmanagementbe.enums.cvs.CvUpdateStatus;
 import com.training.cvmanagementbe.enums.cvs.Language;
 
 import java.util.List;
@@ -20,7 +19,6 @@ public record CvSearchCriteria(
         List<UUID> departmentIds,
         UUID teamId,
         Language language,
-        CvUpdateStatus updateStatus,
         List<String> contentTerms,
         List<UUID> skillIds
 ) {

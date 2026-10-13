@@ -1,6 +1,5 @@
 package com.training.cvmanagementbe.dto.request.cvs;
 
-import com.training.cvmanagementbe.enums.cvs.CvUpdateStatus;
 import com.training.cvmanagementbe.enums.cvs.Language;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Size;
@@ -30,8 +29,6 @@ public record CvSearchFilterRequest(
         UUID teamId,
 
         Language language,
-
-        CvUpdateStatus updateStatus,
 
         // false or absent: primary profiles only
         Boolean allProfiles,

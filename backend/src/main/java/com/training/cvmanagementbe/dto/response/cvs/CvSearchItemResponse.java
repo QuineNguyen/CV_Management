@@ -1,6 +1,5 @@
 package com.training.cvmanagementbe.dto.response.cvs;
 
-import com.training.cvmanagementbe.enums.cvs.CvUpdateStatus;
 import com.training.cvmanagementbe.enums.cvs.Language;
 import io.swagger.v3.oas.annotations.media.Schema;
 
@@ -26,7 +25,6 @@ public record CvSearchItemResponse(
         String departmentName,
         List<CvSearchTeamTag> teams,
         Language language,
-        CvUpdateStatus updateStatus,
         boolean hasPublishedVersion,
         Integer currentVersionNumber,
         LocalDateTime publishedAt,
