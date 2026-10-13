@@ -4,3 +4,8 @@
   --vt-modal-h: min(90vh, 48rem);
   --vt-modal-z: 60;
 }
+
+.code-input {
+  font-family: ui-monospace, 'SFMono-Regular', Menlo, monospace;
+  letter-spacing: 0.02em;
+}

@@ -17,6 +17,9 @@ import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 })
 export class TeamFormDialogComponent implements OnInit {
 
+    private static readonly CODE_MAX_LENGTH = 50;
+    private static readonly CODE_PATTERN = /^[A-Z0-9]+(?:_[A-Z0-9]+)*$/;
+
     private readonly fb = inject(FormBuilder);
     private readonly userService = inject(UserService);
     private readonly destroyRef = inject(DestroyRef);
@@ -27,11 +30,16 @@ export class TeamFormDialogComponent implements OnInit {
     readonly submitted = output<TeamRequest>();
     readonly cancelled = output<void>();
 
+    readonly codeMaxLength = TeamFormDialogComponent.CODE_MAX_LENGTH;
     readonly isClosing = signal(false);
     private backdropMouseDownTarget: EventTarget | null = null;
 
     readonly form = this.fb.nonNullable.group({
-        code: ['', [Validators.required, Validators.maxLength(50)]],
+        code: ['', [
+            Validators.required, 
+            Validators.maxLength(TeamFormDialogComponent.CODE_MAX_LENGTH),
+            Validators.pattern(TeamFormDialogComponent.CODE_PATTERN),
+        ]],
         name: ['', [Validators.required, Validators.maxLength(200)]],
         description: ['', [Validators.maxLength(2000)]],
         // Only active TECH_LEAD users are offered; the server rejects anyone else
@@ -94,6 +102,14 @@ export class TeamFormDialogComponent implements OnInit {
             return;
         }
         this.onCancel();
+    }
+
+    normaliseCode(): void {
+        const control = this.form.controls.code;
+        const next = control.value.toUpperCase().replace(/\s+/g, '_');
+        if (next !== control.value) {
+            control.setValue(next);
+        }
     }
 
     hasError(control: 'code' | 'name' | 'techLeadId', error: string): boolean {
