@@ -1,0 +1,18 @@
+<header class="page-toolbar">
+  <div>
+    <h1 class="page-title">{{ heading() }}</h1>
+    <p class="page-subtitle">
+      {{ subtitle() }}
+      @if (generatedAt(); as at) {
+        · As of {{ at | date:'HH:mm, dd/MM/yyyy' }}
+      }
+    </p>
+  </div>
+
+  <div class="page-toolbar-actions">
+    <ng-content />
+    <button type="button" class="btn btn-ghost" [disabled]="refreshing()" (click)="refresh.emit()">
+      {{ refreshing() ? 'Refreshing...' : 'Refresh' }}
+    </button>
+  </div>
+</header>

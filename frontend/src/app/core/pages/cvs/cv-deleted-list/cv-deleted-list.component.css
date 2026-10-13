@@ -11,6 +11,7 @@
 .col-deleted  { width: 13rem; }
 .col-actions  { width: 6rem; }
 
+.data-table td.col-owner,
 .data-table td.col-profile,
 .data-table td.col-language,
 .data-table td.col-version,

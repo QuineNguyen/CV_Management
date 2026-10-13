@@ -1,0 +1,114 @@
+<section class="page">
+
+  <app-dashboard-toolbar
+    heading="Dashboard"
+    [subtitle]="subtitle()"
+    [generatedAt]="state.data()?.generatedAt ?? null"
+    [refreshing]="state.refreshing()"
+    (refresh)="state.refresh()" />
+
+  <!-- Figures first, so a refresh never blanks the page -->
+  @if (state.data(); as d) {
+
+    <!-- Company overview -->
+    <section class="dash-section" aria-labelledby="overview-title">
+      <h2 id="overview-title" class="dash-section-title">Company overview</h2>
+      <ul class="kpi-grid">
+        <li>
+          <a class="kpi-card" [routerLink]="links.users">
+            <span class="kpi-icon material-symbols-outlined" aria-hidden="true">{{ icons.Employees }}</span>
+            <span class="kpi-label">Employees</span>
+            <strong class="kpi-value">{{ d.totalEmployees }}</strong>
+            <span class="kpi-hint">Active accounts</span>
+          </a>
+        </li>
+        <li>
+          <a class="kpi-card" [routerLink]="links.cvSearch">
+            <span class="kpi-icon material-symbols-outlined" aria-hidden="true">{{ icons.Cvs }}</span>
+            <span class="kpi-label">Active CVs</span>
+            <strong class="kpi-value">{{ d.totalActiveCvs }}</strong>
+            <span class="kpi-hint">Across every profile and language</span>
+          </a>
+        </li>
+        <li>
+          <div class="kpi-card">
+            <span class="kpi-icon material-symbols-outlined" aria-hidden="true">{{ icons.Published }}</span>
+            <span class="kpi-label">Published</span>
+            <strong class="kpi-value">{{ d.cvsWithVersion }}</strong>
+            <span class="kpi-hint">{{ publishedShare() }}% have an official version</span>
+          </div>
+        </li>
+        <li>
+          <div class="kpi-card" [class.is-calm]="d.cvsWithoutVersion === 0">
+            <span class="kpi-icon material-symbols-outlined" aria-hidden="true">{{ icons.Unpublished }}</span>
+            <span class="kpi-label">Not yet published</span>
+            <strong class="kpi-value">{{ d.cvsWithoutVersion }}</strong>
+            <span class="kpi-hint">Nothing to send to a customer yet</span>
+          </div>
+        </li>
+      </ul>
+    </section>
+
+    <!-- Waiting for action -->
+    <section class="dash-section" aria-labelledby="pending-title">
+      <h2 id="pending-title" class="dash-section-title">Waiting for action</h2>
+      <ul class="kpi-grid">
+        <li>
+          <a class="kpi-card" [routerLink]="links.updateRequests">
+            <span class="kpi-icon material-symbols-outlined" aria-hidden="true">{{ icons.Requests }}</span>
+            <span class="kpi-label">Update requests</span>
+            <strong class="kpi-value">{{ d.pendingUpdateRequestCount }}</strong>
+            <span class="kpi-hint">Pending, waiting for employees</span>
+          </a>
+        </li>
+        <li>
+          <a class="kpi-card" [routerLink]="links.profileRequests"
+             [class.is-alert]="d.pendingProfileUpdateCount > 0">
+            <span class="kpi-icon material-symbols-outlined" aria-hidden="true">{{ icons.ProfileRequests }}</span>
+            <span class="kpi-label">Profile requests</span>
+            <strong class="kpi-value">{{ d.pendingProfileUpdateCount }}</strong>
+            <span class="kpi-hint">Personal info changes you can review</span>
+          </a>
+        </li>
+        <li>
+          <a class="kpi-card" [routerLink]="links.pendingDrafts">
+            <span class="kpi-icon material-symbols-outlined" aria-hidden="true">{{ icons.Review }}</span>
+            <span class="kpi-label">Drafts under review</span>
+            <strong class="kpi-value">{{ d.draftsUnderReviewCount }}</strong>
+            <span class="kpi-hint">At Tech Lead or HR level</span>
+          </a>
+        </li>
+        <li>
+          <a class="kpi-card" [routerLink]="links.approvalQueue"
+             [class.is-alert]="d.myPendingApprovalCount > 0">
+            <span class="kpi-icon material-symbols-outlined" aria-hidden="true">{{ icons.Queue }}</span>
+            <span class="kpi-label">My reviews</span>
+            <strong class="kpi-value">{{ d.myPendingApprovalCount }}</strong>
+            <span class="kpi-hint">Assigned to you</span>
+          </a>
+        </li>
+      </ul>
+    </section>
+
+    <!-- Deadlines -->
+    <app-overdue-requests-widget
+      [data]="d.requestDeadlines"
+      [viewAllParams]="overdueParams" />
+
+    <!-- Review SLA: Admin and HR only -->
+    <app-overdue-approvals-widget [data]="d.approvalSla" />
+
+  } @else if (state.loading()) {
+    <div class="skeleton-stack" aria-busy="true">
+      @for (row of [1, 2, 3, 4]; track row) {
+        <div class="skeleton-row"></div>
+      }
+    </div>
+  } @else {
+    <div class="empty-state">
+      <p class="empty-state-title">The dashboard could not be loaded</p>
+      <p class="empty-state-hint">Check your connection, then try again</p>
+      <button type="button" class="btn btn-primary" (click)="state.load()">Try again</button>
+    </div>
+  }
+</section>

@@ -5,7 +5,7 @@ export enum AppRoute {
     ChangePassword = 'account/change-password',
     
     // Core routes
-    Home = 'home',
+    Dashboard = 'dashboard',
     Users = 'users',
     Departments = 'departments',
     Teams = 'teams',

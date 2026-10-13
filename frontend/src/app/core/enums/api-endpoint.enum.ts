@@ -61,4 +61,9 @@ export enum ApiEndpoint {
     // Skill routes
     Skill = '/skills',
     SkillOptions = '/skills/options',
+
+    // Dashboard routes
+    DashboardAdmin = '/dashboard/admin',
+    DashboardTechLead = '/dashboard/tech-lead',
+    DashboardEmployee = '/dashboard/employee',
 }

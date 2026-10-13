@@ -1,0 +1,90 @@
+<section class="page">
+
+  <app-dashboard-toolbar
+    heading="Dashboard"
+    [subtitle]="subtitle()"
+    [generatedAt]="state.data()?.generatedAt ?? null"
+    [refreshing]="state.refreshing()"
+    (refresh)="state.refresh()" />
+
+  <!-- Figures first, so a refresh never blanks the page -->
+  @if (state.data(); as d) {
+
+    <!-- My review queue: first, because it is the tech lead's own work -->
+    <section class="dash-section" aria-labelledby="queue-title">
+      <h2 id="queue-title" class="dash-section-title">My review queue</h2>
+      <ul class="kpi-grid">
+        <li>
+          <a class="kpi-card" [routerLink]="links.approvalQueue"
+             [class.is-calm]="d.myPendingApprovalCount === 0">
+            <span class="kpi-icon material-symbols-outlined" aria-hidden="true">{{ icons.Queue }}</span>
+            <span class="kpi-label">Waiting for my review</span>
+            <strong class="kpi-value">{{ d.myPendingApprovalCount }}</strong>
+            <span class="kpi-hint">Drafts assigned to you</span>
+          </a>
+        </li>
+        <li>
+          <a class="kpi-card" [routerLink]="links.approvalQueue"
+             [class.is-alert]="d.myOverdueApprovalCount > 0"
+             [class.is-calm]="d.myOverdueApprovalCount === 0">
+            <span class="kpi-icon material-symbols-outlined" aria-hidden="true">{{ icons.Overdue }}</span>
+            <span class="kpi-label">Past the review deadline</span>
+            <strong class="kpi-value">{{ d.myOverdueApprovalCount }}</strong>
+            <span class="kpi-hint">Oldest first in your queue</span>
+          </a>
+        </li>
+      </ul>
+    </section>
+
+    <!-- My teams -->
+    <section class="dash-section" aria-labelledby="team-title">
+      <h2 id="team-title" class="dash-section-title">My teams</h2>
+      <ul class="kpi-grid">
+        <li>
+          <a class="kpi-card" [routerLink]="links.users">
+            <span class="kpi-icon material-symbols-outlined" aria-hidden="true">{{ icons.Team }}</span>
+            <span class="kpi-label">Members</span>
+            <strong class="kpi-value">{{ d.teamMemberCount }}</strong>
+            <span class="kpi-hint">In the teams you lead</span>
+          </a>
+        </li>
+        <li>
+          <a class="kpi-card" [routerLink]="links.cvSearch">
+            <span class="kpi-icon material-symbols-outlined" aria-hidden="true">{{ icons.Cvs }}</span>
+            <span class="kpi-label">Team CVs</span>
+            <strong class="kpi-value">{{ d.teamCvCount }}</strong>
+            <span class="kpi-hint">Active, every language</span>
+          </a>
+        </li>
+        <li>
+          <a class="kpi-card" [routerLink]="links.updateRequests" [queryParams]="teamParams">
+            <span class="kpi-icon material-symbols-outlined" aria-hidden="true">{{ icons.Requests }}</span>
+            <span class="kpi-label">Pending update requests</span>
+            <strong class="kpi-value">{{ d.teamPendingRequestCount }}</strong>
+            <span class="kpi-hint">Sent to your team members</span>
+          </a>
+        </li>
+      </ul>
+    </section>
+
+    <!-- Deadlines in the team -->
+    <app-overdue-requests-widget
+      heading="Team update request deadlines"
+      emptyHint="No pending request in your teams is due in the coming days"
+      [data]="d.requestDeadlines"
+      [viewAllParams]="teamOverdueParams" />
+
+  } @else if (state.loading()) {
+    <div class="skeleton-stack" aria-busy="true">
+      @for (row of [1, 2, 3]; track row) {
+        <div class="skeleton-row"></div>
+      }
+    </div>
+  } @else {
+    <div class="empty-state">
+      <p class="empty-state-title">The dashboard could not be loaded</p>
+      <p class="empty-state-hint">Check your connection, then try again</p>
+      <button type="button" class="btn btn-primary" (click)="state.load()">Try again</button>
+    </div>
+  }
+</section>

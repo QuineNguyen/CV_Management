@@ -13,6 +13,7 @@
 .col-sla      { width: 10rem; }
 .col-actions  { width: 7rem; }
 
+.data-table td.col-employee,
 .data-table td.col-profile,
 .data-table td.col-language,
 .data-table td.col-level,

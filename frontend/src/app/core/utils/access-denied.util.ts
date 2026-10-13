@@ -22,6 +22,6 @@ export function leaveIfAccessDenied(error: unknown, router: Router): boolean {
     if (!isAccessDenied(error)) {
         return false;
     }
-    void router.navigate(['/' + AppRoute.Home], { replaceUrl: true });
+    void router.navigate(['/' + AppRoute.Dashboard], { replaceUrl: true });
     return true;
 }

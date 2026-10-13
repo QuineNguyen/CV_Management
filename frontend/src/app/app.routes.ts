@@ -29,12 +29,12 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./core/layout/shell.component').then((m) => m.ShellComponent),
     children: [
-      { path: '', pathMatch: 'full', redirectTo: AppRoute.Home },
+      { path: '', pathMatch: 'full', redirectTo: AppRoute.Dashboard },
       {
-        path: AppRoute.Home,
-        title: 'Home',
+        path: AppRoute.Dashboard,
+        title: 'Dashboard',
         loadComponent: () =>
-          import('./core/pages/home/home.component').then((m) => m.HomeComponent),
+          import('./core/pages/dashboard/dashboard.component').then((m) => m.DashboardComponent),
       },
       {
         path: AppRoute.Departments,

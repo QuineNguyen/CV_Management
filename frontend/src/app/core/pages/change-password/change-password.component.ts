@@ -94,6 +94,6 @@ export class ChangePasswordComponent {
     }
 
     async cancel(): Promise<void> {
-        await this.router.navigateByUrl(this.returnUrl ?? AppRoute.Home);
+        await this.router.navigateByUrl(this.returnUrl ?? AppRoute.Dashboard);
     }
 }

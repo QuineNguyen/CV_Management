@@ -1,0 +1,141 @@
+<section class="widget" aria-labelledby="deadline-widget-title">
+
+  <!-- Header -->
+  <header class="widget-head">
+    <div>
+      <h2 id="deadline-widget-title" class="widget-title">{{ heading() }}</h2>
+      <p class="widget-hint">
+        Pending update requests due within {{ data().approachingDays }} days or already past their deadline
+      </p>
+    </div>
+    @if (total() > 0) {
+      <a class="link-btn view-all" [routerLink]="viewAllRoute()" [queryParams]="viewAllParams()">
+        View all ({{ total() }})
+      </a>
+    }
+  </header>
+
+  <!-- Tallies -->
+  <ul class="urgency-tally" aria-label="Requests by urgency">
+    <li class="urgency-chip" [attr.data-urgency]="urgency.Overdue">
+      <strong>{{ data().overdueCount }}</strong> overdue
+    </li>
+    <li class="urgency-chip" [attr.data-urgency]="urgency.LastDay">
+      <strong>{{ data().lastDayCount }}</strong> due today
+    </li>
+    <li class="urgency-chip" [attr.data-urgency]="urgency.Approaching">
+      <strong>{{ data().approachingCount }}</strong> due in 1–{{ data().approachingDays }} days
+    </li>
+  </ul>
+
+  @if (!data().items.length) {
+    <div class="empty-state">
+      <p class="empty-state-title">Nothing is due soon</p>
+      <p class="empty-state-hint">{{ emptyHint() }}</p>
+    </div>
+  } @else {
+
+    <!-- Table: desktop -->
+    <div class="data-table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr>
+            @if (showEmployee()) {
+              <th scope="col" class="col-employee">Employee</th>
+            }
+            <th scope="col" class="col-profile">Profile</th>
+            <th scope="col" class="col-language">Language</th>
+            <th scope="col" class="col-deadline">Deadline</th>
+            <th scope="col" class="col-status">Status</th>
+            <th scope="col" class="col-actions">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (item of data().items; track item.requestId) {
+            <tr>
+              @if (showEmployee()) {
+                <td class="col-employee">
+                  <span class="cell-strong">{{ item.employeeName ?? '—' }}</span>
+                </td>
+              }
+              <td class="col-profile">
+                <span class="cell-muted">{{ item.profileName ?? 'No profile yet' }}</span>
+              </td>
+              <td class="col-language">
+                <div class="language-cell">
+                  <span class="code-chip is-primary">{{ item.language }}</span>
+                  <span class="language-name">{{ languageLabels[item.language] }}</span>
+                </div>
+              </td>
+              <td class="col-deadline">{{ item.deadline | date:'dd/MM/yyyy' }}</td>
+              <td class="col-status">
+                <span class="urgency-badge" [attr.data-urgency]="item.urgency">{{ timingLabel(item) }}</span>
+              </td>
+              <td class="col-actions">
+                <div class="row-actions">
+                  <ng-container [ngTemplateOutlet]="rowAction" [ngTemplateOutletContext]="{ $implicit: item }"></ng-container>
+                </div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Cards: iPad and phone -->
+    <ul class="data-cards">
+      @for (item of data().items; track item.requestId) {
+        <li class="data-card">
+          <div class="data-card-head">
+            <div class="data-card-text">
+              @if (showEmployee()) {
+                <p class="data-card-title">{{ item.employeeName ?? '—' }}</p>
+                <p class="data-card-line">{{ item.profileName ?? 'No profile yet' }}</p>
+              } @else {
+                <p class="data-card-title">{{ item.profileName ?? 'No profile yet' }}</p>
+              }
+            </div>
+            <span class="urgency-badge" [attr.data-urgency]="item.urgency">{{ timingLabel(item) }}</span>
+          </div>
+
+          <dl class="data-card-facts">
+            <div>
+              <dt>Language</dt>
+              <dd>
+                <div class="language-cell">
+                  <span class="code-chip is-primary">{{ item.language }}</span>
+                  <span class="language-name">{{ languageLabels[item.language] }}</span>
+                </div>
+              </dd>
+            </div>
+            <div>
+              <dt>Deadline</dt>
+              <dd>{{ item.deadline | date:'dd/MM/yyyy' }}</dd>
+            </div>
+          </dl>
+
+          <div class="row-actions">
+            <ng-container [ngTemplateOutlet]="rowAction" [ngTemplateOutletContext]="{ $implicit: item }"></ng-container>
+          </div>
+        </li>
+      }
+    </ul>
+
+    @if (hasMore()) {
+      <p class="widget-foot">
+        Showing the {{ data().items.length }} most urgent of {{ total() }}
+      </p>
+    }
+  }
+</section>
+
+<!-- Row action: open the CV, or create it when the request still waits for one -->
+<ng-template #rowAction let-item>
+  @if (item.cvId) {
+    <a class="link-btn action-link" [routerLink]="['/', cvsRoute, item.cvId]">Open CV</a>
+  } @else if (allowCreateCv()) {
+    <a class="link-btn action-link" [routerLink]="createCvRoute">Create CV</a>
+  } @else {
+    <span class="cell-muted">No CV yet</span>
+  }
+</ng-template>

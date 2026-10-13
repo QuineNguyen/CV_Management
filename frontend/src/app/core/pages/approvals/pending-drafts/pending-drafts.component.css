@@ -12,9 +12,11 @@
 .col-deadline { width: 12rem; }
 .col-actions  { width: 12rem; }
 
+.data-table td.col-employee,
 .data-table td.col-profile,
 .data-table td.col-language,
 .data-table td.col-stage,
+.data-table td.col-assignee,
 .data-table td.col-deadline,
 .data-table td.col-actions {
   text-align: center;
