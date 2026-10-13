@@ -1,6 +1,7 @@
 package com.training.cvmanagementbe.repository;
 
 import com.training.cvmanagementbe.entity.models.TeamMember;
+import com.training.cvmanagementbe.enums.users.AccountStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -17,8 +18,6 @@ public interface TeamMemberRepository extends JpaRepository<TeamMember, UUID> {
     List<TeamMember> findByTeamId(UUID teamId);
 
     List<TeamMember> findByUserId(UUID userId);
-
-    boolean existsByTeamId(UUID teamId);
 
     boolean existsByUserIdAndTeamId(UUID userId, UUID teamId);
 
@@ -47,4 +46,13 @@ public interface TeamMemberRepository extends JpaRepository<TeamMember, UUID> {
 
     // Clears every membership of a team, used when the team itself is deleted.
     void deleteByTeamId(UUID teamId);
+
+    @Query("""
+        SELECT DISTINCT tm.userId FROM TeamMember tm, User u
+        WHERE u.id = tm.userId
+          AND u.status = :status
+          AND tm.teamId IN (SELECT t.id FROM Team t WHERE t.techLeadId = :techLeadId)
+        """)
+    List<UUID> findMemberIdsOfLedTeams(@Param("techLeadId") UUID techLeadId,
+                                       @Param("status") AccountStatus status);
 }

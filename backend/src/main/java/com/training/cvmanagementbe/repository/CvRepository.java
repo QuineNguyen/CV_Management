@@ -28,17 +28,12 @@ public interface CvRepository extends JpaRepository<Cv, UUID> {
 
     List<Cv> findByProfileIdOrderByLanguageAsc(UUID profileId);
 
-    Optional<Cv> findByProfileIdAndLanguageAndLifecycleStatus(
-            UUID profileId, Language language, LifecycleStatus lifecycleStatus);
-
     boolean existsByProfileIdAndLanguageAndLifecycleStatus(
             UUID profileId, Language language, LifecycleStatus lifecycleStatus);
 
     /** The master is the ACTIVE row whose master_cv_id is null. */
     Optional<Cv> findByProfileIdAndMasterCvIdIsNullAndLifecycleStatus(
             UUID profileId, LifecycleStatus lifecycleStatus);
-
-    List<Cv> findByMasterCvIdAndLifecycleStatus(UUID masterCvId, LifecycleStatus lifecycleStatus);
 
     Page<Cv> findByLifecycleStatus(LifecycleStatus lifecycleStatus, Pageable pageable);
 
@@ -108,21 +103,6 @@ public interface CvRepository extends JpaRepository<Cv, UUID> {
                                       @Param("actorId") UUID actorId,
                                       @Param("completedAt") LocalDateTime completedAt);
 
-    /** A request pointing at a deleted CV can never be answered, so it stops asking. */
-    @Modifying(clearAutomatically = true, flushAutomatically = true)
-    @Query(value = """
-            UPDATE update_requests
-               SET status = 'CANCELLED',
-                   cancelled_by = :actorId,
-                   cancelled_at = :cancelledAt,
-                   updated_by = :actorId,
-                   updated_at = :cancelledAt
-             WHERE cv_id = :cvId AND status = 'PENDING'
-            """, nativeQuery = true)
-    int cancelPendingRequestsByCvId(@Param("cvId") UUID cvId,
-                                    @Param("actorId") UUID actorId,
-                                    @Param("cancelledAt") LocalDateTime cancelledAt);
-
     /*
      * Every stored snapshot of this profile, versions and drafts alike. Small by construction: a
      * profile holds at most three CVs, and this runs once per save.
@@ -181,4 +161,23 @@ public interface CvRepository extends JpaRepository<Cv, UUID> {
     List<Cv> findByProfileIdInAndLanguageAndLifecycleStatus(Collection<UUID> profileIds,
                                                             Language language,
                                                             LifecycleStatus lifecycleStatus);
+
+    long countByLifecycleStatus(LifecycleStatus status);
+
+    // Active CVs that already have an official version
+    @Query("""
+        SELECT COUNT(c) FROM Cv c
+        WHERE c.lifecycleStatus = :status
+          AND EXISTS (SELECT 1 FROM CvVersion v WHERE v.cvId = c.id)
+        """)
+    long countWithVersionByLifecycleStatus(@Param("status") LifecycleStatus status);
+
+    // CVs owned by these employees, through their profiles
+    @Query("""
+        SELECT COUNT(c) FROM Cv c
+        WHERE c.lifecycleStatus = :status
+          AND c.profileId IN (SELECT p.id FROM CvProfile p WHERE p.employeeId IN :employeeIds)
+        """)
+    long countByOwnersAndLifecycleStatus(@Param("employeeIds") Collection<UUID> employeeIds,
+                                         @Param("status") LifecycleStatus status);
 }

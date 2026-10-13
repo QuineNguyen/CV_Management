@@ -22,8 +22,6 @@ public interface CvDraftRepository extends JpaRepository<CvDraft, UUID> {
 
     boolean existsByCvIdAndStatusIn(UUID cvId, Collection<DraftStatus> statuses);
 
-    List<CvDraft> findByCvIdInAndStatusIn(Collection<UUID> cvIds, Collection<DraftStatus> statuses);
-
     /**
      * Compare-and-set: moves a draft into the approval flow only if it is still in a status that
      * allows it. Zero rows affected means somebody acted first - a second tab, a double click, or
@@ -97,4 +95,6 @@ public interface CvDraftRepository extends JpaRepository<CvDraft, UUID> {
 
     // The CV's most recent draft, whatever its status - used to tell whether the last one was cancelled.
     Optional<CvDraft> findTopByCvIdOrderByCreatedAtDesc(UUID cvId);
+
+    long countByOwnerIdAndStatusIn(UUID ownerId, Collection<DraftStatus> statuses);
 }

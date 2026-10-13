@@ -116,4 +116,16 @@ public interface ApprovalAssignmentRepository extends JpaRepository<ApprovalAssi
 
     // Open assignments past their SLA, oldest deadline first
     List<ApprovalAssignment> findByStatusAndDueAtBeforeOrderByDueAtAsc(AssignmentStatus status, LocalDateTime now);
+
+    // One open assignment per draft under review, so this is also the drafts-under-review count
+    long countByStatus(AssignmentStatus status);
+
+    long countByStatusAndDueAtBefore(AssignmentStatus status, LocalDateTime now);
+
+    long countByAssigneeIdAndStatusAndDueAtBefore(UUID assigneeId, AssignmentStatus status, LocalDateTime now);
+
+    // Same order as the reminder scan, limited by the pageable to the widget size
+    List<ApprovalAssignment> findByStatusAndDueAtBeforeOrderByDueAtAsc(AssignmentStatus status,
+                                                                       LocalDateTime now,
+                                                                       Pageable pageable);
 }

@@ -87,5 +87,11 @@ public final class ApiPath {
     public static final String BATCH_RESEND_FAILED = "/{id}/resend-failed";
     public static final String BATCH_CANCEL = "/{id}/cancel";
 
+    // Dashboard
+    public static final String DASHBOARD = "/dashboard";
+    public static final String DASHBOARD_ADMIN = "/admin";
+    public static final String DASHBOARD_TECH_LEAD = "/tech-lead";
+    public static final String DASHBOARD_EMPLOYEE = "/employee";
+
     private ApiPath() {}
 }
