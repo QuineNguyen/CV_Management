@@ -10,7 +10,6 @@ public enum PublicEndpoint {
     HEALTH("/health"),
     LOGIN(AuthPath.LOGIN),
     GOOGLE_LOGIN(AuthPath.GOOGLE_LOGIN),
-    SMOKE("/smoke/**"),
     DOCS("/docs"),
     SWAGGER_UI("/swagger-ui/**"),
     SWAGGER_UI_HTML("/swagger-ui.html"),

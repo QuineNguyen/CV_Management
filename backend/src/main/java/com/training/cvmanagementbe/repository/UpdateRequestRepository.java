@@ -4,6 +4,7 @@ import com.training.cvmanagementbe.entity.models.UpdateRequest;
 import com.training.cvmanagementbe.enums.cvs.Language;
 import com.training.cvmanagementbe.enums.users.RequestStatus;
 import com.training.cvmanagementbe.repository.projection.BatchStatusCount;
+import com.training.cvmanagementbe.repository.projection.DeadlineBucketCount;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -151,4 +152,59 @@ public interface UpdateRequestRepository extends JpaRepository<UpdateRequest, UU
             GROUP BY r.batchRequestId, r.status
             """)
     List<BatchStatusCount> countByBatchAndStatus(@Param("batchIds") Collection<UUID> batchIds);
+
+    // ---------- Dashboard ----------
+
+    // Read straight from deadline vs now, never from reminder_logs
+
+    long countByStatus(RequestStatus status);
+
+    long countByStatusAndEmployeeIdIn(RequestStatus status, Collection<UUID> employeeIds);
+
+    // Company-wide buckets in one pass; bounds come from DeadlineWindow
+    @Query("""
+            SELECT COALESCE(SUM(CASE WHEN r.deadline < :now THEN 1 ELSE 0 END), 0) AS overdue,
+                   COALESCE(SUM(CASE WHEN r.deadline >= :now AND r.deadline < :lastDayEnd THEN 1 ELSE 0 END), 0) AS lastDay,
+                   COALESCE(SUM(CASE WHEN r.deadline >= :lastDayEnd THEN 1 ELSE 0 END), 0) AS approaching
+            FROM UpdateRequest r
+            WHERE r.status = :status AND r.deadline < :horizon
+            """)
+    DeadlineBucketCount countDeadlineBuckets(@Param("status") RequestStatus status,
+                                             @Param("now") LocalDateTime now,
+                                             @Param("lastDayEnd") LocalDateTime lastDayEnd,
+                                             @Param("horizon") LocalDateTime horizon);
+
+    // Same buckets for a set of employees (a tech lead's teams, or the caller alone)
+    @Query("""
+            SELECT COALESCE(SUM(CASE WHEN r.deadline < :now THEN 1 ELSE 0 END), 0) AS overdue,
+                   COALESCE(SUM(CASE WHEN r.deadline >= :now AND r.deadline < :lastDayEnd THEN 1 ELSE 0 END), 0) AS lastDay,
+                   COALESCE(SUM(CASE WHEN r.deadline >= :lastDayEnd THEN 1 ELSE 0 END), 0) AS approaching
+            FROM UpdateRequest r
+            WHERE r.status = :status AND r.deadline < :horizon AND r.employeeId IN :employeeIds
+            """)
+    DeadlineBucketCount countDeadlineBucketsFor(@Param("employeeIds") Collection<UUID> employeeIds,
+                                                @Param("status") RequestStatus status,
+                                                @Param("now") LocalDateTime now,
+                                                @Param("lastDayEnd") LocalDateTime lastDayEnd,
+                                                @Param("horizon") LocalDateTime horizon);
+
+    // Oldest deadline first, so overdue rows lead, then due today, then due soon
+    @Query("""
+            SELECT r FROM UpdateRequest r
+            WHERE r.status = :status AND r.deadline < :horizon
+            ORDER BY r.deadline ASC, r.id ASC
+            """)
+    List<UpdateRequest> findMostUrgent(@Param("status") RequestStatus status,
+                                       @Param("horizon") LocalDateTime horizon,
+                                       Pageable pageable);
+
+    @Query("""
+            SELECT r FROM UpdateRequest r
+            WHERE r.status = :status AND r.deadline < :horizon AND r.employeeId IN :employeeIds
+            ORDER BY r.deadline ASC, r.id ASC
+            """)
+    List<UpdateRequest> findMostUrgentFor(@Param("employeeIds") Collection<UUID> employeeIds,
+                                          @Param("status") RequestStatus status,
+                                          @Param("horizon") LocalDateTime horizon,
+                                          Pageable pageable);
 }

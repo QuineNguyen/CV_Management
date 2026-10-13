@@ -60,15 +60,6 @@ public interface UserRepository extends JpaRepository<User, UUID> {
                                 @Param("openStatuses") Collection<String> openStatuses,
                                 @Param("cancelled") String cancelled);
 
-    // Cancels every pending update request addressed to the user.
-    @Modifying
-    @Query(value = "UPDATE update_requests SET status = :cancelled, updated_at = CURRENT_TIMESTAMP "
-            + "WHERE employee_id = :userId AND status = :pending",
-            nativeQuery = true)
-    int cancelPendingRequestsByEmployee(@Param("userId") UUID userId,
-                                        @Param("pending") String pending,
-                                        @Param("cancelled") String cancelled);
-
     // Clears approval assignments still waiting on the user.
     @Modifying
     @Query(value = "UPDATE approval_assignments SET status = :cancelled, closed_at = CURRENT_TIMESTAMP "
@@ -104,4 +95,6 @@ public interface UserRepository extends JpaRepository<User, UUID> {
 
     // Team batch: active accounts among the members
     List<User> findAllByIdInAndStatus(Collection<UUID> ids, AccountStatus status);
+
+    long countByStatus(AccountStatus status);
 }
