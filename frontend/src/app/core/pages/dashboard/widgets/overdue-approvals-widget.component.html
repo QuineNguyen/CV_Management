@@ -1,0 +1,83 @@
+<section class="widget" aria-labelledby="sla-widget-title">
+
+  <!-- Header -->
+  <header class="widget-head">
+    <div>
+      <h2 id="sla-widget-title" class="widget-title">Reviews past their SLA</h2>
+      <p class="widget-hint">
+        Drafts waiting longer than the review deadline · {{ data().overdueCount }} in total
+      </p>
+    </div>
+    @if (data().overdueCount > 0) {
+      <a class="link-btn view-all" [routerLink]="viewAllRoute()">View all ({{ data().overdueCount }})</a>
+    }
+  </header>
+
+  @if (!data().items.length) {
+    <div class="empty-state">
+      <p class="empty-state-title">Every review is on time</p>
+      <p class="empty-state-hint">No assigned review has passed its deadline</p>
+    </div>
+  } @else {
+
+    <!-- Table: desktop -->
+    <div class="data-table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th scope="col" class="col-owner">CV owner</th>
+            <th scope="col" class="col-reviewer">Assigned reviewer</th>
+            <th scope="col" class="col-level">Level</th>
+            <th scope="col" class="col-due">Due</th>
+            <th scope="col" class="col-late">Overdue by</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (item of data().items; track item.assignmentId) {
+            <tr>
+              <td class="col-owner"><span class="cell-strong">{{ item.cvOwnerName ?? '—' }}</span></td>
+              <td class="col-reviewer"><span class="reviewer-name">{{ item.assigneeName ?? '—' }}</span></td>
+              <td class="col-level"><span class="code-chip">{{ levelLabel(item.level) }}</span></td>
+              <td class="col-due">{{ item.dueAt | date:'dd/MM/yyyy HH:mm' }}</td>
+              <td class="col-late">
+                <span class="urgency-badge" [attr.data-urgency]="urgency.Overdue">{{ overdueLabel(item) }}</span>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Cards: iPad and phone -->
+    <ul class="data-cards">
+      @for (item of data().items; track item.assignmentId) {
+        <li class="data-card">
+          <div class="data-card-head">
+            <div class="data-card-text">
+              <p class="data-card-title">{{ item.cvOwnerName ?? '—' }}</p>
+              <p class="data-card-line">Reviewer: {{ item.assigneeName ?? '—' }}</p>
+            </div>
+            <span class="urgency-badge" [attr.data-urgency]="urgency.Overdue">{{ overdueLabel(item) }}</span>
+          </div>
+
+          <dl class="data-card-facts">
+            <div>
+              <dt>Level</dt>
+              <dd>{{ levelLabel(item.level) }}</dd>
+            </div>
+            <div>
+              <dt>Due</dt>
+              <dd>{{ item.dueAt | date:'dd/MM/yyyy HH:mm' }}</dd>
+            </div>
+          </dl>
+        </li>
+      }
+    </ul>
+
+    @if (data().overdueCount > data().items.length) {
+      <p class="widget-foot">
+        Showing the {{ data().items.length }} longest-waiting of {{ data().overdueCount }}
+      </p>
+    }
+  }
+</section>

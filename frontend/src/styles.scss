@@ -1,5 +1,6 @@
 @use '@angular/material' as mat;
 @use './styles/ui';
+@use './styles/dashboard';
 @use 'cropperjs/dist/cropper.css';
 
 $vt-theme: mat.define-theme((
@@ -79,6 +80,14 @@ html {
   --diff-modified-bg: #fff6e5;
   --diff-modified-mark: #ffe2b0;
   --diff-modified-ink: #a24f00;
+
+  /* Deadline urgency: amber (due soon), orange (due today), red (overdue) */
+  --vt-urgency-approaching-bg: #fff6d6;
+  --vt-urgency-approaching-ink: #8a6100;
+  --vt-urgency-last-day-bg: #fdf0e0;
+  --vt-urgency-last-day-ink: #b45309;
+  --vt-urgency-overdue-bg: var(--vt-red-surface);
+  --vt-urgency-overdue-ink: var(--vt-red-dark);
 }
 
 html, body {

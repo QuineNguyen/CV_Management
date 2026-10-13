@@ -1,0 +1,232 @@
+/* ---------- Sections ---------- */
+.dash-section {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--vt-gap) * 0.75);
+}
+
+.dash-section-title {
+  margin: 0;
+  font-size: var(--vt-fs-md);
+  font-weight: 700;
+  color: var(--vt-ink);
+}
+
+/* ---------- KPI tiles ---------- */
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(13rem, 100%), 1fr));
+  gap: var(--vt-gap);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.kpi-card {
+  box-sizing: border-box;
+  height: 100%;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-areas:
+    'icon label'
+    'icon value'
+    'icon hint';
+  column-gap: calc(var(--vt-gap) * 0.9);
+  align-items: center;
+  padding: clamp(0.75rem, 2vw, 1.125rem);
+  background: var(--vt-surface);
+  border: 0.0625rem solid var(--vt-line);
+  border-radius: var(--vt-radius-md);
+  color: var(--vt-ink);
+  text-decoration: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+a.kpi-card:hover,
+a.kpi-card:focus-visible {
+  border-color: var(--vt-red);
+  box-shadow: var(--vt-shadow);
+  outline: none;
+}
+
+.kpi-icon {
+  grid-area: icon;
+  width: clamp(2.25rem, 6vw, 2.75rem);
+  height: clamp(2.25rem, 6vw, 2.75rem);
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--vt-red-tint);
+  color: var(--vt-red);
+  font-size: clamp(1.125rem, 3vw, 1.375rem);
+}
+
+.kpi-label {
+  grid-area: label;
+  font-size: var(--vt-fs-sm);
+  font-weight: 600;
+  color: var(--vt-ink-muted);
+}
+
+.kpi-value {
+  grid-area: value;
+  font-size: clamp(1.375rem, 1.1rem + 1.2vw, 2rem);
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.kpi-hint {
+  grid-area: hint;
+  font-size: var(--vt-fs-sm);
+  color: var(--vt-ink-muted);
+  overflow-wrap: anywhere;
+}
+
+/* Something needs attention right now */
+.kpi-card.is-alert {
+  border-color: var(--vt-red);
+  background: var(--vt-red-surface);
+}
+
+.kpi-card.is-alert .kpi-icon {
+  background: var(--vt-red);
+  color: var(--vt-surface);
+}
+
+.kpi-card.is-alert .kpi-value {
+  color: var(--vt-red);
+}
+
+/* Nothing to do: reads quieter */
+.kpi-card.is-calm .kpi-icon {
+  background: var(--vt-canvas);
+  color: var(--vt-ink-muted);
+}
+
+/* ---------- Widget panel ---------- */
+.widget {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: var(--vt-gap);
+  padding: var(--vt-pad);
+  background: var(--vt-surface);
+  border: 0.0625rem solid var(--vt-line);
+  border-radius: var(--vt-radius-md);
+}
+
+.widget-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--vt-gap);
+}
+
+.widget-title {
+  margin: 0;
+  font-size: var(--vt-fs-md);
+  font-weight: 700;
+}
+
+.widget-hint {
+  margin: 0.25rem 0 0;
+  font-size: var(--vt-fs-sm);
+  color: var(--vt-ink-muted);
+}
+
+.widget-foot {
+  margin: 0;
+  font-size: var(--vt-fs-sm);
+  color: var(--vt-ink-muted);
+}
+
+/* A table inside a widget is already on a surface */
+.widget .data-table {
+  min-width: 44rem;
+}
+
+.widget .data-card {
+  background: var(--vt-canvas);
+}
+
+.widget .empty-state {
+  padding-block: clamp(1rem, 4vw, 1.75rem);
+}
+
+/* ---------- Urgency ---------- */
+[data-urgency='APPROACHING'] {
+  --urgency-bg: var(--vt-urgency-approaching-bg);
+  --urgency-ink: var(--vt-urgency-approaching-ink);
+}
+
+[data-urgency='LAST_DAY'] {
+  --urgency-bg: var(--vt-urgency-last-day-bg);
+  --urgency-ink: var(--vt-urgency-last-day-ink);
+}
+
+[data-urgency='OVERDUE'] {
+  --urgency-bg: var(--vt-urgency-overdue-bg);
+  --urgency-ink: var(--vt-urgency-overdue-ink);
+}
+
+.urgency-tally {
+  display: flex;
+  flex-wrap: wrap;
+  gap: calc(var(--vt-gap) * 0.5);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.urgency-chip {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.375rem;
+  padding: 0.375rem clamp(0.625rem, 2vw, 0.875rem);
+  border-radius: var(--vt-radius-sm);
+  background: var(--urgency-bg);
+  color: var(--urgency-ink);
+  font-size: var(--vt-fs-sm);
+  font-weight: 600;
+}
+
+.urgency-chip strong {
+  font-size: var(--vt-fs-md);
+}
+
+.urgency-badge {
+  display: inline-block;
+  width: fit-content;
+  max-width: 100%;
+  padding: 0.0625rem 0.5rem;
+  border-radius: 999px;
+  background: var(--urgency-bg);
+  color: var(--urgency-ink);
+  font-size: var(--vt-fs-sm);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+/* ---------- Phone ---------- */
+@media (max-width: 40rem) {
+  /* Two tiles per row, icon stacked above the number */
+  .kpi-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .kpi-card {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      'icon'
+      'label'
+      'value'
+      'hint';
+    row-gap: 0.25rem;
+    align-items: start;
+  }
+
+  .urgency-chip {
+    flex: 1 1 calc(50% - var(--vt-gap));
+  }
+}

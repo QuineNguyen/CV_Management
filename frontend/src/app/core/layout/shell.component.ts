@@ -68,7 +68,7 @@ export class ShellComponent {
 
   readonly user = this.auth.user;
   readonly navOpen = signal(true);
-  readonly homeRoute = '/' + AppRoute.Home;
+  readonly homeRoute = '/' + AppRoute.Dashboard;
   readonly myProfileRoute = '/' + AppRoute.MyProfile;
   readonly notificationsRoute = '/' + AppRoute.Notifications;
   readonly unreadCount = this.notifications.unreadCount;
@@ -89,7 +89,7 @@ export class ShellComponent {
   );
 
   private readonly navItems: NavEntry[] = [
-    { label: 'Home', icon: NavIconEnum.Home, route: AppRoute.Home },
+    { label: 'Dashboard', icon: NavIconEnum.Home, route: AppRoute.Dashboard },
     {
       key: NavGroupKey.Cvs,
       label: 'CVs',

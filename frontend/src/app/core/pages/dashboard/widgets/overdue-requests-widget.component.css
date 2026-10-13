@@ -1,0 +1,76 @@
+:host {
+  display: block;
+}
+
+/* ---------- Column widths ---------- */
+.col-employee { width: 22%; min-width: 10rem; }
+.col-profile  { width: 22%; min-width: 9rem; }
+.col-language { width: 12rem; }
+.col-deadline { width: 8rem; }
+.col-status   { width: 10rem; }
+.col-actions  { width: 7rem; }
+
+.data-table td.col-employee,
+.data-table td.col-profile,
+.data-table td.col-language,
+.data-table td.col-deadline,
+.data-table td.col-status,
+.data-table td.col-actions {
+  text-align: center;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+.data-table td .row-actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.row-actions .link-btn,
+.action-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: auto;
+  line-height: normal;
+}
+
+.col-profile .cell-muted {
+  max-width: none;
+  font-size: var(--vt-fs-md);
+}
+
+/* ---------- Language cell ---------- */
+.language-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  white-space: nowrap;
+}
+
+.language-name {
+  font-size: var(--vt-fs-md);
+  color: var(--vt-ink-muted);
+}
+
+/* ---------- Header link ---------- */
+.view-all {
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+/* ---------- Cards ---------- */
+.data-card-title {
+  overflow-wrap: anywhere;
+}
+
+.data-card .row-actions {
+  justify-content: flex-end;
+}
+
+.data-card .link-btn {
+  text-decoration: none;
+}

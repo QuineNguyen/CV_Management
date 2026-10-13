@@ -7,7 +7,7 @@ import { QueryParam } from '../enums/query-param.enum';
 
 /**
  * Blocks routes that require a session, remembering where the user was heading so sign-in can
- * return them there instead of dropping them on the home page.
+ * return them there instead of dropping them on the dashboard.
  */
 export const authGuard: CanActivateFn = (_route, state) => {
   const auth = inject(AuthService);
@@ -30,6 +30,6 @@ export function roleGuard(...allowed: UserRole[]): CanActivateFn {
   return () => {
     const auth = inject(AuthService);
     const router = inject(Router);
-    return auth.hasRole(...allowed) ? true : router.createUrlTree([AppRoute.Home]);
+    return auth.hasRole(...allowed) ? true : router.createUrlTree([AppRoute.Dashboard]);
   };
 }

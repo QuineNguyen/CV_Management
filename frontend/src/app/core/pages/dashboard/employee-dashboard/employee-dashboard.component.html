@@ -1,0 +1,71 @@
+<section class="page">
+
+  <app-dashboard-toolbar
+    heading="Dashboard"
+    [subtitle]="subtitle()"
+    [generatedAt]="state.data()?.generatedAt ?? null"
+    [refreshing]="state.refreshing()"
+    (refresh)="state.refresh()">
+    <a class="btn btn-primary" [routerLink]="links.createCv">Create CV</a>
+  </app-dashboard-toolbar>
+
+  <!-- Figures first, so a refresh never blanks the page -->
+  @if (state.data(); as d) {
+
+    <!-- My CVs -->
+    <section class="dash-section" aria-labelledby="mine-title">
+      <h2 id="mine-title" class="dash-section-title">My CVs</h2>
+      <ul class="kpi-grid">
+        <li>
+          <a class="kpi-card" [routerLink]="links.profiles">
+            <span class="kpi-icon material-symbols-outlined" aria-hidden="true">{{ icons.Cvs }}</span>
+            <span class="kpi-label">Active CVs</span>
+            <strong class="kpi-value">{{ d.myCvCount }}</strong>
+            <span class="kpi-hint">Across your competency profiles</span>
+          </a>
+        </li>
+        <li>
+          <a class="kpi-card" [routerLink]="links.profiles" [class.is-calm]="d.openDraftCount === 0">
+            <span class="kpi-icon material-symbols-outlined" aria-hidden="true">{{ icons.Drafts }}</span>
+            <span class="kpi-label">Open drafts</span>
+            <strong class="kpi-value">{{ d.openDraftCount }}</strong>
+            <span class="kpi-hint">{{ d.draftsInReviewCount }} waiting for review</span>
+          </a>
+        </li>
+        <li>
+          <a class="kpi-card" [routerLink]="links.updateRequests"
+             [class.is-alert]="hasOverdue()"
+             [class.is-calm]="d.pendingRequestCount === 0">
+            <span class="kpi-icon material-symbols-outlined" aria-hidden="true">{{ icons.Requests }}</span>
+            <span class="kpi-label">Update requests</span>
+            <strong class="kpi-value">{{ d.pendingRequestCount }}</strong>
+            <span class="kpi-hint">
+              {{ hasOverdue() ? 'Some are past their deadline' : 'Waiting for your update' }}
+            </span>
+          </a>
+        </li>
+      </ul>
+    </section>
+
+    <!-- Requests sent to me -->
+    <app-overdue-requests-widget
+      heading="Requests sent to me"
+      emptyHint="None of your update requests is due in the coming days"
+      [data]="d.requestDeadlines"
+      [showEmployee]="false"
+      [allowCreateCv]="true" />
+
+  } @else if (state.loading()) {
+    <div class="skeleton-stack" aria-busy="true">
+      @for (row of [1, 2, 3]; track row) {
+        <div class="skeleton-row"></div>
+      }
+    </div>
+  } @else {
+    <div class="empty-state">
+      <p class="empty-state-title">The dashboard could not be loaded</p>
+      <p class="empty-state-hint">Check your connection, then try again</p>
+      <button type="button" class="btn btn-primary" (click)="state.load()">Try again</button>
+    </div>
+  }
+</section>

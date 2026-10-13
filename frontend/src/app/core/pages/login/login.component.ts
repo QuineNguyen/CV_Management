@@ -135,7 +135,7 @@ export class LoginComponent {
     }
 
     // navigateByUrl, not navigate([...]): returnUrl may carry its own query string or fragment.
-    return this.router.navigateByUrl(this.returnUrl ?? AppRoute.Home);
+    return this.router.navigateByUrl(this.returnUrl ?? AppRoute.Dashboard);
   }
 
   // ---------- Lockout handling ----------

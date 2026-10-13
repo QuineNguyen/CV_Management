@@ -1,0 +1,7 @@
+<!-- HR shares the Admin dashboard -->
+@switch (role()) {
+  @case (roles.Admin) { <app-admin-dashboard /> }
+  @case (roles.HR) { <app-admin-dashboard /> }
+  @case (roles.TechLead) { <app-tech-lead-dashboard /> }
+  @default { <app-employee-dashboard /> }
+}
