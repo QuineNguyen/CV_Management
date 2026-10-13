@@ -4,6 +4,15 @@
 }
 
 /* ---------- Filter bar extras ---------- */
+.page-filters {
+  align-items: flex-start;
+}
+
+app-skill-filter.field-full-row {
+  flex: 1 0 100%;
+  width: 100%;
+}
+
 .search-options {
   display: flex;
   flex-wrap: wrap;
@@ -19,19 +28,27 @@
   margin: 0;
 }
 
+/* ---------- Data table layout ---------- */
+.data-table {
+  table-layout: fixed;
+  width: 100%;
+}
+
 /* ---------- Column widths ---------- */
-.col-employee { width: 18%; min-width: 12rem; }
-.col-profile  { width: 13%; min-width: 8.5rem; }
-.col-org      { width: 16%; min-width: 11.5rem; }
-.col-language { width: 8.5rem; }
-.col-version  { width: 9.5rem; }
-.col-skills   { width: 18%; min-width: 10.5rem; }
-.col-status   { width: 8.5rem; }
+.col-employee { width: 20%; min-width: 12rem; }
+.col-profile  { width: 18%; min-width: 0; }
+.col-org      { width: 16%; min-width: 0; }
+.col-language { width: 9rem; }
+.col-version  { width: 10rem; }
+.col-skills   { width: 15%; min-width: 0; }
 .col-actions  { width: 8.5rem; }
+
+.data-table td.col-profile {
+  text-align: center;
+}
 
 .data-table td.col-language,
 .data-table td.col-version,
-.data-table td.col-status,
 .data-table td.col-actions {
   text-align: center;
   white-space: nowrap;
@@ -54,8 +71,20 @@
 }
 
 /* ---------- Profile & organisation ---------- */
+.col-profile .cell-strong {
+  white-space: normal;
+  text-overflow: unset;
+  overflow: visible;
+  word-break: break-word;
+  line-height: 1.35;
+  text-align: center;
+}
+
 .col-profile .status-badge {
-  margin-block-start: 0.25rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-block-start: 0.35rem;
 }
 
 .org-cell {
@@ -125,7 +154,54 @@
 
 /* ---------- Skills ---------- */
 .col-skills .chip-list {
-  max-width: min(18rem, 100%);
+  max-width: 100%;
+  min-width: 0;
+}
+
+.col-skills .code-chip:not(.chip-toggle) {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  box-sizing: border-box;
+}
+
+.chip-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.125rem;
+  cursor: pointer;
+  border: 0;
+  font-family: inherit;
+  font-size: var(--vt-fs-sm);
+  font-weight: 700;
+  color: var(--vt-ink-muted);
+  background: var(--vt-canvas);
+  border-radius: var(--vt-radius-sm);
+  padding: 0.125rem 0.5rem;
+  transition: background-color 0.15s ease, color 0.15s ease;
+  flex-shrink: 0;
+}
+
+.chip-toggle:hover {
+  background-color: var(--vt-red-tint);
+  color: var(--vt-red);
+}
+
+.chip-toggle.is-collapse {
+  color: var(--vt-red);
+  background-color: var(--vt-red-tint);
+}
+
+.chip-toggle.is-collapse:hover {
+  background-color: var(--vt-red);
+  color: #ffffff;
+}
+
+.chip-toggle .chip-icon {
+  font-size: 1rem;
+  line-height: 1;
 }
 
 .card-skills {

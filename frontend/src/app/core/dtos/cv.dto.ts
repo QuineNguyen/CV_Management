@@ -1,5 +1,4 @@
 import { CvLanguage } from "../enums/cv-language.enum";
-import { CvUpdateStatus } from "../enums/cv-search.enum";
 import { DraftStatus } from "../enums/draft-status.enum";
 import { LifecycleStatus } from "../enums/lifecycle-status.enum";
 import { CvSearchSortField, CvSortField, SortDirection } from "../enums/sort-field.enum";
@@ -106,7 +105,6 @@ export interface CvSearchQuery {
     departmentId?: string;
     teamId?: string;
     language?: CvLanguage;
-    updateStatus?: CvUpdateStatus;
     allProfiles?: boolean;
     keyword?: string;
     skillIds?: readonly string[];
@@ -140,7 +138,6 @@ export interface CvSearchItemResponse {
     departmentName: string;
     teams: CvSearchTeamTag[];
     language: CvLanguage;
-    updateStatus: CvUpdateStatus;
     hasPublishedVersion: boolean;
     currentVersionNumber: number | null;
     publishedAt: string | null;

@@ -7,7 +7,6 @@ import com.training.cvmanagementbe.common.LikePatterns;
 import com.training.cvmanagementbe.constant.CvContentKeys;
 import com.training.cvmanagementbe.dto.response.cvs.CvSearchTeamTag;
 import com.training.cvmanagementbe.enums.cvs.*;
-import com.training.cvmanagementbe.enums.users.RequestStatus;
 import com.training.cvmanagementbe.record.cvs.CvSearchCriteria;
 import com.training.cvmanagementbe.repository.projection.CvSearchRow;
 import com.training.cvmanagementbe.repository.projection.DepartmentLink;
@@ -60,19 +59,14 @@ public class CvSearchRepository {
                               AND lv.version_number = (SELECT MAX(v2.version_number) FROM cv_versions v2 WHERE v2.cv_id = c.id)
             """;
 
-    // Update status is derived from pending requests
-    private static final String PENDING_REQUEST =
-            "EXISTS (SELECT 1 FROM update_requests ur WHERE ur.cv_id = c.id AND ur.status = :pending)";
-
     private static final String SELECT = """
             SELECT c.id AS cv_id, c.language,
                    cp.name AS profile_name, cp.is_primary,
                    u.id AS employee_id, u.full_name, u.email, u.avatar_image_id,
                    d.code AS department_code, d.name AS department_name,
                    lv.version_number, lv.published_at,
-                   JSON_EXTRACT(lv.content_json, '%s') AS skill_ids,
-                   %s AS has_pending_request
-            """.formatted(SKILL_IDS_PATH, PENDING_REQUEST);
+                   JSON_EXTRACT(lv.content_json, '%s') AS skill_ids
+            """.formatted(SKILL_IDS_PATH);
 
     // Keeps paging stable when the chosen sort has ties
     private static final List<String> TIE_BREAKERS =
@@ -200,7 +194,6 @@ public class CvSearchRepository {
 
     private String whereOf(CvSearchCriteria criteria, MapSqlParameterSource params) {
         params.addValue("active", LifecycleStatus.ACTIVE.name());
-        params.addValue("pending", RequestStatus.PENDING.name());
 
         List<String> clauses = new ArrayList<>();
         clauses.add("c.lifecycle_status = :active");
@@ -254,11 +247,6 @@ public class CvSearchRepository {
         if (criteria.language() != null) {
             clauses.add("c.language = :language");
             params.addValue("language", criteria.language().name());
-        }
-        if (criteria.updateStatus() != null) {
-            clauses.add(criteria.updateStatus() == CvUpdateStatus.NOT_UPDATED
-                    ? PENDING_REQUEST
-                    : "NOT " + PENDING_REQUEST);
         }
     }
 
@@ -365,8 +353,7 @@ public class CvSearchRepository {
                 rs.getString("department_name"),
                 rs.getObject("version_number", Integer.class),
                 rs.getObject("published_at", LocalDateTime.class),
-                skillIdsOf(rs.getString("skill_ids")),
-                rs.getBoolean("has_pending_request")
+                skillIdsOf(rs.getString("skill_ids"))
         );
     }
 

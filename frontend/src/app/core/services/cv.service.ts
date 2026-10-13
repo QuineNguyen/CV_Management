@@ -119,9 +119,6 @@ export class CvService {
         if (query.language) {
             params = params.set('language', query.language);
         }
-        if (query.updateStatus) {
-            params = params.set('updateStatus', query.updateStatus);
-        }
         if (query.allProfiles) {
             params = params.set('allProfiles', true);
         }

@@ -10,7 +10,7 @@ import { DepartmentService } from "../../../services/department.service";
 import { AuthService } from "../../../services/auth.service";
 import { Router } from "@angular/router";
 import { CV_LANGUAGE_LABELS, CvLanguage } from "../../../enums/cv-language.enum";
-import { CV_UPDATE_STATUS_LABELS, CvRouteSegment, CvSearchDropdown, CvUpdateStatus, ProfileScope } from "../../../enums/cv-search.enum";
+import { CvRouteSegment, CvSearchDropdown, ProfileScope } from "../../../enums/cv-search.enum";
 import { CvSearchFilterOption, CvSearchItemResponse, CvSearchSkillTag } from "../../../dtos/cv.dto";
 import { DepartmentNode } from "../../../dtos/department.dto";
 import { CvPageState } from "../../../models/cv-page.model";
@@ -58,9 +58,6 @@ export class CvSearchComponent implements OnInit {
     readonly pageSizeOptions = [5, 10, 20, 50];
     readonly languageLabels = CV_LANGUAGE_LABELS;
     readonly languageOptions = Object.values(CvLanguage);
-    readonly updateStatusLabels = CV_UPDATE_STATUS_LABELS;
-    readonly updateStatusOptions = Object.values(CvUpdateStatus);
-    readonly updatedStatus = CvUpdateStatus.Updated;
     readonly dropdown = CvSearchDropdown;
     readonly profileScope = ProfileScope;
     readonly sortField = CvSearchSortField;
@@ -93,9 +90,9 @@ export class CvSearchComponent implements OnInit {
     readonly departmentFilter = signal<string | null>(null);
     readonly teamFilter = signal<string | null>(null);
     readonly languageFilter = signal<CvLanguage | null>(null);
-    readonly updateStatusFilter = signal<CvUpdateStatus | null>(null);
     readonly profileScopeFilter = signal<ProfileScope>(ProfileScope.Primary);
     readonly selectedSkills = signal<SkillOptionResponse[]>([]);
+    readonly expandedSkills = signal<ReadonlySet<string>>(new Set<string>());
     readonly openDropdown = signal<CvSearchDropdown | null>(null);
 
     readonly sort = signal<SortState<CvSearchSortField>>(CvSearchComponent.DEFAULT_SORT);
@@ -132,7 +129,6 @@ export class CvSearchComponent implements OnInit {
             this.departmentFilter(),
             this.teamFilter(),
             this.languageFilter(),
-            this.updateStatusFilter(),
         ];
         return values.filter(value => !!value).length
             + (this.profileScopeFilter() === ProfileScope.All ? 1 : 0)
@@ -145,11 +141,6 @@ export class CvSearchComponent implements OnInit {
     readonly languageLabel = computed(() => {
         const language = this.languageFilter();
         return language ? this.languageLabels[language] : 'All languages';
-    });
-
-    readonly updateStatusLabel = computed(() => {
-        const status = this.updateStatusFilter();
-        return status ? this.updateStatusLabels[status] : 'All statuses';
     });
 
     readonly isEmpty = computed(() => !this.loading() && this.results().length === 0);
@@ -181,7 +172,6 @@ export class CvSearchComponent implements OnInit {
             departmentId: this.departmentFilter() ?? undefined,
             teamId: this.teamFilter() ?? undefined,
             language: this.languageFilter() ?? undefined,
-            updateStatus: this.updateStatusFilter() ?? undefined,
             allProfiles: this.profileScopeFilter() === ProfileScope.All,
             skillIds: this.selectedSkills().map(skill => skill.id),
             sortBy: activeSort.field,
@@ -194,6 +184,7 @@ export class CvSearchComponent implements OnInit {
                     return;
                 }
                 this.results.set(result.content);
+                this.expandedSkills.set(new Set<string>());
                 this.pageState.update(state => ({ ...state, total: result.totalElements }));
                 this.brokenAvatars.set(new Set<string>());
                 this.loading.set(false);
@@ -230,10 +221,6 @@ export class CvSearchComponent implements OnInit {
         this.applyFilter(() => this.languageFilter.set(language));
     }
 
-    selectUpdateStatus(status: CvUpdateStatus | null): void {
-        this.applyFilter(() => this.updateStatusFilter.set(status));
-    }
-
     setProfileScope(scope: ProfileScope): void {
         if (this.profileScopeFilter() !== scope) {
             this.applyFilter(() => this.profileScopeFilter.set(scope));
@@ -254,7 +241,6 @@ export class CvSearchComponent implements OnInit {
         this.departmentFilter.set(null);
         this.teamFilter.set(null);
         this.languageFilter.set(null);
-        this.updateStatusFilter.set(null);
         this.profileScopeFilter.set(ProfileScope.Primary);
         this.selectedSkills.set([]);
         this.sort.set(CvSearchComponent.DEFAULT_SORT);
@@ -346,7 +332,26 @@ export class CvSearchComponent implements OnInit {
 
     // ---------- Row display ----------
 
+    toggleSkills(cvId: string): void {
+        this.expandedSkills.update(set => {
+            const next = new Set(set);
+            if (next.has(cvId)) {
+                next.delete(cvId);
+            } else {
+                next.add(cvId);
+            }
+            return next;
+        });
+    }
+
+    isSkillsExpanded(cvId: string): boolean {
+        return this.expandedSkills().has(cvId);
+    }
+
     visibleSkills(item: CvSearchItemResponse): CvSearchSkillTag[] {
+        if (this.isSkillsExpanded(item.cvId)) {
+            return item.skills;
+        }
         return item.skills.slice(0, CvSearchComponent.VISIBLE_SKILLS);
     }
 
