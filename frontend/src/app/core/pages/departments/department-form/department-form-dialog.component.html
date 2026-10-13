@@ -9,13 +9,17 @@
         <label class="field-label" for="dept-code">
           Code <span class="field-required">*</span>
         </label>
-        <input id="dept-code" class="field-input" type="text" formControlName="code"
-               placeholder="e.g. TECH" autocomplete="off" />
+        <input id="dept-code" class="field-input code-input" type="text" formControlName="code"
+               placeholder="TECH_DIV" [attr.maxlength]="codeMaxLength" autocomplete="off"
+               (input)="normaliseCode()" />
         @if (hasError('code', 'required')) {
           <span class="field-error">Code is required</span>
         }
+        @if (hasError('code', 'pattern')) {
+          <span class="field-error">Use capital letters, digits and single underscores, e.g. TECH_DIV</span>
+        }
         @if (hasError('code', 'maxlength')) {
-          <span class="field-error">Code must be at most 50 characters</span>
+          <span class="field-error">Code must be at most {{ codeMaxLength }} characters</span>
         }
       </div>
 

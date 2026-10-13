@@ -3,6 +3,7 @@ package com.training.cvmanagementbe.dto.request.teams;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
 import java.time.LocalDateTime;
@@ -14,6 +15,9 @@ public record TeamRequest(
 
         @NotBlank
         @Size(max = 50)
+        @Pattern(regexp = "^[A-Z0-9]+(_[A-Z0-9]+)*$",
+                message = "Code must be UPPER_SNAKE_CASE, e.g. TEAM_ALPHA")
+        @Schema(example = "TEAM_ALPHA")
         String code,
 
         @NotBlank

@@ -295,9 +295,13 @@ public class DepartmentServiceImpl implements DepartmentService {
     }
 
     private void applyRequest(Department target, DepartmentRequest request) {
-        target.setCode(request.code());
+        target.setCode(normaliseCode(request.code()));
         target.setName(request.name());
         target.setParentDepartmentId(request.parentDepartmentId());
+    }
+
+    private static String normaliseCode(String code) {
+        return code.trim().toUpperCase(Locale.ROOT);
     }
 
     private UUID parentKeyOf(Department department) {

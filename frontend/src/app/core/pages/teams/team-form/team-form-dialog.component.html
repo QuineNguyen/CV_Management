@@ -10,17 +10,21 @@
           <span class="field-label">Code <span class="required" aria-hidden="true">*</span></span>
           <input
             type="text"
-            class="field-input"
+            class="field-input code-input"
             formControlName="code"
-            placeholder="ALPHA"
-            maxlength="50"
-            autocomplete="off" />
+            placeholder="TEAM_ALPHA"
+            [attr.maxlength]="codeMaxLength"
+            autocomplete="off"
+            (input)="normaliseCode()" />
           <span class="field-hint">Unique across the whole system</span>
           @if (hasError('code', 'required')) {
             <span class="field-error">Code is required</span>
           }
+          @if (hasError('code', 'pattern')) {
+            <span class="field-error">Use capital letters, digits and single underscores, e.g. TEAM_ALPHA</span>
+          }
           @if (hasError('code', 'maxlength')) {
-            <span class="field-error">Code must be at most 50 characters</span>
+            <span class="field-error">Code must be at most {{ codeMaxLength }} characters</span>
           }
         </label>
 

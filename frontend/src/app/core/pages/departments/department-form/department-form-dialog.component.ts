@@ -21,6 +21,9 @@ export class DepartmentFormDialogComponent implements OnInit {
     private static readonly LOOKUP_SIZE = 20;
 
     private static readonly SEARCH_DEBOUNCE_MS = 250;
+
+    private static readonly CODE_MAX_LENGTH = 50;
+    private static readonly CODE_PATTERN = /^[A-Z0-9]+(?:_[A-Z0-9]+)*$/;
     
     private readonly fb = inject(FormBuilder);
     private readonly departmentService = inject(DepartmentService);
@@ -31,12 +34,16 @@ export class DepartmentFormDialogComponent implements OnInit {
 
     readonly submitted = output<DepartmentRequest>();
     readonly cancelled = output<void>();
-
+    readonly codeMaxLength = DepartmentFormDialogComponent.CODE_MAX_LENGTH;
     readonly isClosing = signal(false);
     private backdropMouseDownTarget: EventTarget | null = null;
 
     readonly form = this.fb.nonNullable.group({
-        code: ['', [Validators.required, Validators.maxLength(50)]],
+        code: ['', [
+            Validators.required, 
+            Validators.maxLength(DepartmentFormDialogComponent.CODE_MAX_LENGTH),
+            Validators.pattern(DepartmentFormDialogComponent.CODE_PATTERN),
+        ]],
         name: ['', [Validators.required, Validators.maxLength(255)]],
     });
 
@@ -57,26 +64,6 @@ export class DepartmentFormDialogComponent implements OnInit {
     private readonly reload$ = new Subject<void>();
 
     private lookupStarted = false;
-
-    // Server includes the edited node and its descendants, so no loop can be picked.
-    readonly suggestions = toSignal(
-        this.parentKeyword.valueChanges.pipe(
-            startWith(''),
-            debounceTime(250),
-            distinctUntilChanged(),
-            switchMap(keyword => {
-                this.lookupLoading.set(true);
-                return this.departmentService.search({
-                    keyword: keyword.trim() || undefined,
-                    excludeSubtreeOf: this.state().department?.id,
-                    page: 0,
-                    size: DepartmentFormDialogComponent.LOOKUP_SIZE,
-                });
-            }),
-            takeUntilDestroyed(),
-        ),
-        { initialValue: null },
-    )
 
     ngOnInit(): void {
         const { department, parentId } = this.state();
@@ -103,6 +90,15 @@ export class DepartmentFormDialogComponent implements OnInit {
     selectParent(parent: DepartmentNode | null): void {
         this.selectedParent.set(parent);
         this.pickerOpen.set(false);
+    }
+
+    // Keeps the code in UPPER_SNAKE_CASE while typing
+    normaliseCode(): void {
+        const control = this.form.controls.code;
+        const next = control.value.toUpperCase().replace(/\s+/g, '_');
+        if (next !== control.value) {
+            control.setValue(next);
+        }
     }
 
     hasError(control: 'code' | 'name', error: string): boolean {

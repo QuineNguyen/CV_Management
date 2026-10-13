@@ -51,6 +51,11 @@
   outline-offset: -0.0625rem;
 }
 
+.code-input {
+  font-family: ui-monospace, 'SFMono-Regular', Menlo, monospace;
+  letter-spacing: 0.02em;
+}
+
 .field-textarea {
   min-height: clamp(4rem, 14vh, 7rem);
   resize: vertical;
