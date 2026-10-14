@@ -1,0 +1,250 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Standard 9-section CV, rendered by Thymeleaf (XML mode) and openhtmltopdf.
+  Rules of this engine: CSS 2.1 only (tables, no flexbox/grid), well-formed XML (self-closed
+  tags, quoted attributes, numeric entities such as &#160;), and th:attr instead of th:src/th:class.
+  No watermark of any kind: this file goes to customers.
+-->
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org"
+      th:attr="lang=${cv.lang}">
+<head>
+    <title th:text="${cv.documentTitle}">CV</title>
+    <style type="text/css">
+        /* Font families match PdfFontFamily; each list falls back glyph by glyph */
+        @page {
+            size: A4 portrait;
+            margin: 16mm 14mm 18mm 14mm;
+
+            @bottom-right {
+                content: counter(page) " / " counter(pages);
+                font-family: NotoSans, NotoSansJP;
+                font-size: 8pt;
+                color: #8a8f98;
+            }
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: NotoSans, NotoSansJP;
+            font-size: 9.5pt;
+            line-height: 1.45;
+            color: #1a1a1a;
+            word-wrap: break-word;
+        }
+
+        /* Japanese CVs lead with the JP font so kana and kanji share one design */
+        body.lang-ja {
+            font-family: NotoSansJP, NotoSans;
+        }
+
+        p {
+            margin: 0;
+        }
+
+        table {
+            border-collapse: collapse;
+        }
+
+        td {
+            padding: 0;
+            vertical-align: top;
+        }
+
+        /* ---------- Header: section 1 ---------- */
+        .header {
+            width: 100%;
+            margin-bottom: 2mm;
+            border-bottom: 1.5pt solid #ee0033;
+        }
+
+        .avatar-cell {
+            width: 32mm;
+            padding: 0 5mm 4mm 0;
+        }
+
+        /* Width only, so the photo keeps its own proportions */
+        .avatar {
+            width: 28mm;
+            border: 0.75pt solid #e0e0e0;
+        }
+
+        .identity-cell {
+            padding: 0 0 4mm 0;
+        }
+
+        .full-name {
+            margin: 0;
+            font-size: 20pt;
+            font-weight: bold;
+            line-height: 1.2;
+            color: #1a1a1a;
+        }
+
+        .job-title {
+            margin: 1mm 0 0 0;
+            font-size: 11pt;
+            font-weight: bold;
+            color: #ee0033;
+        }
+
+        .contacts {
+            margin-top: 3mm;
+        }
+
+        .field-label {
+            width: 26mm;
+            padding: 0.4mm 2mm 0.4mm 0;
+            color: #5a5a5a;
+        }
+
+        .field-value {
+            padding: 0.4mm 0;
+        }
+
+        /* ---------- Sections 2-9 ---------- */
+        .section {
+            margin-top: 5mm;
+        }
+
+        .section-title {
+            margin: 0 0 2.5mm 0;
+            padding-bottom: 1mm;
+            border-bottom: 0.75pt solid #f5c2cd;
+            font-size: 10.5pt;
+            font-weight: bold;
+            letter-spacing: 0.4pt;
+            text-transform: uppercase;
+            color: #ee0033;
+            page-break-after: avoid;
+        }
+
+        .paragraph {
+            white-space: pre-line;
+        }
+
+        /* Skills and languages */
+        .ratings {
+            width: 100%;
+        }
+
+        .ratings tr {
+            page-break-inside: avoid;
+        }
+
+        .ratings td {
+            padding: 1mm 3mm 1mm 0;
+            border-bottom: 0.5pt solid #eeeeee;
+        }
+
+        .rating-name {
+            width: 38%;
+            font-weight: bold;
+        }
+
+        .rating-level {
+            width: 24%;
+            color: #c4002a;
+        }
+
+        .rating-note {
+            color: #5a5a5a;
+        }
+
+        /* Experience, education, certifications, projects, additional info */
+        .entry {
+            margin-bottom: 3.5mm;
+            page-break-inside: avoid;
+        }
+
+        .entry-head {
+            width: 100%;
+        }
+
+        .entry-title {
+            font-size: 10pt;
+            font-weight: bold;
+        }
+
+        .entry-period {
+            width: 40mm;
+            padding-left: 3mm;
+            text-align: right;
+            white-space: nowrap;
+            font-size: 8.5pt;
+            color: #5a5a5a;
+        }
+
+        .entry-subtitle {
+            margin-top: 0.5mm;
+            color: #5a5a5a;
+        }
+
+        .details {
+            margin-top: 1mm;
+        }
+
+        .description {
+            margin-top: 1.2mm;
+            white-space: pre-line;
+        }
+    </style>
+</head>
+<body th:attr="class=${'lang-' + cv.lang}">
+
+<!-- Section 1: without a photo the identity cell takes the full width -->
+<table class="header">
+    <tr>
+        <td class="avatar-cell" th:if="${cv.header.avatarDataUri != null}">
+            <img class="avatar" alt="" th:attr="src=${cv.header.avatarDataUri}"/>
+        </td>
+        <td class="identity-cell">
+            <p class="full-name" th:text="${cv.header.fullName}">Full name</p>
+            <p class="job-title" th:if="${cv.header.position != null}" th:text="${cv.header.position}">Job title</p>
+            <table class="contacts" th:unless="${#lists.isEmpty(cv.header.contacts)}">
+                <tr th:each="field : ${cv.header.contacts}">
+                    <td class="field-label" th:text="${field.label}">Label</td>
+                    <td class="field-value" th:text="${field.value}">Value</td>
+                </tr>
+            </table>
+        </td>
+    </tr>
+</table>
+
+<!-- Sections 2-9: empty ones never reach the template -->
+<div class="section" th:each="section : ${cv.sections}">
+    <p class="section-title" th:text="${section.title}">Section</p>
+
+    <p class="paragraph" th:if="${section.text != null}" th:text="${section.text}">Text</p>
+
+    <table class="ratings" th:unless="${#lists.isEmpty(section.ratings)}">
+        <tr th:each="rating : ${section.ratings}">
+            <td class="rating-name" th:text="${rating.name}">Name</td>
+            <td class="rating-level" th:text="${rating.level}">Level</td>
+            <td class="rating-note" th:text="${rating.note}">Note</td>
+        </tr>
+    </table>
+
+    <div class="entry" th:each="entry : ${section.entries}">
+        <table class="entry-head">
+            <tr>
+                <td class="entry-title" th:text="${entry.title}">Title</td>
+                <td class="entry-period" th:if="${entry.period != null}" th:text="${entry.period}">Period</td>
+            </tr>
+        </table>
+
+        <p class="entry-subtitle" th:if="${entry.subtitle != null}" th:text="${entry.subtitle}">Subtitle</p>
+
+        <table class="details" th:unless="${#lists.isEmpty(entry.details)}">
+            <tr th:each="field : ${entry.details}">
+                <td class="field-label" th:text="${field.label}">Label</td>
+                <td class="field-value" th:text="${field.value}">Value</td>
+            </tr>
+        </table>
+
+        <p class="description" th:if="${entry.description != null}" th:text="${entry.description}">Description</p>
+    </div>
+</div>
+
+</body>
+</html>
