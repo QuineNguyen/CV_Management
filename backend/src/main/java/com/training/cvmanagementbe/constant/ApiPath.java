@@ -34,10 +34,15 @@ public final class ApiPath {
     public static final String VERSIONS = "/{id}/versions";
     public static final String VERSION_DIFF = "/{id}/versions/diff";
     public static final String VERSION_EXPORT_PDF = "/{id}/versions/{versionId}/export-pdf";
+    public static final String VERSION_PDF_LINK = "/{id}/versions/{versionId}/pdf-link";
     public static final String CV_ROLLBACK = "/{id}/rollback";
     public static final String SKILLS = "/skills";
     public static final String OPTIONS = "/options";
     public static final String SEARCH_FILTERS = "/search-filters";
+
+    // Signed PDF links (public); the regex keeps ".pdf" in fileName
+    public static final String PDF_LINKS = "/pdf-links";
+    public static final String PDF_LINK_FILE = "/{token}/{fileName:.+}";
 
     // Images
     public static final String IMAGES = "/images";

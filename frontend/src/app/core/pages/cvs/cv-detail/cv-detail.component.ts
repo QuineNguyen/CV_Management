@@ -19,17 +19,20 @@ import { ApprovalService } from "../../../services/approval.service";
 import { CreateUpdateRequestDialogComponent } from "../../update-requests/create-update-request-dialog/create-update-request-dialog.component";
 import { leaveIfAccessDenied } from "../../../utils/access-denied.util";
 import { PendingNoteResponse } from "../../../dtos/update-request.dto";
+import { CvPdfPreviewDialogComponent } from "../cv-pdf-preview-dialog/cv-pdf-preview-dialog.component";
+import { CvPdfTarget } from "../../../models/cv-pdf.model";
 
 /*
  * Read-only view of a CV's current version, plus the actions available on it.
  * - Deleting the master of a profile that still holds other CVs requires naming a successor -
  * the localisation chain has to keep an anchor - so the delete dialog turns into a picker in that
  * case rather than failing with an error after the fact.
+ * - Export PDF prints the current version; older versions are exported from the history.
  */
 @Component({
     selector: 'app-cv-detail',
     standalone: true,
-    imports: [CvContentEditorComponent, RouterLink, MatTooltipModule, DatePipe, CreateUpdateRequestDialogComponent],
+    imports: [CvContentEditorComponent, RouterLink, MatTooltipModule, DatePipe, CreateUpdateRequestDialogComponent, CvPdfPreviewDialogComponent],
     templateUrl: './cv-detail.component.html',
     styleUrl: './cv-detail.component.css',
     changeDetection: ChangeDetectionStrategy.OnPush,
@@ -61,6 +64,9 @@ export class CvDetailComponent implements OnInit {
     readonly cancellingDraft = signal(false);
     readonly isCancelClosing = signal(false);
     private cancelBackdropMouseDownTarget: EventTarget | null = null;
+
+    // Version shown in the PDF preview; null while the preview is closed
+    readonly pdfTarget = signal<CvPdfTarget | null>(null);
 
     // Only the owner writes CV content; there is no path for anyone else.
     readonly canEdit = computed(() => this.auth.user()?.id === this.detail()?.cv.employeeId);
@@ -157,6 +163,28 @@ export class CvDetailComponent implements OnInit {
         if (id) {
             void this.router.navigate(['/' + AppRoute.Cvs, id, 'edit']);
         }
+    }
+
+    // ---------- Export PDF ----------
+
+    // Drafts are never exported, so the button only exists once a version is published
+    openPdf(): void {
+        const detail = this.detail();
+        const version = detail?.currentVersion;
+        if (!detail || !version) {
+            return;
+        }
+        this.pdfTarget.set({
+            cvId: detail.cv.id,
+            versionId: version.id,
+            versionNumber: version.versionNumber,
+            employeeName: detail.cv.employeeName ?? null,
+            language: detail.cv.language,
+        });
+    }
+
+    closePdf(): void {
+        this.pdfTarget.set(null);
     }
 
     // ---------- Request update ----------

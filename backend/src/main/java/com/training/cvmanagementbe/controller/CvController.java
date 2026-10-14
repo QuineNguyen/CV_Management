@@ -1,12 +1,13 @@
 package com.training.cvmanagementbe.controller;
 
+import com.training.cvmanagementbe.common.PdfResponses;
 import com.training.cvmanagementbe.constant.ApiPath;
 import com.training.cvmanagementbe.constant.PageDefaults;
 import com.training.cvmanagementbe.dto.request.cvs.*;
 import com.training.cvmanagementbe.dto.response.configs.ApiResponse;
 import com.training.cvmanagementbe.dto.response.configs.PagedResponse;
 import com.training.cvmanagementbe.dto.response.cvs.*;
-import com.training.cvmanagementbe.dto.response.cvs.pdf.CvPdfFile;
+import com.training.cvmanagementbe.dto.response.cvs.pdf.CvPdfLinkResponse;
 import com.training.cvmanagementbe.enums.cvs.CvSearchSortField;
 import com.training.cvmanagementbe.enums.cvs.CvSortField;
 import com.training.cvmanagementbe.enums.cvs.CvVersionSortField;
@@ -14,6 +15,8 @@ import com.training.cvmanagementbe.service.CvSearchService;
 import com.training.cvmanagementbe.service.CvService;
 import com.training.cvmanagementbe.service.PdfExportService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.security.SecurityRequirements;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -34,6 +37,9 @@ import java.util.UUID;
  *
  * Scope lives in the service, not here: whether a caller may edit depends on who owns the CV,
  * which the path does not say.
+ *
+ * One endpoint here is public: openPdfLink. Which paths skip the JWT is decided by PublicEndpoint,
+ * not by this class.
  */
 @RestController
 @RequiredArgsConstructor
@@ -139,6 +145,13 @@ public class CvController {
         return ResponseEntity.ok(cvService.diffVersions(id, from, to));
     }
 
+    // ---------- PDF export ----------
+
+    /*
+     * Direct download for API clients and Swagger; the web app opens a signed link instead.
+     * No 'produces' on the mapping: It would also bind the error responses to application/pdf
+     * and the JSON error body of a 403/404 could no longer be written.
+     */
     @GetMapping(ApiPath.CVS + ApiPath.VERSION_EXPORT_PDF)
     @Operation(summary = "Export a published version as PDF (standard 9-section template, no watermark); preview=true renders inline")
     public ResponseEntity<byte[]> exportPdf(
@@ -146,18 +159,38 @@ public class CvController {
             @PathVariable UUID versionId,
             @RequestParam(defaultValue = "false") boolean preview
     ) {
-        CvPdfFile file = pdfExportService.export(id, versionId);
-
-        ContentDisposition disposition = (preview ? ContentDisposition.inline() : ContentDisposition.attachment())
-                .filename(file.fileName())
-                .build();
-
-        return ResponseEntity.ok()
-                .contentType(MediaType.APPLICATION_PDF)
-                .header(HttpHeaders.CONTENT_DISPOSITION, disposition.toString())
-                .cacheControl(CacheControl.noStore())
-                .body(file.content());
+        return PdfResponses.of(pdfExportService.export(id, versionId), preview);
     }
+
+    // POST: Issuing a link is the audited export, not a plain read
+    @PostMapping(ApiPath.CVS + ApiPath.VERSION_PDF_LINK)
+    @Operation(summary = "Issue a short-lived signed link that opens a published version as PDF in the browser")
+    public ResponseEntity<CvPdfLinkResponse> createPdfLink(@PathVariable UUID id, @PathVariable UUID versionId) {
+        return ResponseEntity.ok(pdfExportService.createLink(id, versionId));
+    }
+
+    /*
+     * Public (PublicEndpoint.PDF_LINK): an iframe or a new browser tab cannot send the JWT header,
+     * so the signed token in the path is the credential. The trailing file name segment is
+     * cosmetic - it is what a PDF viewer saves under.
+     * - @SecurityRequirements() with no value drops the lock in Swagger, so a test there sends no
+     * JWT - exactly like the browser does.
+     * - fileName is declared only so Swagger shows a field for it; the token alone picks the PDF.
+     */
+    @GetMapping(ApiPath.PDF_LINKS + ApiPath.PDF_LINK_FILE)
+    @SecurityRequirements
+    @Operation(summary = "Open an exported CV through a signed link; download=true saves instead of showing it")
+    public ResponseEntity<byte[]> openPdfLink(
+            @Parameter(description = "Token from the 'path' returned by POST .../pdf-link - not the login JWT")
+            @PathVariable String token,
+            @Parameter(description = "File name from the same 'path', e.g. CV_Nguyen_Van_A_vi_v2.pdf")
+            @PathVariable String fileName,
+            @RequestParam(defaultValue = "false") boolean download
+    ) {
+        return PdfResponses.of(pdfExportService.openLink(token), !download);
+    }
+
+    // ---------- Lifecycle ----------
 
     @PostMapping(ApiPath.CVS + ApiPath.CV_ROLLBACK)
     @Operation(summary = "Roll a CV back to an older version, published as a new version (Admin/HR)")

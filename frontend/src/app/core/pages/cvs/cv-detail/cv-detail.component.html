@@ -30,7 +30,8 @@
 
       <div class="page-toolbar-actions">
         @if (detail.currentVersion) {
-          <button type="button" class="btn btn-primary" (click)="openHistory()">Version history</button>
+          <button type="button" class="btn btn-ghost" (click)="openHistory()">Version history</button>
+          <button type="button" class="btn btn-ghost" (click)="openPdf()">Export PDF</button>
         }
         @if (canEdit()) {
           <button type="button" class="btn btn-primary" (click)="edit()">Edit</button>
@@ -248,4 +249,9 @@
     [prefillLanguage]="current.cv.language"
     [prefillCvId]="current.cv.id"
     (closed)="closeRequestUpdate()" />
+}
+
+<!-- PDF preview of the current version -->
+@if (pdfTarget(); as target) {
+  <app-cv-pdf-preview-dialog [target]="target" (closed)="closePdf()" />
 }

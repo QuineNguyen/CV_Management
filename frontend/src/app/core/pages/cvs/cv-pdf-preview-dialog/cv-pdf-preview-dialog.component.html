@@ -1,0 +1,60 @@
+<div class="modal-backdrop" [class.is-closing]="isClosing()"
+     (mousedown)="onBackdropMouseDown($event)" (click)="onBackdropClick($event)">
+  <div class="modal pdf-modal" role="dialog" aria-modal="true" aria-labelledby="pdf-preview-title"
+       (click)="$event.stopPropagation()">
+
+    <header class="pdf-head">
+      <h2 id="pdf-preview-title" class="modal-title">Export PDF</h2>
+      <p class="modal-subtitle">
+        <span class="code-chip is-primary">{{ target().language }}</span>
+        {{ languageLabels[target().language] }} CV of {{ target().employeeName ?? '—' }} · v{{ target().versionNumber }}
+      </p>
+    </header>
+
+    <div class="pdf-viewer" [attr.aria-busy]="busy()">
+      @if (status() === Status.Failed) {
+        <div class="pdf-state" role="alert">
+          <span class="material-symbols-outlined pdf-state-icon" aria-hidden="true">error</span>
+          <p class="pdf-state-title">The PDF could not be generated</p>
+          <button type="button" class="btn btn-primary" (click)="load()">Try again</button>
+        </div>
+      } @else if (inlineViewer && frameUrl()) {
+        <iframe #pdfFrame class="pdf-frame" [src]="frameUrl()!" title="PDF preview"
+                (load)="onFrameLoad(pdfFrame)"></iframe>
+      } @else if (status() === Status.Ready) {
+        <!-- Phones cannot show a PDF inside the page: offer the two things that work -->
+        <div class="pdf-state">
+          <span class="material-symbols-outlined pdf-state-icon" aria-hidden="true">picture_as_pdf</span>
+          <p class="pdf-state-title">{{ fileName() }}</p>
+          <p class="pdf-state-hint">
+            This device cannot show the PDF here. Open it in a new tab or download it
+          </p>
+        </div>
+      }
+
+      <!-- Covers the frame until the PDF has arrived, so no blank viewer flashes -->
+      @if (busy()) {
+        <div class="pdf-state pdf-state-overlay" role="status">
+          <span class="pdf-spinner" aria-hidden="true"></span>
+          <p class="pdf-state-title">Generating the PDF…</p>
+          <p class="pdf-state-hint">Fonts and the photo are embedded, so this can take a few seconds</p>
+        </div>
+      }
+    </div>
+
+    <div class="modal-footer pdf-footer">
+      <button type="button" class="btn btn-ghost" (click)="close()">Close</button>
+      <button type="button" class="btn btn-ghost" [disabled]="!ready()" (click)="openInNewTab()">
+        Open in new tab
+      </button>
+      @if (inlineViewer) {
+        <button type="button" class="btn btn-ghost" [disabled]="!ready() || !frameLoaded()" (click)="print()">
+          Print
+        </button>
+      }
+      <button type="button" class="btn btn-primary" [disabled]="!ready()" (click)="download()">
+        Download
+      </button>
+    </div>
+  </div>
+</div>

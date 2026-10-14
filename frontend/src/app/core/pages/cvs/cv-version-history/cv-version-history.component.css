@@ -11,7 +11,7 @@
 .col-reviewers { width: 16%; min-width: 10rem; }
 .col-source    { width: 10rem; }
 .col-summary   { min-width: 12rem; }
-.col-actions   { width: 7.5rem; }
+.col-actions   { width: 10rem; }
 
 /* Table outer borders merge seamlessly with .data-table-wrap */
 .data-table thead th {

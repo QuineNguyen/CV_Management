@@ -1,15 +1,18 @@
 import { HttpClient, HttpParams } from "@angular/common/http";
 import { inject, Injectable } from "@angular/core";
 import { environment } from "../../../environments/environment";
-import { Observable } from "rxjs";
-import { CvCreateRequest, CvDeleteRequest, CvDetailResponse, CvEditRequest, CvEditResponse, CvResponse, CvSearchFiltersResponse, CvSearchItemResponse, CvSearchQuery, CvVersionSummary, DeletedCvQuery } from "../dtos/cv.dto";
+import { map, Observable } from "rxjs";
+import { CvCreateRequest, CvDeleteRequest, CvDetailResponse, CvEditRequest, CvEditResponse, CvPdfFile, CvPdfLinkResponse, CvResponse, CvSearchFiltersResponse, CvSearchItemResponse, CvSearchQuery, CvVersionSummary, DeletedCvQuery } from "../dtos/cv.dto";
 import { ApiEndpoint } from "../enums/api-endpoint.enum";
 import { PagedResponse } from "../dtos/page.dto";
 import { PendingNoteResponse } from "../dtos/update-request.dto";
 import { CvRollbackRequest, CvVersionHistoryItem, CvVersionQuery, VersionDiffResponse } from "../dtos/cv-version.dto";
+import { CvPdfLink } from "../models/cv-pdf.model";
 
 @Injectable({ providedIn: 'root' })
 export class CvService {
+
+    private static readonly MS_PER_SECOND = 1000;
 
     private readonly http = inject(HttpClient);
 
@@ -66,6 +69,23 @@ export class CvService {
         }
         return this.http.get<VersionDiffResponse>(
             this.url(`${ApiEndpoint.Cvs}/${id}/versions/diff`), { params }
+        );
+    }
+
+    /*
+     * A short-lived signed link to one published version. The preview iframe and a new tab open
+     * it directly - neither can send the JWT header - and its path ends with the file name, so
+     * the browser's PDF viewer saves the file under that name instead of a random id.
+     */
+    createPdfLink(id: string, versionId: string): Observable<CvPdfLink> {
+        return this.http.post<CvPdfLinkResponse>(
+            this.url(`${ApiEndpoint.Cvs}/${id}/versions/${versionId}/pdf-link`), null
+        ).pipe(
+            map(response => ({
+                url: this.url(response.path),
+                fileName: response.fileName,
+                expiresAt: Date.now() + response.expiresInSeconds * CvService.MS_PER_SECOND,
+            })),
         );
     }
 

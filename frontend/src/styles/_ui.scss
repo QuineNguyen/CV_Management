@@ -953,7 +953,7 @@ th[aria-sort]:not([aria-sort='none']) .sort-icon {
 .modal-backdrop {
   position: fixed;
   inset: 0;
-  z-index: var(--vt-modal-z, 50);
+  z-index: var(--vt-modal-z, 1000);
   display: grid;
   place-items: center;
   padding: var(--vt-pad);

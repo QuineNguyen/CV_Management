@@ -156,3 +156,15 @@ export interface CvSearchFiltersResponse {
     departments: CvSearchFilterOption[];
     teams: CvSearchFilterOption[];
 }
+
+export interface CvPdfFile {
+    blob: Blob;
+    // From Content-Disposition; null when the header is missing or not exposed
+    fileName: string | null;
+}
+
+export interface CvPdfLinkResponse {
+    path: string;
+    fileName: string;
+    expiresInSeconds: number;
+}

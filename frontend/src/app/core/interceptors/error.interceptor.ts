@@ -1,7 +1,7 @@
 import { HttpErrorResponse, HttpInterceptorFn } from '@angular/common/http';
 import { inject } from '@angular/core';
 import { Router } from '@angular/router';
-import { catchError, throwError } from 'rxjs';
+import { catchError, from, map, Observable, of, switchMap, throwError } from 'rxjs';
 import { AuthService } from '../services/auth.service';
 import { ERROR_MESSAGES, messageFor } from '../models/error-messages.model';
 import { ApiErrorResponse } from '../dtos/api-error.dto';
@@ -10,6 +10,7 @@ import { ApiEndpoint } from '../enums/api-endpoint.enum';
 import { AppRoute } from '../enums/app-route.enum';
 import { QueryParam } from '../enums/query-param.enum';
 import { SKIP_ERROR_TOAST } from './skip-error-toast.token';
+import { MediaType } from '../enums/cv-pdf.enum';
 
 /**
  * Turns every failed request into one visible, consistent outcome.
@@ -23,8 +24,8 @@ import { SKIP_ERROR_TOAST } from './skip-error-toast.token';
  *   + 401 - the session is gone or was revoked server-side. Clear local state without
  *       calling sign-out (that call would only produce a second 401) and send the user to the
  *       sign-in page, remembering where they were.
- *   + 403 - out of data scope. Announced here. A page whose own resource (the id in its
- *       URL) returns 403/404 also leaves via leaveIfAccessDenied(), so it never sits empty.
+ *   + 403 - out of data scope. Nothing the user can do, so a notice is the whole
+ *       response; the error is not re-thrown as something screens should handle.
  *   + 409 - someone else acted first. The user needs to reload, so say exactly that.
  *   + 422 - a business rule was broken. Shown here, and re-thrown so a form can also
  *       react (for example by keeping the submit button enabled).
@@ -34,6 +35,10 @@ import { SKIP_ERROR_TOAST } from './skip-error-toast.token';
  * - Background requests flagged with SKIP_ERROR_TOAST (notification polling) get no notice: the
  * user did not start them and cannot act on them. The 401 notice is kept because it explains
  * the redirect that follows.
+ * 
+ * - A request made with responseType 'blob' (PDF export) receives its JSON error envelope as a
+ * Blob too. It is read back to JSON first, so those errors show the server's message like any
+ * other call.
  * 
  * - The error is always re-thrown. Swallowing it would leave a caller's loading spinner running
  * forever, since neither `next` nor `error` would ever arrive.
@@ -50,71 +55,99 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
     }
   }
 
-  return next(req).pipe(
-    catchError((error: HttpErrorResponse) => {
-      // Handle network errors (status 0).
-      if (error.status === 0) {
-        notify(ERROR_MESSAGES.NETWORK_ERROR);
-        return throwError(() => error);
-      }
-
-      const envelope = error.error as ApiErrorResponse | null;
-      const code = envelope?.code ?? '';
-      const message = messageFor(code, envelope?.message);
-
-      switch (error.status) {
-        case 401:
-          auth.clearSession();
-          // Skip redirect when the request is a login/auth call (the login
-          // component handles its own errors) or the user is already on the
-          // login page — otherwise returnUrl keeps nesting on every attempt.
-          const isSignInAttempt = req.url.includes(ApiEndpoint.Login)
-              || req.url.includes(ApiEndpoint.GoogleLogin);
-
-          if (!isSignInAttempt && !router.url.startsWith('/' +AppRoute.Login)) {
-            // Shown even for a background call: it explains the redirect.
-            toast.error(message);
-            void router.navigate([AppRoute.Login], {
-              queryParams: { [QueryParam.ReturnUrl]: router.url },
-            });
-          }
-          break;
-
-        case 403:
-          notify(message);
-          break;
-
-        case 404:
-          // Only notify for GET requests.
-          if (req.method === 'GET') {
-            notify(message);
-          }
-          break;
-
-        case 409:
-          if (!silent) {
-            toast.error(message, 'Reload')
-              .onAction()
-              .subscribe(() => window.location.reload());
-          }
-          break;
-
-        case 422:
-          notify(message);
-          break;
-
-        case 400:
-          // Skip notification if response has field-level validation errors.
-          if (!envelope?.data?.fieldErrors?.length) {
-            notify(message);
-          }
-          break;
-
-        default:
-          notify(messageFor('INTERNAL_ERROR'));
-      }
-
+  const handle = (error: HttpErrorResponse): Observable<never> => {
+    // Handle network errors (status 0).
+    if (error.status === 0) {
+      notify(ERROR_MESSAGES.NETWORK_ERROR);
       return throwError(() => error);
-    }),
+    }
+
+    const envelope = error.error as ApiErrorResponse | null;
+    const code = envelope?.code ?? '';
+    const message = messageFor(code, envelope?.message);
+
+    switch (error.status) {
+      case 401: {
+        auth.clearSession();
+        // Skip redirect when the request is a login/auth call (the login
+        // component handles its own errors) or the user is already on the
+        // login page — otherwise returnUrl keeps nesting on every attempt.
+        const isSignInAttempt = req.url.includes(ApiEndpoint.Login)
+            || req.url.includes(ApiEndpoint.GoogleLogin);
+
+        if (!isSignInAttempt && !router.url.startsWith('/' + AppRoute.Login)) {
+          // Shown even for a background call: it explains the redirect.
+          toast.error(message);
+          void router.navigate([AppRoute.Login], {
+            queryParams: { [QueryParam.ReturnUrl]: router.url },
+          });
+        }
+        break;
+      }
+
+      case 403:
+        notify(message);
+        break;
+
+      case 404:
+        // Only notify for GET requests.
+        if (req.method === 'GET') {
+          notify(message);
+        }
+        break;
+
+      case 409:
+        if (!silent) {
+          toast.error(message, 'Reload')
+            .onAction()
+            .subscribe(() => window.location.reload());
+        }
+        break;
+
+      case 422:
+        notify(message);
+        break;
+
+      case 400:
+        // Skip notification if response has field-level validation errors.
+        if (!envelope?.data?.fieldErrors?.length) {
+          notify(message);
+        }
+        break;
+
+      default:
+        notify(messageFor('INTERNAL_ERROR'));
+    }
+
+    return throwError(() => error);
+  };
+
+  return next(req).pipe(
+    catchError((error: HttpErrorResponse) => withJsonBody(error).pipe(switchMap(handle))),
   );
 };
+
+// A Blob error body that holds JSON becomes that JSON; anything else is passed on untouched.
+function withJsonBody(error: HttpErrorResponse): Observable<HttpErrorResponse> {
+  const body = error.error;
+  if (!(body instanceof Blob) || (body.type && !body.type.includes(MediaType.Json))) {
+    return of(error);
+  }
+  return from(body.text()).pipe(
+    map(text => new HttpErrorResponse({
+      error: parseJson(text),
+      headers: error.headers,
+      status: error.status,
+      url: error.url ?? undefined,
+    })),
+    catchError(() => of(error)),
+  );
+}
+
+function parseJson(text: string): unknown {
+  try {
+    return JSON.parse(text);
+  } catch {
+    return null;
+  }
+}
