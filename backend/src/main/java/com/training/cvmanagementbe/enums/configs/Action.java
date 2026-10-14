@@ -45,5 +45,6 @@ public enum Action {
     CANCEL_BATCH_REQUEST,
     CREATE_SKILL,
     UPDATE_SKILL,
+    EXPORT_PDF,
     UPDATE_SYSTEM_CONFIG,
 }

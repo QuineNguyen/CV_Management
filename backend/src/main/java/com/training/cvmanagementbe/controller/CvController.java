@@ -6,11 +6,13 @@ import com.training.cvmanagementbe.dto.request.cvs.*;
 import com.training.cvmanagementbe.dto.response.configs.ApiResponse;
 import com.training.cvmanagementbe.dto.response.configs.PagedResponse;
 import com.training.cvmanagementbe.dto.response.cvs.*;
+import com.training.cvmanagementbe.dto.response.cvs.pdf.CvPdfFile;
 import com.training.cvmanagementbe.enums.cvs.CvSearchSortField;
 import com.training.cvmanagementbe.enums.cvs.CvSortField;
 import com.training.cvmanagementbe.enums.cvs.CvVersionSortField;
 import com.training.cvmanagementbe.service.CvSearchService;
 import com.training.cvmanagementbe.service.CvService;
+import com.training.cvmanagementbe.service.PdfExportService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -19,7 +21,7 @@ import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
@@ -40,6 +42,7 @@ public class CvController {
 
     private final CvService cvService;
     private final CvSearchService cvSearchService;
+    private final PdfExportService pdfExportService;
 
     @PostMapping(ApiPath.PROFILES + ApiPath.CVS_BY_PROFILE)
     @Operation(summary = "Create a CV in one profile and language")
@@ -134,6 +137,26 @@ public class CvController {
             @RequestParam UUID to
     ) {
         return ResponseEntity.ok(cvService.diffVersions(id, from, to));
+    }
+
+    @GetMapping(ApiPath.CVS + ApiPath.VERSION_EXPORT_PDF)
+    @Operation(summary = "Export a published version as PDF (standard 9-section template, no watermark); preview=true renders inline")
+    public ResponseEntity<byte[]> exportPdf(
+            @PathVariable UUID id,
+            @PathVariable UUID versionId,
+            @RequestParam(defaultValue = "false") boolean preview
+    ) {
+        CvPdfFile file = pdfExportService.export(id, versionId);
+
+        ContentDisposition disposition = (preview ? ContentDisposition.inline() : ContentDisposition.attachment())
+                .filename(file.fileName())
+                .build();
+
+        return ResponseEntity.ok()
+                .contentType(MediaType.APPLICATION_PDF)
+                .header(HttpHeaders.CONTENT_DISPOSITION, disposition.toString())
+                .cacheControl(CacheControl.noStore())
+                .body(file.content());
     }
 
     @PostMapping(ApiPath.CVS + ApiPath.CV_ROLLBACK)
