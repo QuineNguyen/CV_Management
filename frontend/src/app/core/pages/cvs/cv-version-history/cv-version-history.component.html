@@ -146,6 +146,13 @@
                             [matTooltip]="compareTooltip(version)"
                             [attr.aria-label]="compareTooltip(version)"
                             (click)="compareWithPrevious(version)">⇄</button>
+
+                    <button type="button" class="icon-btn"
+                            [matTooltip]="pdfTooltip(version)"
+                            [attr.aria-label]="pdfTooltip(version)"
+                            (click)="exportPdf(version)">
+                      <span class="material-symbols-outlined action-icon" aria-hidden="true">picture_as_pdf</span>
+                    </button>
                     
                     <!-- Wrapper keeps the tooltip working while the button is disabled -->
                     @if (showRollback(version)) {
@@ -187,6 +194,13 @@
                         [matTooltip]="compareTooltip(version)"
                         [attr.aria-label]="compareTooltip(version)"
                         (click)="compareWithPrevious(version)">⇄</button>
+
+                <button type="button" class="icon-btn"
+                        [matTooltip]="pdfTooltip(version)"
+                        [attr.aria-label]="pdfTooltip(version)"
+                        (click)="exportPdf(version)">
+                  <span class="material-symbols-outlined action-icon" aria-hidden="true">picture_as_pdf</span>
+                </button>
 
                 @if (showRollback(version)) {
                   <span class="tooltip-host" [matTooltip]="rollbackTooltip(version)">
@@ -271,5 +285,10 @@
       (cancelled)="onRollbackCancelled()"
       (completed)="onRollbackCompleted()"
       (failed)="onRollbackFailed()" />
+  }
+
+  <!-- PDF preview of the chosen version -->
+  @if (pdfTarget(); as target) {
+    <app-cv-pdf-preview-dialog [target]="target" (closed)="closePdf()" />
   }
 }

@@ -18,6 +18,8 @@ import { QueryParam } from "../../../enums/query-param.enum";
 import { CvRollbackDialogComponent } from "./cv-rollback-dialog/cv-rollback-dialog.component";
 import { AuthService } from "../../../services/auth.service";
 import { UserRole } from "../../../enums/user-role.enum";
+import { CvPdfPreviewDialogComponent } from "../cv-pdf-preview-dialog/cv-pdf-preview-dialog.component";
+import { CvPdfTarget } from "../../../models/cv-pdf.model";
 
 /*
  * Version timeline of one CV, newest first, with the open draft pinned above it.
@@ -26,11 +28,12 @@ import { UserRole } from "../../../enums/user-role.enum";
  * - Each row compares with its predecessor in one click; v1 compares with an empty CV.
  * - ROLLBACK rows say their author and reviewers are inherited from the source version.
  * - Admin/HR can rollback to any non-current version, except while a draft is under review.
+ * - Every version exports to PDF: anyone who can read this history may send any of them out.
  */
 @Component({
     selector: 'app-cv-version-history',
     standalone: true,
-    imports: [DatePipe, MatPaginatorModule, MatTooltipModule, CvRollbackDialogComponent],
+    imports: [DatePipe, MatPaginatorModule, MatTooltipModule, CvRollbackDialogComponent, CvPdfPreviewDialogComponent],
     templateUrl: './cv-version-history.component.html',
     styleUrl: './cv-version-history.component.css',
     changeDetection: ChangeDetectionStrategy.OnPush,
@@ -76,6 +79,9 @@ export class CvVersionHistoryComponent implements OnInit {
     });
 
     readonly rollbackTarget = signal<CvVersionHistoryItem | null>(null);
+
+    // Version shown in the PDF preview; null while the preview is closed
+    readonly pdfTarget = signal<CvPdfTarget | null>(null);
 
     private cvId: string | null = null;
 
@@ -222,6 +228,30 @@ export class CvVersionHistoryComponent implements OnInit {
     onRollbackFailed(): void {
         this.rollbackTarget.set(null);
         this.refresh(false);
+    }
+
+    // ---------- Export PDF ----------
+
+    pdfTooltip(version: CvVersionHistoryItem): string {
+        return `Export v${version.versionNumber} as PDF`;
+    }
+
+    exportPdf(version: CvVersionHistoryItem): void {
+        const detail = this.detail();
+        if (!detail) {
+            return;
+        }
+        this.pdfTarget.set({
+            cvId: detail.cv.id,
+            versionId: version.id,
+            versionNumber: version.versionNumber,
+            employeeName: detail.cv.employeeName ?? null,
+            language: detail.cv.language,
+        });
+    }
+
+    closePdf(): void {
+        this.pdfTarget.set(null);
     }
 
     // ---------- Navigation ----------

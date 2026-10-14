@@ -6,6 +6,7 @@ import com.openhtmltopdf.extend.FSSupplier;
 import com.openhtmltopdf.pdfboxout.PdfRendererBuilder;
 import com.training.cvmanagementbe.common.AuditLogger;
 import com.training.cvmanagementbe.common.PdfFileNames;
+import com.training.cvmanagementbe.constant.ApiPath;
 import com.training.cvmanagementbe.dto.response.cvs.pdf.*;
 import com.training.cvmanagementbe.entity.models.*;
 import com.training.cvmanagementbe.enums.configs.Action;
@@ -19,6 +20,8 @@ import com.training.cvmanagementbe.enums.users.Role;
 import com.training.cvmanagementbe.exception.ApiException;
 import com.training.cvmanagementbe.record.cvs.CvContent;
 import com.training.cvmanagementbe.record.cvs.PdfExportAuditDetail;
+import com.training.cvmanagementbe.record.cvs.PdfExportTarget;
+import com.training.cvmanagementbe.record.cvs.PdfLinkClaims;
 import com.training.cvmanagementbe.repository.*;
 import com.training.cvmanagementbe.service.PdfExportService;
 import lombok.RequiredArgsConstructor;
@@ -35,6 +38,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
@@ -56,6 +60,10 @@ public class PdfExportServiceImpl implements PdfExportService {
     private static final int ISO_DATE_LENGTH = 10;
     // Name under which the template reads its model
     private static final String MODEL_VARIABLE = "cv";
+    // Path segment separator when building a link path
+    private static final String SLASH = "/";
+    // Shown in the not-found message instead of the token, which is a credential
+    private static final String DEAD_LINK = "expired or invalid";
 
     private final SpringTemplateEngine templateEngine = buildTemplateEngine();
 
@@ -71,46 +79,50 @@ public class PdfExportServiceImpl implements PdfExportService {
     private final AvatarUrlResolver avatarUrlResolver;
     private final AuditLogger auditLogger;
     private final ObjectMapper objectMapper;
+    private final PdfLinkSigner linkSigner;
 
     @Override
     @Transactional
     public CvPdfFile export(UUID cvId, UUID versionId) {
-        // A deleted CV is not something to send to a customer
-        Cv cv = cvRepository.findByIdAndLifecycleStatus(cvId, LifecycleStatus.ACTIVE)
-                .orElseThrow(() -> new ApiException.NotFoundException("cv", cvId));
-        CvProfile profile = cvProfileRepository.findById(cv.getProfileId())
-                .orElseThrow(() -> new ApiException.NotFoundException("cv profile", cv.getProfileId()));
-        requireCanRead(profile.getEmployeeId());
+        PdfExportTarget target = resolve(cvId, versionId);
+        CvPdfFile file = render(target);
 
-        // A version of another CV reads as not found, as in diffVersions
-        CvVersion version = cvVersionRepository.findByIdAndCvId(versionId, cvId)
-                .orElseThrow(() -> new ApiException.NotFoundException("cv version", versionId));
+        // Written after rendering, so a failed render leaves no record of an export that never happened
+        recordExport(target);
+        return file;
+    }
 
-        PdfLocale locale = PdfLocale.of(cv.getLanguage());
-        CvPdfContext context = toContext(
-                codec.read(version.getContentJson()),
-                locale,
-                avatarUrlResolver.resolve(version.getAvatarImageId())
-        );
-        byte[] pdf = render(PdfTemplate.STANDARD_CV, context);
+    @Override
+    @Transactional
+    public CvPdfLinkResponse createLink(UUID cvId, UUID versionId) {
+        PdfExportTarget target = resolve(cvId, versionId);
 
-        // The account name, not the snapshot: It stays Latin even on a Japanese CV
-        String employeeName = userRepository.findById(profile.getEmployeeId())
-                .map(User::getFullName)
-                .orElse(null);
-
-        // Written last, so a failed render leaves no record of an export that never happened
-        auditLogger.record(Action.EXPORT_PDF, TargetType.CV, cvId, null, new PdfExportAuditDetail(
-                profile.getId(),
-                cv.getLanguage(),
-                version.getId(),
-                version.getVersionNumber()
+        String token = linkSigner.sign(new PdfLinkClaims(
+                cvId,
+                versionId,
+                CurrentActor.requireUserId(),
+                CurrentActor.requireRole(),
+                Instant.now().plus(linkSigner.ttl())
         ));
 
-        return new CvPdfFile(
-                PdfFileNames.of(employeeName, locale.getCode(), version.getVersionNumber()),
-                pdf
+        // Issuing the link is the export; opening it again re-renders without a second record
+        recordExport(target);
+
+        return new CvPdfLinkResponse(
+                ApiPath.PDF_LINKS + SLASH + token + SLASH + target.fileName(),
+                target.fileName(),
+                linkSigner.ttl().toSeconds()
         );
+    }
+
+    @Override
+    public CvPdfFile openLink(String token) {
+        PdfLinkClaims claims = linkSigner.verify(token, Instant.now())
+                .orElseThrow(() -> new ApiException.NotFoundException("pdf link", DEAD_LINK));
+
+        // Checked again as the person the link was issued to: A CV deleted meanwhile no longer opens
+        return CurrentActor.supplyAs(claims.userId(), claims.role(),
+                () -> render(resolve(claims.cvId(), claims.versionId())));
     }
 
     /*
@@ -134,7 +146,7 @@ public class PdfExportServiceImpl implements PdfExportService {
         throw new ApiException.ForbiddenException(ErrorCode.OUT_OF_SCOPE);
     }
 
-    public CvPdfContext toContext(CvContent content, PdfLocale locale, String avatarUrl) {
+    public CvPdfContext toContext(CvContent content, PdfLocale locale, String avatarUrl, String documentTitle) {
         JsonNode root = objectMapper.valueToTree(content);
         PdfHeaderDto header = header(root.path(CvSectionKey.PERSONAL_INFO.key()), locale, avatarUrl);
 
@@ -152,7 +164,7 @@ public class PdfExportServiceImpl implements PdfExportService {
                 .filter(PdfSectionDto::hasContent)
                 .toList();
 
-        return new CvPdfContext(locale.getCode(), header.fullName(), header, sections);
+        return new CvPdfContext(locale.getCode(), documentTitle, header, sections);
     }
 
     // ---------- Section 1 ----------
@@ -423,5 +435,55 @@ public class PdfExportServiceImpl implements PdfExportService {
         SpringTemplateEngine engine = new SpringTemplateEngine();
         engine.setTemplateResolver(resolver);
         return engine;
+    }
+
+    // --------- Helpers ---------
+
+    private PdfExportTarget resolve(UUID cvId, UUID versionId) {
+        // A deleted CV is not something to send to a customer
+        Cv cv = cvRepository.findByIdAndLifecycleStatus(cvId, LifecycleStatus.ACTIVE)
+                .orElseThrow(() -> new ApiException.NotFoundException("cv", cvId));
+        CvProfile profile = cvProfileRepository.findById(cv.getProfileId())
+                .orElseThrow(() -> new ApiException.NotFoundException("cv profile", cv.getProfileId()));
+        requireCanRead(profile.getEmployeeId());
+
+        // A version of another CV reads as not found, as in diffVersions
+        CvVersion version = cvVersionRepository.findByIdAndCvId(versionId, cvId)
+                .orElseThrow(() -> new ApiException.NotFoundException("cv version", versionId));
+
+        PdfLocale locale = PdfLocale.of(cv.getLanguage());
+
+        // The account name, not the snapshot: It stays Latin even on a Japanese CV
+        String employeeName = userRepository.findById(profile.getEmployeeId())
+                .map(User::getFullName)
+                .orElse(null);
+
+        return new PdfExportTarget(
+                cv,
+                profile,
+                version,
+                locale,
+                PdfFileNames.of(employeeName, locale.getCode(), version.getVersionNumber())
+        );
+    }
+
+    // The file name doubles as the PDF Title, so the viewer tab matches the saved file
+    private CvPdfFile render(PdfExportTarget target) {
+        CvPdfContext context = toContext(
+                codec.read(target.version().getContentJson()),
+                target.locale(),
+                avatarUrlResolver.resolve(target.version().getAvatarImageId()),
+                target.fileName()
+        );
+        return new CvPdfFile(target.fileName(), render(PdfTemplate.STANDARD_CV, context));
+    }
+
+    private void recordExport(PdfExportTarget target) {
+        auditLogger.record(Action.EXPORT_PDF, TargetType.CV, target.cv().getId(), null, new PdfExportAuditDetail(
+                target.profile().getId(),
+                target.cv().getLanguage(),
+                target.version().getId(),
+                target.version().getVersionNumber()
+        ));
     }
 }

@@ -1,5 +1,6 @@
 package com.training.cvmanagementbe.enums.configs;
 
+import com.training.cvmanagementbe.constant.ApiPath;
 import com.training.cvmanagementbe.constant.AuthPath;
 
 import java.util.Arrays;
@@ -13,7 +14,8 @@ public enum PublicEndpoint {
     DOCS("/docs"),
     SWAGGER_UI("/swagger-ui/**"),
     SWAGGER_UI_HTML("/swagger-ui.html"),
-    API_DOCS("/v3/api-docs/**");
+    API_DOCS("/v3/api-docs/**"),
+    PDF_LINK(ApiPath.PDF_LINKS + "/**");
 
     private final String pattern;
 

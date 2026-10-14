@@ -2,12 +2,12 @@
   color: var(--vt-ink);
   --vt-modal-w: min(38rem, 100%);
   --vt-modal-h: min(90vh, 48rem);
-  --vt-modal-z: 60;
+  --vt-modal-z: 1000;
 }
 
 /* The confirmation sits above the members panel. */
 .modal-backdrop--stacked {
-  --vt-modal-z: 70;
+  --vt-modal-z: 1010;
 }
 
 /* Members dialog stacks head, body and footer with a shared rhythm. */

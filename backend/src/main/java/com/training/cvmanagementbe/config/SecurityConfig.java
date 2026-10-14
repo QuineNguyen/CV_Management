@@ -50,6 +50,11 @@ public class SecurityConfig {
             .exceptionHandling(ex -> ex
                     .authenticationEntryPoint(authenticationEntryPoint)
                     .accessDeniedHandler(accessDeniedHandler))
+            /*
+             * The default X-Frame-Options is DENY, which blanks the PDF preview iframe. SAMEORIGIN
+             * still blocks framing by any other site; the app and the API share one origin via nginx.
+             */
+            .headers(headers -> headers.frameOptions(frame -> frame.sameOrigin()))
             // Disable default form login and HTTP basic popup
             .formLogin(form -> form.disable())
             .httpBasic(basic -> basic.disable())
