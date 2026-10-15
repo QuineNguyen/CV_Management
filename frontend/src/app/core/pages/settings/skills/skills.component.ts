@@ -3,15 +3,15 @@ import { ChangeDetectionStrategy, Component, computed, DestroyRef, inject, OnIni
 import { FormControl, ReactiveFormsModule } from "@angular/forms";
 import { MatPaginatorModule, PageEvent } from "@angular/material/paginator";
 import { MatTooltipModule } from "@angular/material/tooltip";
-import { SortState } from "../../models/sort-state.model";
-import { AriaSortDirection, SkillSortField, SortDirection, SortIcon } from "../../enums/sort-field.enum";
-import { SkillService } from "../../services/skill.service";
-import { ToastService } from "../../services/toast.service";
-import { SkillRequest, SkillResponse } from "../../dtos/skill.dto";
-import { SkillDialogState, SkillPageState } from "../../models/skill-page.model";
+import { SortState } from "../../../models/sort-state.model";
+import { AriaSortDirection, SkillSortField, SortDirection, SortIcon } from "../../../enums/sort-field.enum";
+import { SkillService } from "../../../services/skill.service";
+import { ToastService } from "../../../services/toast.service";
+import { SkillRequest, SkillResponse } from "../../../dtos/skill.dto";
+import { SkillDialogState, SkillPageState } from "../../../models/skill-page.model";
 import { debounceTime, map } from "rxjs";
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
-import { DialogMode } from "../../enums/dialog-mode.enum";
+import { DialogMode } from "../../../enums/dialog-mode.enum";
 import { SkillFormDialogComponent } from "./skill-form/skill-form-dialog.component";
 
 /*

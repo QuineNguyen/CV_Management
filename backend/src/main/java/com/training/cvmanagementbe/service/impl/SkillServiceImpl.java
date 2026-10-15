@@ -2,6 +2,7 @@ package com.training.cvmanagementbe.service.impl;
 
 import com.training.cvmanagementbe.common.AuditLogger;
 import com.training.cvmanagementbe.common.LikePatterns;
+import com.training.cvmanagementbe.dto.request.skills.MoveSkillRequest;
 import com.training.cvmanagementbe.dto.request.skills.SkillRequest;
 import com.training.cvmanagementbe.dto.response.configs.PagedResponse;
 import com.training.cvmanagementbe.dto.response.skills.SkillOptionResponse;
@@ -12,6 +13,7 @@ import com.training.cvmanagementbe.entity.models.User;
 import com.training.cvmanagementbe.enums.configs.Action;
 import com.training.cvmanagementbe.enums.configs.ErrorCode;
 import com.training.cvmanagementbe.enums.configs.TargetType;
+import com.training.cvmanagementbe.enums.skills.SkillSortField;
 import com.training.cvmanagementbe.enums.users.Role;
 import com.training.cvmanagementbe.exception.ApiException;
 import com.training.cvmanagementbe.record.cvs.CvContent;
@@ -23,6 +25,7 @@ import com.training.cvmanagementbe.service.SkillService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -42,6 +45,11 @@ public class SkillServiceImpl implements SkillService {
     private static final String FALLBACK_CODE = "SKILL";
     // Skills typed into a CV get the default order until Admin/HR places them
     private static final int TYPED_SKILL_DISPLAY_ORDER = 0;
+    // Renumbering leaves gaps so a later manual edit can slot a skill in between
+    private static final int DISPLAY_ORDER_STEP = 10;
+    // Same order as every picker and the catalogue screen
+    private static final Sort CATALOGUE_ORDER = Sort.by(SkillSortField.DISPLAY_ORDER.getProperty())
+            .and(Sort.by(SkillSortField.NAME.getProperty()));
 
     private final SkillRepository skillRepository;
     private final UserRepository userRepository;
@@ -106,8 +114,7 @@ public class SkillServiceImpl implements SkillService {
     public SkillResponse update(UUID id, SkillRequest request) {
         requireAdminOrHr();
 
-        Skill skill = skillRepository.findById(id)
-                .orElseThrow(() -> new ApiException.NotFoundException("skill", id));
+        Skill skill = findSkill(id);
 
         String code = normaliseCode(request.code());
         String name = normaliseName(request.name());
@@ -118,7 +125,7 @@ public class SkillServiceImpl implements SkillService {
             throw new ApiException.BusinessRuleException(ErrorCode.DUPLICATE_SKILL_NAME);
         }
 
-        long cvCount = cvSearchRepository.countCvsBySkill(List.of(id)).getOrDefault(id, 0L);
+        long cvCount = countCvs(id);
         String creatorName = resolveUserName(skill.getCreatedBy());
         SkillResponse before = toResponse(skill, cvCount, creatorName);
 
@@ -128,8 +135,49 @@ public class SkillServiceImpl implements SkillService {
         Skill saved = skillRepository.save(skill);
 
         SkillResponse after = toResponse(saved, cvCount, creatorName);
-        auditLogger.record(Action.UPDATE_SKILL, TargetType.SKILL, id, before, after);
+        // A save with nothing changed is not an event worth auditing
+        if (!before.equals(after)) {
+            auditLogger.record(Action.UPDATE_SKILL, TargetType.SKILL, id, before, after);
+        }
         return after;
+    }
+
+    /*
+     * Drag and drop on the catalogue screen. The whole catalogue is renumbered in steps of 10,
+     * which also settles ties left by typed skills (order 0). Only rows whose number changes are
+     * written; the audit entry records the moved skill, the shift of the others is its consequence.
+     */
+    @Override
+    @Transactional
+    public void move(UUID id, MoveSkillRequest request) {
+        requireAdminOrHr();
+
+        List<Skill> ordered = new ArrayList<>(skillRepository.findAll(CATALOGUE_ORDER));
+        Skill moved = ordered.stream()
+                .filter(skill -> skill.getId().equals(id))
+                .findFirst()
+                .orElseThrow(() -> new ApiException.NotFoundException("skill", id));
+
+        long cvCount = countCvs(id);
+        String creatorName = resolveUserName(moved.getCreatedBy());
+        SkillResponse before = toResponse(moved, cvCount, creatorName);
+
+        ordered.remove(moved);
+        ordered.add(Math.min(request.targetIndex(), ordered.size()), moved);
+
+        for (int index = 0; index < ordered.size(); index++) {
+            Skill skill = ordered.get(index);
+            int displayOrder = (index + 1) * DISPLAY_ORDER_STEP;
+            // Managed entities: Only changed rows are flushed
+            if (!Objects.equals(skill.getDisplayOrder(), displayOrder)) {
+                skill.setDisplayOrder(displayOrder);
+            }
+        }
+
+        SkillResponse after = toResponse(moved, cvCount, creatorName);
+        if (!before.equals(after)) {
+            auditLogger.record(Action.UPDATE_SKILL, TargetType.SKILL, id, before, after);
+        }
     }
 
     @Override
@@ -230,6 +278,15 @@ public class SkillServiceImpl implements SkillService {
         if (role != Role.ADMIN && role != Role.HR) {
             throw new ApiException.ForbiddenException(ErrorCode.OUT_OF_SCOPE);
         }
+    }
+
+    private Skill findSkill(UUID id) {
+        return skillRepository.findById(id)
+                .orElseThrow(() -> new ApiException.NotFoundException("skill", id));
+    }
+
+    private long countCvs(UUID skillId) {
+        return cvSearchRepository.countCvsBySkill(List.of(skillId)).getOrDefault(skillId, 0L);
     }
 
     private static String normaliseCode(String code) {

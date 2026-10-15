@@ -35,4 +35,19 @@ public class SystemConfig {
 
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
+
+    // Recreates a row the seed should have inserted; never expected in a healthy database
+    public static SystemConfig create(String configKey, String configValue, UUID actorId) {
+        SystemConfig config = new SystemConfig();
+        config.configKey = configKey;
+        config.updateValue(configValue, actorId);
+        return config;
+    }
+
+    // The caller passes an already validated value
+    public void updateValue(String newValue, UUID actorId) {
+        this.configValue = newValue;
+        this.updatedBy = actorId;
+        this.updatedAt = LocalDateTime.now();
+    }
 }
