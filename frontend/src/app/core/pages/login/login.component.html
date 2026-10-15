@@ -1,77 +1,133 @@
 <div class="login-page">
-  <mat-card class="login-card" appearance="outlined">
-    @if (submitting()) {
-      <mat-progress-bar mode="indeterminate" />
-    }
+  <div class="login-shell">
+    <mat-card class="login-card" appearance="outlined">
+      <!-- Brand pane: decorative, hidden on phones where the form takes the full width -->
+      <aside class="login-brand">
+        <div class="login-brand-header">
+          <div class="login-logo">
+            <span class="material-symbols-outlined" aria-hidden="true">description</span>
+          </div>
+          <h2 class="login-brand-title">CV Management</h2>
+          <p class="login-brand-tagline">
+            One place for every profile, version and approval
+          </p>
+        </div>
 
-    <mat-card-header class="login-header">
-      <mat-card-title>CV Management </mat-card-title>
-      <mat-card-subtitle>Sign in to continue</mat-card-subtitle>
-    </mat-card-header>
+        <ul class="login-highlights">
+          <li>
+            <span class="material-symbols-outlined highlight-icon" aria-hidden="true">history</span>
+            <span>Versioned CVs with full history</span>
+          </li>
+          <li>
+            <span class="material-symbols-outlined highlight-icon" aria-hidden="true">verified</span>
+            <span>Two-level review before publishing</span>
+          </li>
+          <li>
+            <span class="material-symbols-outlined highlight-icon" aria-hidden="true">translate</span>
+            <span>Vietnamese, English and Japanese</span>
+          </li>
+        </ul>
 
-    <mat-card-content>
-      <form class="login-form" [formGroup]="form" (ngSubmit)="submit()">
-        <mat-form-field appearance="outline">
-          <mat-label>Username</mat-label>
-          <input
-            matInput
-            formControlName="username"
-            autocomplete="username"
-            autocapitalize="none"
-            spellcheck="false"
-          />
-          @if (form.controls.username.hasError('required') && form.controls.username.touched) {
-            <mat-error>Enter your username</mat-error>
+        <div class="login-brand-footer">
+          <span class="login-brand-badge">
+            <span class="material-symbols-outlined" aria-hidden="true">verified_user</span>
+            <span>Enterprise CV Platform</span>
+          </span>
+        </div>
+      </aside>
+
+      <section class="login-panel">
+        <div class="login-progress" aria-hidden="true">
+          @if (submitting()) {
+            <mat-progress-bar mode="indeterminate" />
           }
-        </mat-form-field>
+        </div>
 
-        <mat-form-field appearance="outline">
-          <mat-label>Password</mat-label>
-          <input
-            matInput
-            formControlName="password"
-            [type]="passwordVisible() ? 'text' : 'password'"
-            autocomplete="current-password"
-          />
-          <button
-            mat-icon-button
-            matSuffix
-            type="button"
-            (click)="passwordVisible.set(!passwordVisible())"
-            [attr.aria-label]="passwordVisible() ? 'Hide password' : 'Show password'"
-          >
-            <span class="material-symbols-outlined">
-              {{ passwordVisible() ? 'visibility_off' : 'visibility' }}
-            </span>
-          </button>
-          @if (form.controls.password.hasError('required') && form.controls.password.touched) {
-            <mat-error>Enter your password</mat-error>
-          }
-        </mat-form-field>
+        <div class="login-panel-body">
+          <div class="login-panel-content">
+            <header class="login-heading">
+              <div class="login-logo login-logo-compact" aria-hidden="true">
+                <span class="material-symbols-outlined">description</span>
+              </div>
+              <h1>Welcome back</h1>
+              <p>Sign in with your company account to continue</p>
+            </header>
 
-        @if (failureMessage(); as message) {
-          <p class="login-failure" role="alert">{{ message }}</p>
-        }
+            <form class="login-form" [formGroup]="form" (ngSubmit)="submit()">
+              <mat-form-field appearance="outline">
+                <mat-label>Username</mat-label>
+                <span class="material-symbols-outlined login-field-icon" matPrefix aria-hidden="true">person</span>
+                <input
+                  matInput
+                  formControlName="username"
+                  autocomplete="username"
+                  autocapitalize="none"
+                  spellcheck="false"
+                />
+                @if (form.controls.username.hasError('required') && form.controls.username.touched) {
+                  <mat-error>Enter your username</mat-error>
+                }
+              </mat-form-field>
 
-        <button
-          mat-flat-button
-          color="primary"
-          type="submit"
-          [disabled]="submitting() || form.invalid"
-        >
-          Sign in
-        </button>
-      </form>
-    </mat-card-content>
+              <mat-form-field appearance="outline">
+                <mat-label>Password</mat-label>
+                <span class="material-symbols-outlined login-field-icon" matPrefix aria-hidden="true">lock</span>
+                <input
+                  matInput
+                  formControlName="password"
+                  [type]="passwordVisible() ? 'text' : 'password'"
+                  autocomplete="current-password"
+                />
+                <button
+                  mat-icon-button
+                  matSuffix
+                  type="button"
+                  (click)="passwordVisible.set(!passwordVisible())"
+                  [attr.aria-label]="passwordVisible() ? 'Hide password' : 'Show password'"
+                >
+                  <span class="material-symbols-outlined">
+                    {{ passwordVisible() ? 'visibility_off' : 'visibility' }}
+                  </span>
+                </button>
+                @if (form.controls.password.hasError('required') && form.controls.password.touched) {
+                  <mat-error>Enter your password</mat-error>
+                }
+              </mat-form-field>
 
-    @if (googleEnabled) {
-      <mat-card-content class="login-google">
-        <div #googleButton></div>
-      </mat-card-content>
-    }
+              @if (failureMessage(); as message) {
+                <p class="login-failure" role="alert">
+                  <span class="material-symbols-outlined" aria-hidden="true">
+                    {{ lockoutRemaining() > 0 ? 'lock_clock' : 'error' }}
+                  </span>
+                  <span>{{ message }}</span>
+                </p>
+              }
 
-    <mat-card-footer class="login-footer">
-      <small>Forgotten your password? Ask an administrator to reset it</small>
-    </mat-card-footer>
-  </mat-card>
+              <button
+                class="login-submit"
+                mat-flat-button
+                color="primary"
+                type="submit"
+                [disabled]="submitting() || form.invalid"
+              >
+                {{ submitting() ? 'Signing in…' : 'Sign in' }}
+              </button>
+            </form>
+
+            @if (googleEnabled) {
+              <div class="login-divider"><span>or</span></div>
+              <div class="login-google">
+                <div #googleButton></div>
+              </div>
+            }
+          </div>
+
+          <p class="login-footer">
+            <span class="material-symbols-outlined" aria-hidden="true">help</span>
+            <span>Forgotten your password? Ask an administrator to reset it</span>
+          </p>
+        </div>
+      </section>
+    </mat-card>
+  </div>
 </div>

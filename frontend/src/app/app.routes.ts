@@ -95,7 +95,7 @@ export const routes: Routes = [
         canActivate: [roleGuard(UserRole.Admin, UserRole.HR)],
         title: 'Skill',
         loadComponent: () =>
-          import('./core/pages/skills/skills.component')
+          import('./core/pages/settings/skills/skills.component')
             .then(m => m.SkillsComponent),
       },
       {

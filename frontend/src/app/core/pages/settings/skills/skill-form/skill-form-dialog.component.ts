@@ -1,9 +1,9 @@
 import { ChangeDetectionStrategy, Component, computed, HostListener, inject, input, OnInit, output, signal } from "@angular/core";
 import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from "@angular/forms";
-import { SkillDialogState } from "../../../models/skill-page.model";
-import { SkillRequest } from "../../../dtos/skill.dto";
+import { SkillDialogState } from "../../../../models/skill-page.model";
+import { SkillRequest } from "../../../../dtos/skill.dto";
 import { toSignal } from "@angular/core/rxjs-interop";
-import { DialogMode } from "../../../enums/dialog-mode.enum";
+import { DialogMode } from "../../../../enums/dialog-mode.enum";
 
 /*
  * Add / edit one catalogue skill. Rendered inline by the page, not via MatDialog.
