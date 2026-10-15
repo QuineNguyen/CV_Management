@@ -40,6 +40,9 @@ public final class ApiPath {
     public static final String OPTIONS = "/options";
     public static final String SEARCH_FILTERS = "/search-filters";
 
+    // Skill catalogue: drag and drop target
+    public static final String SKILL_POSITION = "/{id}/position";
+
     // Signed PDF links (public); the regex keeps ".pdf" in fileName
     public static final String PDF_LINKS = "/pdf-links";
     public static final String PDF_LINK_FILE = "/{token}/{fileName:.+}";
@@ -98,6 +101,14 @@ public final class ApiPath {
     public static final String DASHBOARD_ADMIN = "/admin";
     public static final String DASHBOARD_TECH_LEAD = "/tech-lead";
     public static final String DASHBOARD_EMPLOYEE = "/employee";
+
+    // System configuration (Admin)
+    public static final String SYSTEM_CONFIGS = "/system-configs";
+
+    // Audit logs (Admin)
+    public static final String AUDIT_LOGS = "/audit-logs";
+    public static final String AUDIT_LOG_ACTIONS = "/actions";
+    public static final String AUDIT_LOG_TARGET_TYPES = "/target-types";
 
     private ApiPath() {}
 }

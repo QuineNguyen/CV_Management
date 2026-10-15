@@ -22,9 +22,6 @@ public abstract class ApiException extends RuntimeException {
 
     /** 400 — the request itself is malformed. */
     public static class BadRequestException extends ApiException {
-        public BadRequestException(String message) {
-            super(HttpStatus.BAD_REQUEST, ErrorCode.BAD_REQUEST.code(), message);
-        }
         /*
          * Keeps a specific code on an 400. "Image too large" and "only JPEG and PNG" lead the user
          * to two different actions, so they must not both arrive as BAD_REQUEST.

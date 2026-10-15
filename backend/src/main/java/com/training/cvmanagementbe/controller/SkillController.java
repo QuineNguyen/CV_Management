@@ -2,6 +2,7 @@ package com.training.cvmanagementbe.controller;
 
 import com.training.cvmanagementbe.constant.ApiPath;
 import com.training.cvmanagementbe.constant.PageDefaults;
+import com.training.cvmanagementbe.dto.request.skills.MoveSkillRequest;
 import com.training.cvmanagementbe.dto.request.skills.SkillRequest;
 import com.training.cvmanagementbe.dto.response.configs.PagedResponse;
 import com.training.cvmanagementbe.dto.response.skills.SkillOptionResponse;
@@ -23,7 +24,7 @@ import java.util.UUID;
 
 @RestController
 @RequiredArgsConstructor
-@Tag(name = "Skills", description = "Shared skill catalogue - add and edit only, never delete")
+@Tag(name = "Skills", description = "Shared skill catalogue - add, edit and reorder only, never delete")
 public class SkillController {
 
     // Catalogue order used by every picker
@@ -57,9 +58,9 @@ public class SkillController {
             @RequestParam(defaultValue = "ASC") Sort.Direction direction
     ) {
         Sort sort = Sort.by(direction, sortBy.getProperty());
-        // Equal display orders still read alphabetically
+        // Equal display orders still read alphabetically. Sort is immutable: and() returns a new one
         if (sortBy != SkillSortField.NAME) {
-            sort.and(Sort.by(SkillSortField.NAME.getProperty()));
+            sort = sort.and(Sort.by(SkillSortField.NAME.getProperty()));
         }
 
         Pageable pageable = PageRequest.of(PageDefaults.clampPage(page), PageDefaults.clampSize(size), sort);
@@ -80,5 +81,13 @@ public class SkillController {
     public ResponseEntity<SkillResponse> update(@PathVariable UUID id,
                                                 @Valid @RequestBody SkillRequest request) {
         return ResponseEntity.ok(skillService.update(id, request));
+    }
+
+    @PutMapping(ApiPath.SKILLS + ApiPath.SKILL_POSITION)
+    @Operation(summary = "Move a skill to a position in catalogue order; the catalogue is renumbered (Admin/HR)")
+    public ResponseEntity<Void> move(@PathVariable UUID id,
+                                     @Valid @RequestBody MoveSkillRequest request) {
+        skillService.move(id, request);
+        return ResponseEntity.noContent().build();
     }
 }

@@ -1,5 +1,6 @@
 package com.training.cvmanagementbe.service;
 
+import com.training.cvmanagementbe.dto.request.skills.MoveSkillRequest;
 import com.training.cvmanagementbe.dto.request.skills.SkillRequest;
 import com.training.cvmanagementbe.dto.response.configs.PagedResponse;
 import com.training.cvmanagementbe.dto.response.skills.SkillOptionResponse;
@@ -21,6 +22,8 @@ public interface SkillService {
     SkillResponse create(SkillRequest request);
 
     SkillResponse update(UUID id, SkillRequest request);
+
+    void move(UUID id, MoveSkillRequest request);
 
     /*
      * Points every skills entry of the content at a catalogue row, creating rows for names typed
