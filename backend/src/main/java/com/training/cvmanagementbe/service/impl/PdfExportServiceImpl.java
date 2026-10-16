@@ -469,7 +469,11 @@ public class PdfExportServiceImpl implements PdfExportService {
         );
     }
 
-    // The file name doubles as the PDF Title, so the viewer tab matches the saved file
+    /*
+     * The file name doubles as the PDF Title, so the viewer tab matches the saved file.
+     * The photo is embedded as a data: URI, never a presigned URL: The renderer runs inside the
+     * backend container, where the browser's MinIO address is unreachable.
+     */
     private CvPdfFile render(PdfExportTarget target) {
         // Skill names come from the catalogue, so a rename reaches PDFs of older versions too
         CvContent content = skillService.applyCatalogNames(codec.read(target.version().getContentJson()));
@@ -477,7 +481,7 @@ public class PdfExportServiceImpl implements PdfExportService {
         CvPdfContext context = toContext(
                 content,
                 target.locale(),
-                avatarUrlResolver.resolve(target.version().getAvatarImageId()),
+                avatarUrlResolver.resolveDataUri(target.version().getAvatarImageId()),
                 target.fileName()
         );
         return new CvPdfFile(target.fileName(), render(PdfTemplate.STANDARD_CV, context));
