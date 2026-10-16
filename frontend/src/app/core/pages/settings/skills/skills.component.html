@@ -35,7 +35,12 @@
 
   <p class="notice catalog-notice">
     Skills cannot be deleted — CVs already sent to customers point at them.
-    To retire a skill, give it a large display order so it sinks to the bottom
+    @if (canReorder()) {
+      Drag <span class="handle-glyph" aria-hidden="true">⠿</span> to reorder; a skill no longer used
+      can be dragged to the bottom
+    } @else {
+      Clear the search and sort by Order to reorder by dragging
+    }
   </p>
 
   <!-- Body -->
@@ -61,10 +66,11 @@
   } @else {
 
     <!-- Table: laptop and desktop -->
-    <div class="data-table-wrap">
+    <div class="data-table-wrap" [class.is-busy]="reordering()">
       <table class="data-table">
         <thead>
           <tr>
+            <th scope="col" class="col-handle"><span class="sr-only">Reorder</span></th>
             <th scope="col" class="col-order" [attr.aria-sort]="ariaSort(sortField.DisplayOrder)">
               <button type="button" class="sort-header" (click)="toggleSort(sortField.DisplayOrder)">
                 Order
@@ -89,9 +95,22 @@
             <th scope="col" class="col-actions">Actions</th>
           </tr>
         </thead>
-        <tbody>
+        <!-- Preview stays inside the table so the dragged row keeps its column widths -->
+        <tbody cdkDropList
+               cdkDropListLockAxis="y"
+               [cdkDropListData]="skills()"
+               [cdkDropListDisabled]="dragDisabled()"
+               (cdkDropListDropped)="onDrop($event)">
           @for (skill of skills(); track skill.id) {
-            <tr>
+            <tr cdkDrag cdkDragPreviewContainer="parent">
+              <td class="col-handle">
+                <!-- Tooltip on a wrapper: a disabled button fires no hover events -->
+                <span class="handle-host" [matTooltip]="handleHint()">
+                  <button type="button" class="drag-handle" cdkDragHandle
+                          [disabled]="dragDisabled()"
+                          [attr.aria-label]="'Reorder ' + skill.name">⠿</button>
+                </span>
+              </td>
               <td class="col-order">{{ skill.displayOrder }}</td>
               <td class="col-code"><span class="code-chip">{{ skill.code }}</span></td>
               <td class="col-name"><span class="cell-strong">{{ skill.name }}</span></td>
@@ -114,13 +133,24 @@
     </div>
 
     <!-- Cards: iPad and phone -->
-    <ul class="data-cards">
+    <ul class="data-cards"
+        [class.is-busy]="reordering()"
+        cdkDropList
+        cdkDropListLockAxis="y"
+        [cdkDropListData]="skills()"
+        [cdkDropListDisabled]="dragDisabled()"
+        (cdkDropListDropped)="onDrop($event)">
       @for (skill of skills(); track skill.id) {
-        <li class="data-card">
+        <li class="data-card" cdkDrag>
           <div class="data-card-head">
-            <div class="data-card-text">
-              <p class="data-card-title">{{ skill.name }}</p>
-              <p class="data-card-line is-mono">{{ skill.code }}</p>
+            <div class="data-card-identity">
+              <button type="button" class="drag-handle" cdkDragHandle
+                      [disabled]="dragDisabled()"
+                      [attr.aria-label]="'Reorder ' + skill.name">⠿</button>
+              <div class="data-card-text">
+                <p class="data-card-title">{{ skill.name }}</p>
+                <p class="data-card-line is-mono">{{ skill.code }}</p>
+              </div>
             </div>
             <div class="row-actions">
               <button type="button" class="icon-btn" matTooltip="Edit skill" (click)="openEdit(skill)">✎</button>
@@ -152,6 +182,7 @@
       [pageSize]="pageState().size"
       [pageSizeOptions]="pageSizeOptions"
       showFirstLastButtons
+      [disabled]="reordering()"
       (page)="onPageChange($event)" />
   }
 </section>

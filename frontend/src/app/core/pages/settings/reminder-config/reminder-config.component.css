@@ -1,0 +1,154 @@
+:host {
+  display: block;
+  color: var(--vt-ink);
+  /* A settings form reads better narrow than at full list width */
+  --vt-page-max: min(56rem, 100%);
+}
+
+/* ---------- Card ---------- */
+.config-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--vt-gap);
+  padding: var(--vt-pad);
+  background: var(--vt-surface);
+  border: 0.0625rem solid var(--vt-line);
+  border-radius: var(--vt-radius-md);
+}
+
+.config-card-head {
+  display: flex;
+  align-items: flex-start;
+  gap: calc(var(--vt-gap) * 0.75);
+  padding-block-end: calc(var(--vt-gap) * 0.75);
+  border-block-end: 0.0625rem solid var(--vt-line);
+}
+
+.config-card-icon {
+  flex: 0 0 auto;
+  width: clamp(2.25rem, 6vw, 2.75rem);
+  height: clamp(2.25rem, 6vw, 2.75rem);
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--vt-red-tint);
+  color: var(--vt-red);
+  font-size: clamp(1.125rem, 3vw, 1.375rem);
+}
+
+.config-card-text {
+  min-width: 0;
+}
+
+.config-card-title {
+  margin: 0;
+  font-size: var(--vt-fs-md);
+  font-weight: 700;
+}
+
+.config-card-hint {
+  margin: 0.25rem 0 0;
+  font-size: var(--vt-fs-sm);
+  color: var(--vt-ink-muted);
+  line-height: 1.5;
+}
+
+/* ---------- Toggle row ---------- */
+.config-toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--vt-gap);
+  min-height: var(--vt-touch-target);
+  padding: calc(var(--vt-gap) * 0.6) calc(var(--vt-gap) * 0.8);
+  border-radius: var(--vt-radius-sm);
+  background: var(--vt-canvas);
+}
+
+.config-toggle-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  min-width: 0;
+}
+
+/* Fields still editable while reminders are off, only dimmed */
+.form-grid.is-muted {
+  opacity: 0.7;
+}
+
+/* ---------- Custom Select (Department style) ---------- */
+.field.custom-select-wrap {
+  position: relative;
+}
+
+.field:has(.custom-select-panel) {
+  z-index: 40;
+}
+
+.custom-select-trigger {
+  width: 100%;
+}
+
+.custom-select-trigger:disabled {
+  background: var(--vt-canvas) !important;
+  color: var(--vt-ink-muted) !important;
+  cursor: not-allowed !important;
+  opacity: 0.7;
+}
+
+.custom-select-trigger:disabled::after {
+  opacity: 0.4;
+}
+
+/* ---------- Number with unit ---------- */
+.input-suffix-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.input-with-suffix {
+  padding-inline-end: 3.5rem;
+}
+
+.input-suffix {
+  position: absolute;
+  inset-inline-end: calc(var(--vt-gap) * 0.75);
+  font-size: var(--vt-fs-sm);
+  color: var(--vt-ink-muted);
+  pointer-events: none;
+}
+
+/* ---------- Notices ---------- */
+.config-notice {
+  margin: 0;
+}
+
+.config-notice-change {
+  display: block;
+  margin-block-start: 0.375rem;
+  font-weight: 600;
+}
+
+/* ---------- Actions ---------- */
+.config-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: calc(var(--vt-gap) * 0.5);
+}
+
+@media (max-width: 40rem) {
+  .config-toggle-row {
+    align-items: flex-start;
+  }
+
+  .config-actions {
+    flex-direction: column-reverse;
+  }
+
+  .config-actions .btn {
+    width: 100%;
+  }
+}

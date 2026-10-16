@@ -136,6 +136,8 @@ export class ShellComponent {
       icon: NavIconEnum.SettingsGroup,
       children: [
         { label: 'Skill Catalog', icon: NavIconEnum.SkillCatalog, route: AppRoute.Skills, roles: [UserRole.Admin, UserRole.HR] },
+        { label: 'Reminder & SLA', icon: NavIconEnum.ReminderConfig, route: AppRoute.ReminderConfig, roles: [UserRole.Admin] },
+        { label: 'Audit Logs', icon: NavIconEnum.AuditLogs, route: AppRoute.AuditLogs, roles: [UserRole.Admin] },
       ],
     },
   ];

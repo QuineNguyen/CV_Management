@@ -201,6 +201,28 @@ public class SkillServiceImpl implements SkillService {
         return codec.mapSkillIds(content, ref -> resolve(ref, existing, resolvedByName));
     }
 
+    /*
+     * skill_id is the reference; the name stored beside it is only what was shown when the content
+     * was saved. Every read that displays content goes through here, so a catalogue rename reaches
+     * published versions and PDFs without rewriting them.
+     */
+    @Override
+    public CvContent applyCatalogNames(CvContent content) {
+        if (content == null) {
+            return null;
+        }
+        Set<UUID> ids = codec.skillRefsOf(content).stream()
+                .map(SkillRef::skillId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+        if (ids.isEmpty()) {
+            return content;
+        }
+        Map<UUID, String> names = skillRepository.findAllById(ids).stream()
+                .collect(Collectors.toMap(Skill::getId, Skill::getName));
+        return codec.mapSkillNames(content, names);
+    }
+
     // ---------- Catalogue linking ----------
 
     /*

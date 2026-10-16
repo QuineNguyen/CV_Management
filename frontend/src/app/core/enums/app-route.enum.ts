@@ -14,7 +14,6 @@ export enum AppRoute {
     CvsNew = 'cvs/new',
     CvsDeleted = 'cvs/deleted',
     CvsSearch = 'cvs/search',
-    Skills = 'settings/skills',
     MyProfile = 'my-profile',
     ProfileUpdateRequests = 'profile-update-requests',
     Approvals = 'approvals',
@@ -24,4 +23,9 @@ export enum AppRoute {
     UpdateRequests = 'update-requests',
     BatchRequests = 'batch-requests',
     BatchCreate = 'batch-requests/new',
+    Settings = 'settings',
+    Skills = 'settings/skills',
+    ReminderConfig = 'settings/reminder-config',
+    AuditLogs = 'settings/audit-logs',
+    LegacySkills = 'skills',
 }

@@ -25,6 +25,10 @@ export interface SkillRequest {
     displayOrder: number;
 }
 
+export interface MoveSkillRequest {
+    targetIndex: number;
+}
+
 export interface SkillSearchQuery {
     keyword?: string;
     sortBy?: SkillSortField;

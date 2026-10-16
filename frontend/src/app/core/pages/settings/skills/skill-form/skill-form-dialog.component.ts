@@ -8,8 +8,8 @@ import { DialogMode } from "../../../../enums/dialog-mode.enum";
 /*
  * Add / edit one catalogue skill. Rendered inline by the page, not via MatDialog.
  * - Code is UPPER_SNAKE_CASE; typing is upper-cased and spaces become underscores as you go.
- * - Renaming a skill that CVs use changes how every published version shows it,
- * so the dialog says how many CVs are affected before saving.
+ * - CVs store the skill id, not its name, so a rename changes every published version and every
+ * PDF exported later. Saving a new name therefore asks for an explicit confirmation first.
  */
 @Component({
     selector: 'app-skill-form-dialog',
@@ -40,6 +40,10 @@ export class SkillFormDialogComponent implements OnInit {
     readonly isClosing = signal(false);
     private backdropMouseDownTarget: EventTarget | null = null;
 
+    // Body waiting for the rename confirmation; null when no confirmation is open
+    readonly pendingRename = signal<SkillRequest | null>(null);
+    private confirmMouseDownTarget: EventTarget | null = null;
+
     readonly form = this.fb.group({
         code: ['', [
             Validators.required,
@@ -59,6 +63,7 @@ export class SkillFormDialogComponent implements OnInit {
     readonly isEdit = computed(() => this.state().mode === DialogMode.Edit);
     readonly title = computed(() => (this.isEdit() ? 'Edit skill' : 'Add skill'));
     readonly usedBy = computed(() => this.state().skill?.cvCount ?? 0);
+    readonly originalName = computed(() => this.state().skill?.name ?? '');
 
     // CVs whose display changes if this name is saved
     readonly renameImpact = computed(() => {
@@ -66,7 +71,7 @@ export class SkillFormDialogComponent implements OnInit {
         if (!skill || skill.cvCount === 0) {
             return 0;
         }
-        return this.nameValue().trim() !== skill.name ? skill.cvCount : 0;
+        return SkillFormDialogComponent.normaliseName(this.nameValue()) !== skill.name ? skill.cvCount : 0;
     });
 
     ngOnInit(): void {
@@ -96,11 +101,45 @@ export class SkillFormDialogComponent implements OnInit {
             return;
         }
         const value = this.form.getRawValue();
-        this.saved.emit({
+        const body: SkillRequest = {
             code: value.code.trim(),
-            name: value.name.trim().replace(/\s+/g, ' '),
+            name: SkillFormDialogComponent.normaliseName(value.name),
             displayOrder: Number(value.displayOrder),
-        });
+        };
+
+        // Any rename, used or not: older versions outside the usage count may still show it
+        if (this.isEdit() && body.name !== this.originalName()) {
+            this.pendingRename.set(body);
+            return;
+        }
+        this.saved.emit(body);
+    }
+
+    // ---------- Rename confirmation ----------
+
+    confirmRename(): void {
+        const body = this.pendingRename();
+        if (!body) {
+            return;
+        }
+        this.pendingRename.set(null);
+        this.saved.emit(body);
+    }
+
+    // Back to the form with the typed values kept
+    keepEditing(): void {
+        this.pendingRename.set(null);
+    }
+
+    onConfirmBackdropMouseDown(event: MouseEvent): void {
+        this.confirmMouseDownTarget = event.target;
+    }
+
+    onConfirmBackdropClick(event: MouseEvent): void {
+        if (event.target === event.currentTarget && this.confirmMouseDownTarget === event.currentTarget) {
+            this.keepEditing();
+        }
+        this.confirmMouseDownTarget = null;
     }
 
     // ---------- Closing ----------
@@ -125,8 +164,18 @@ export class SkillFormDialogComponent implements OnInit {
         this.backdropMouseDownTarget = null;
     }
 
+    // Escape steps back one level: the confirmation first, then the dialog
     @HostListener('document:keydown.escape')
     onEscape(): void {
+        if (this.pendingRename()) {
+            this.keepEditing();
+            return;
+        }
         this.cancel();
+    }
+
+    // Trimmed with inner whitespace collapsed, the same rule as the server
+    private static normaliseName(name: string): string {
+        return name.trim().replace(/\s+/g, ' ');
     }
 }

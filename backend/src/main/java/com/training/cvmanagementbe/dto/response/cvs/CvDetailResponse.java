@@ -1,6 +1,7 @@
 package com.training.cvmanagementbe.dto.response.cvs;
 
 import com.training.cvmanagementbe.record.cvs.CvContent;
+import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.util.UUID;
 
@@ -12,6 +13,7 @@ import java.util.UUID;
  * - openDraft is what the edit screen loads. Seeding the editor from the published
  * version instead would silently discard work an employee saved and came back to.
  */
+@Schema(name = "CvDetailResponse", description = "Response body for a CV with its current version and content")
 public record CvDetailResponse(
         CvResponse cv,
         CvVersionSummary currentVersion,

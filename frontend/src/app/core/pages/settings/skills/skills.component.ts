@@ -13,18 +13,21 @@ import { debounceTime, map } from "rxjs";
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 import { DialogMode } from "../../../enums/dialog-mode.enum";
 import { SkillFormDialogComponent } from "./skill-form/skill-form-dialog.component";
+import { CdkDrag, CdkDragDrop, CdkDragHandle, CdkDropList, moveItemInArray } from "@angular/cdk/drag-drop";
 
 /*
  * Skill catalogue management (Admin/HR).
- * - Add and edit only: the delete action does not exist. Unused skills are pushed down
+ * - Add, edit and reorder only: the delete action does not exist. Unused skills are pushed down
  * by display order instead.
  * - "CVs using" counts the latest published version of active CVs - the scope of the CV search
  * skill filter, so both screens give the same number.
+ * - Drag and drop works in catalogue order with no search, so the position on screen is the
+ * position in the catalogue. The server renumbers every skill in steps of 10.
  */
 @Component({
     selector: 'app-skills',
     standalone: true,
-    imports: [ReactiveFormsModule, MatPaginatorModule, MatTooltipModule, DatePipe, SkillFormDialogComponent],
+    imports: [ReactiveFormsModule, MatPaginatorModule, MatTooltipModule, DatePipe, CdkDropList, CdkDrag, CdkDragHandle, SkillFormDialogComponent],
     templateUrl: './skills.component.html',
     styleUrl: './skills.component.css',
     changeDetection: ChangeDetectionStrategy.OnPush,
@@ -60,9 +63,24 @@ export class SkillsComponent implements OnInit {
 
     readonly dialogState = signal<SkillDialogState | null>(null);
     readonly saving = signal(false);
+    readonly reordering = signal(false);
 
     readonly isEmpty = computed(() => !this.loading() && this.skills().length === 0);
     readonly hasFilters = computed(() => this.keyword().length > 0);
+
+    // A filtered or re-sorted list would make the drop position mean nothing in the catalogue
+    readonly canReorder = computed(() => {
+        const current = this.sort();
+        return !this.hasFilters()
+            && current.field === SkillsComponent.DEFAULT_SORT.field
+            && current.direction === SkillsComponent.DEFAULT_SORT.direction;
+    });
+
+    readonly dragDisabled = computed(() => !this.canReorder() || this.reordering());
+
+    readonly handleHint = computed(() => this.canReorder()
+        ? 'Drag to reorder'
+        : 'Clear the search and sort by Order to reorder');
 
     ngOnInit(): void {
         this.watchKeyword();
@@ -140,6 +158,40 @@ export class SkillsComponent implements OnInit {
             return SortIcon.None;
         }
         return current.direction === SortDirection.Asc ? SortIcon.Up : SortIcon.Down;
+    }
+
+    // ---------- Drag and drop ----------
+
+    /*
+     * The row stays where it was dropped while the server renumbers; the reload then shows the new
+     * numbers. On failure the reload puts the row back where the server still has it.
+     */
+    onDrop(event: CdkDragDrop<SkillResponse[]>): void {
+        if (event.previousIndex === event.currentIndex || this.dragDisabled()) {
+            return;
+        }
+        const skill = this.skills()[event.previousIndex];
+        const { index, size } = this.pageState();
+        const targetIndex = index * size + event.currentIndex;
+
+        this.skills.update(list => {
+            const next = [...list];
+            moveItemInArray(next, event.previousIndex, event.currentIndex);
+            return next;
+        });
+
+        this.reordering.set(true);
+        this.skillService.move(skill.id, { targetIndex }).subscribe({
+            next: () => {
+                this.reordering.set(false);
+                this.toast.success(`${skill.name} moved`);
+                this.load(false);
+            },
+            error: () => {
+                this.reordering.set(false);
+                this.load(false);
+            },
+        });
     }
 
     // ---------- Create / edit ----------

@@ -1,0 +1,175 @@
+<section class="page">
+
+  <!-- Toolbar -->
+  <header class="page-toolbar">
+    <div class="page-heading">
+      <h1 class="page-title">Reminder &amp; SLA</h1>
+      <p class="page-subtitle">
+        @if (saved()?.updatedAt; as updatedAt) {
+          Last changed by {{ saved()?.updatedByName ?? '—' }} on {{ updatedAt | date:'dd/MM/yyyy HH:mm' }}
+        } @else {
+          Default values, not edited yet
+        }
+      </p>
+    </div>
+  </header>
+
+  <!-- Body -->
+  @if (loading()) {
+    <div class="skeleton-stack" aria-busy="true">
+      @for (row of [1, 2, 3, 4]; track row) {
+        <div class="skeleton-row"></div>
+      }
+    </div>
+  } @else if (loadFailed()) {
+    <div class="empty-state">
+      <p class="empty-state-title">Settings could not be loaded</p>
+      <p class="empty-state-hint">Check your connection, then try again</p>
+      <button type="button" class="btn btn-primary" (click)="load()">Retry</button>
+    </div>
+  } @else {
+    <form class="form" [formGroup]="form" (ngSubmit)="save()" novalidate>
+
+      <!-- Block 1: daily reminder job -->
+      <section class="config-card" aria-labelledby="reminder-heading">
+        <header class="config-card-head">
+          <span class="material-symbols-outlined config-card-icon" aria-hidden="true">schedule_send</span>
+          <div class="config-card-text">
+            <h2 class="config-card-title" id="reminder-heading">Automatic reminders</h2>
+            <p class="config-card-hint">
+              A daily job emails employees about update requests near their deadline and
+              reviewers about approvals past their SLA
+            </p>
+          </div>
+        </header>
+
+        <div class="config-toggle-row">
+          <div class="config-toggle-text">
+            <span class="field-label" id="reminder-toggle-label">Send reminders</span>
+            <span class="field-hint">When off, the daily job sends no reminder and no overdue digest</span>
+          </div>
+          <mat-slide-toggle formControlName="reminderEnabled" aria-labelledby="reminder-toggle-label" />
+        </div>
+
+        <div class="form-grid" [class.is-muted]="!remindersOn()">
+          <div class="field custom-select-wrap">
+            <span class="field-label" id="send-time-label">Send time <span class="field-required">*</span></span>
+
+            <button type="button"
+                    class="field-input custom-select-trigger"
+                    [class.is-open]="hourDropdownOpen()"
+                    [disabled]="!remindersOn()"
+                    (click)="toggleHourDropdown($event)"
+                    aria-haspopup="listbox"
+                    aria-labelledby="send-time-label"
+                    [attr.aria-expanded]="hourDropdownOpen()">
+              <span class="custom-select-label">{{ selectedHourLabel() }}</span>
+            </button>
+
+            @if (hourDropdownOpen()) {
+              <div class="custom-select-panel" (click)="$event.stopPropagation()">
+                <ul class="custom-select-list" role="listbox">
+                  @for (hour of hourOptions; track hour.value) {
+                    <li role="option" [attr.aria-selected]="form.controls.reminderSendHour.value === hour.value">
+                      <button type="button"
+                              class="custom-select-option"
+                              [class.is-selected]="form.controls.reminderSendHour.value === hour.value"
+                              (click)="selectHour(hour.value)">
+                        {{ hour.label }}
+                      </button>
+                    </li>
+                  }
+                </ul>
+              </div>
+            }
+            <span class="field-hint">Server time zone. The next run uses the new hour</span>
+          </div>
+
+          <label class="field">
+            <span class="field-label">Escalation threshold <span class="field-required">*</span></span>
+            <span class="input-suffix-wrap">
+              <input type="number"
+                     class="field-input input-with-suffix"
+                     formControlName="escalationThresholdDays"
+                     [min]="limits.minDays"
+                     [max]="limits.maxDays"
+                     step="1"
+                     inputmode="numeric" />
+              <span class="input-suffix" aria-hidden="true">days</span>
+            </span>
+            <span class="field-hint">Reminders start this many days before an update request is due</span>
+            @if (hasError('escalationThresholdDays', 'required')) {
+              <span class="field-error">Escalation threshold is required</span>
+            } @else if (hasError('escalationThresholdDays', 'min') || hasError('escalationThresholdDays', 'max')
+                        || hasError('escalationThresholdDays', 'pattern')) {
+              <span class="field-error">Use a whole number from {{ limits.minDays }} to {{ limits.maxDays }}</span>
+            }
+          </label>
+        </div>
+
+        @if (!remindersOn()) {
+          <p class="notice config-notice" role="status">
+            Reminders are off. The time and threshold are kept and apply again once reminders are turned back on
+          </p>
+        }
+      </section>
+
+      <!-- Block 2: approval SLA -->
+      <section class="config-card" aria-labelledby="sla-heading">
+        <header class="config-card-head">
+          <span class="material-symbols-outlined config-card-icon" aria-hidden="true">timer</span>
+          <div class="config-card-text">
+            <h2 class="config-card-title" id="sla-heading">Approval SLA</h2>
+            <p class="config-card-hint">
+              Days a reviewer has to act on a CV once assigned, for both Tech Lead and HR levels
+            </p>
+          </div>
+        </header>
+
+        <div class="form-grid">
+          <label class="field">
+            <span class="field-label">Review deadline <span class="field-required">*</span></span>
+            <span class="input-suffix-wrap">
+              <input type="number"
+                     class="field-input input-with-suffix"
+                     formControlName="approvalSlaDays"
+                     [min]="limits.minDays"
+                     [max]="limits.maxDays"
+                     step="1"
+                     inputmode="numeric" />
+              <span class="input-suffix" aria-hidden="true">days</span>
+            </span>
+            <span class="field-hint">Counted from the moment a reviewer is assigned</span>
+            @if (hasError('approvalSlaDays', 'required')) {
+              <span class="field-error">Review deadline is required</span>
+            } @else if (hasError('approvalSlaDays', 'min') || hasError('approvalSlaDays', 'max')
+                        || hasError('approvalSlaDays', 'pattern')) {
+              <span class="field-error">Use a whole number from {{ limits.minDays }} to {{ limits.maxDays }}</span>
+            }
+          </label>
+        </div>
+
+        <div class="notice notice-warning config-notice" role="note">
+          <strong>Not applied retroactively.</strong>
+          A new SLA counts only for approval assignments created after you save. Assignments already
+          waiting keep the deadline they were given
+          @if (slaChanged()) {
+            <span class="config-notice-change">
+              Pending reviews stay on {{ saved()?.approvalSlaDays }} day(s)
+            </span>
+          }
+        </div>
+      </section>
+
+      <!-- Actions -->
+      <div class="config-actions">
+        <button type="button" class="btn btn-ghost" (click)="discard()" [disabled]="saving() || !hasChanges()">
+          Discard changes
+        </button>
+        <button type="submit" class="btn btn-primary" [disabled]="saving() || !hasChanges()">
+          {{ saving() ? 'Saving...' : 'Save configuration' }}
+        </button>
+      </div>
+    </form>
+  }
+</section>

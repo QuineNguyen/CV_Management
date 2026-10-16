@@ -97,7 +97,7 @@ public class CvServiceImpl implements CvService {
         return new CvDetailResponse(
                 toResponse(cv, profile, resolveEmployeeName(profile.getEmployeeId()), current.orElse(null)),
                 current.map(this::toSummary).orElse(null),
-                current.map(version -> codec.read(version.getContentJson())).orElse(null),
+                current.map(version -> readForDisplay(version.getContentJson())).orElse(null),
                 avatarImageId,
                 avatarUrlResolver.resolve(avatarImageId),
                 openDraft,
@@ -181,9 +181,9 @@ public class CvServiceImpl implements CvService {
         CvVersion from = fromVersionId == null ? null : requireVersionOf(cvId, fromVersionId);
 
         ContentDiff diff = diffService.diff(
-                from == null ? null : codec.read(from.getContentJson()),
+                from == null ? null : readForDisplay(from.getContentJson()),
                 from == null ? null : from.getAvatarImageId(),
-                codec.read(to.getContentJson()),
+                readForDisplay(to.getContentJson()),
                 to.getAvatarImageId()
         );
 
@@ -730,6 +730,11 @@ public class CvServiceImpl implements CvService {
         return cvVersionRepository.findTopByCvIdOrderByVersionNumberDesc(cv.getId()).orElse(null);
     }
 
+    // Stored content with skill names taken from the catalogue, as every screen and PDF shows it.
+    private CvContent readForDisplay(String contentJson) {
+        return skillService.applyCatalogNames(codec.read(contentJson));
+    }
+
     /*
      * CANCELLED is terminal, so updated_by / updated_at of that row are the canceller and the moment
      * for good - no separate columns needed. A draft the owner discarded themselves yields nothing.
@@ -897,7 +902,7 @@ public class CvServiceImpl implements CvService {
     }
 
     private CvDraftResponse toDraftResponse(CvDraft draft) {
-        CvContent content = codec.read(draft.getContentJson());
+        CvContent content = readForDisplay(draft.getContentJson());
 
         return new CvDraftResponse(
                 draft.getId(),

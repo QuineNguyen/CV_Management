@@ -1,0 +1,101 @@
+<div class="modal-backdrop" [class.is-closing]="isClosing()"
+     (mousedown)="onBackdropMouseDown($event)" (click)="onBackdropClick($event)">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="audit-detail-title"
+       (click)="$event.stopPropagation()">
+    <h2 class="modal-title" id="audit-detail-title">Audit entry</h2>
+
+    @if (detail(); as entry) {
+
+      <!-- Who, when, on what -->
+      <div class="detail-head">
+        <span class="action-badge" [attr.data-tone]="tone()">{{ entry.action | enumLabel }}</span>
+        <span class="detail-time">{{ entry.createdAt | date:'dd/MM/yyyy HH:mm:ss' }}</span>
+      </div>
+
+      <dl class="data-card-facts detail-facts">
+        <div>
+          <dt>Performed by</dt>
+          <dd>
+            {{ entry.actorName ?? 'Unknown user' }}
+            @if (entry.actorEmail) {
+              <span class="detail-muted">{{ entry.actorEmail }}</span>
+            }
+          </dd>
+        </div>
+        <div>
+          <dt>Role at the time</dt>
+          <dd>{{ roleLabels[entry.actorRole] }}</dd>
+        </div>
+        <div>
+          <dt>Target</dt>
+          <dd>{{ entry.targetType | enumLabel }}</dd>
+        </div>
+        <div>
+          <dt>Target ID</dt>
+          <dd class="detail-id">
+            <code class="detail-id-value">{{ entry.targetId }}</code>
+            <button type="button" class="icon-btn" aria-label="Copy target ID" (click)="copyTargetId()">⧉</button>
+          </dd>
+        </div>
+      </dl>
+
+      <!-- Changed top-level fields, only when both values are JSON objects -->
+      @if (diffs().length > 0) {
+        <div class="detail-section">
+          <h3 class="detail-section-title">Changed fields</h3>
+          <div class="chip-list">
+            @for (diff of diffs(); track diff.key) {
+              <span class="diff-chip" [attr.data-change]="diff.change">{{ diff.key }}</span>
+            }
+          </div>
+        </div>
+      }
+
+      <!-- Old / new values -->
+      <div class="detail-section">
+        <div class="view-toggle detail-side-toggle" role="group" aria-label="Value shown">
+          <button type="button" class="view-toggle-btn"
+                  [class.is-active]="visibleSide() === valueSide.Old"
+                  [attr.aria-pressed]="visibleSide() === valueSide.Old"
+                  (click)="showSide(valueSide.Old)">Before</button>
+          <button type="button" class="view-toggle-btn"
+                  [class.is-active]="visibleSide() === valueSide.New"
+                  [attr.aria-pressed]="visibleSide() === valueSide.New"
+                  (click)="showSide(valueSide.New)">After</button>
+        </div>
+
+        <div class="value-grid">
+          <section class="value-pane" [class.is-hidden-compact]="visibleSide() !== valueSide.Old">
+            <h3 class="value-pane-title" data-change="REMOVED">Before</h3>
+            @if (oldText()) {
+              <pre class="value-code">{{ oldText() }}</pre>
+            } @else {
+              <p class="value-empty">No previous value — the target was created by this action</p>
+            }
+          </section>
+
+          <section class="value-pane" [class.is-hidden-compact]="visibleSide() !== valueSide.New">
+            <h3 class="value-pane-title" data-change="ADDED">After</h3>
+            @if (newText()) {
+              <pre class="value-code">{{ newText() }}</pre>
+            } @else {
+              <p class="value-empty">No new value recorded</p>
+            }
+          </section>
+        </div>
+      </div>
+    } @else if (loadFailed()) {
+      <p class="modal-body">This entry could not be loaded</p>
+    } @else {
+      <div class="skeleton-stack" aria-busy="true">
+        @for (row of [1, 2, 3]; track row) {
+          <div class="skeleton-row"></div>
+        }
+      </div>
+    }
+
+    <div class="modal-footer">
+      <button type="button" class="btn btn-primary" (click)="close()">Close</button>
+    </div>
+  </div>
+</div>

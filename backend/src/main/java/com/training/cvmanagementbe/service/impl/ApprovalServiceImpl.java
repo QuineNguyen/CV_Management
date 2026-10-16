@@ -22,6 +22,7 @@ import com.training.cvmanagementbe.record.cvs.CvContent;
 import com.training.cvmanagementbe.record.cvs.PublishCommand;
 import com.training.cvmanagementbe.repository.*;
 import com.training.cvmanagementbe.service.ApprovalService;
+import com.training.cvmanagementbe.service.SkillService;
 import com.training.cvmanagementbe.service.SystemConfigService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
@@ -104,6 +105,7 @@ public class ApprovalServiceImpl implements ApprovalService {
     private final AuditLogger auditLogger;
     private final ApplicationEventPublisher eventPublisher;
     private final SystemConfigService systemConfigService;
+    private final SkillService skillService;
     // Same zone-pinned clock as the reminder job, so due_at and "overdue" agree
     private final Clock clock;
 
@@ -265,7 +267,7 @@ public class ApprovalServiceImpl implements ApprovalService {
         LocalDateTime now = LocalDateTime.now(clock);
 
         return new DraftReviewResponse(
-                toResponse(draft, codec.read(draft.getContentJson())),
+                toResponse(draft, skillService.applyCatalogNames(codec.read(draft.getContentJson()))),
                 cv.getLanguage(),
                 profile.getName(),
                 names.get(profile.getEmployeeId()),

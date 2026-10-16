@@ -91,12 +91,38 @@ export const routes: Routes = [
             .then(m => m.CvSearchComponent),
       },
       {
+        path: AppRoute.Settings,
+        pathMatch: 'full',
+        redirectTo: AppRoute.Skills,
+      },
+      {
+        path: AppRoute.LegacySkills,
+        pathMatch: 'full',
+        redirectTo: AppRoute.Skills,
+      },
+      {
         path: AppRoute.Skills,
         canActivate: [roleGuard(UserRole.Admin, UserRole.HR)],
-        title: 'Skill',
+        title: 'Skill Catalog',
         loadComponent: () =>
           import('./core/pages/settings/skills/skills.component')
             .then(m => m.SkillsComponent),
+      },
+      {
+        path: AppRoute.ReminderConfig,
+        canActivate: [roleGuard(UserRole.Admin)],
+        title: 'Reminder & SLA Configuration',
+        loadComponent: () =>
+          import('./core/pages/settings/reminder-config/reminder-config.component')
+            .then(m => m.ReminderConfigComponent),
+      },
+      {
+        path: AppRoute.AuditLogs,
+        canActivate: [roleGuard(UserRole.Admin)],
+        title: 'Audit Logs',
+        loadComponent: () =>
+          import('./core/pages/settings/audit-logs/audit-logs.component')
+            .then(m => m.AuditLogsComponent),
       },
       {
         path: `${AppRoute.Cvs}/:id`,

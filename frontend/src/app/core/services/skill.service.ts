@@ -1,7 +1,7 @@
 import { HttpClient, HttpParams } from "@angular/common/http";
 import { inject, Injectable } from "@angular/core";
 import { environment } from "../../../environments/environment";
-import { SkillOptionQuery, SkillOptionResponse, SkillRequest, SkillResponse, SkillSearchQuery } from "../dtos/skill.dto";
+import { MoveSkillRequest, SkillOptionQuery, SkillOptionResponse, SkillRequest, SkillResponse, SkillSearchQuery } from "../dtos/skill.dto";
 import { Observable } from "rxjs";
 import { PagedResponse } from "../dtos/page.dto";
 import { ApiEndpoint } from "../enums/api-endpoint.enum";
@@ -51,5 +51,10 @@ export class SkillService {
 
     update(id: string, body: SkillRequest): Observable<SkillResponse> {
         return this.http.put<SkillResponse>(this.url(`${ApiEndpoint.Skill}/${id}`), body);
+    }
+
+    // Drag and drop: the server renumbers the whole catalogue (Admin/HR)
+    move(id: string, body: MoveSkillRequest): Observable<void> {
+        return this.http.put<void>(this.url(`${ApiEndpoint.Skill}/${id}/position`), body);
     }
 }

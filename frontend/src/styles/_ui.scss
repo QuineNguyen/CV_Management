@@ -566,6 +566,37 @@ th[aria-sort]:not([aria-sort='none']) .sort-icon {
   color: var(--vt-red);
 }
 
+/* Audit action badge; tone set by the component from the action's first word */
+.action-badge {
+  display: inline-block;
+  width: fit-content;
+  max-width: 100%;
+  padding: 0.125rem 0.6rem;
+  border-radius: 999px;
+  background: rgba(90, 90, 90, 0.12);
+  color: var(--vt-ink-muted);
+  font-size: var(--vt-fs-sm);
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.action-badge[data-tone='create'] {
+  background: var(--diff-added-bg);
+  color: var(--diff-added-ink);
+}
+
+.action-badge[data-tone='change'] {
+  background: var(--diff-modified-bg);
+  color: var(--diff-modified-ink);
+}
+
+.action-badge[data-tone='remove'] {
+  background: var(--vt-red-surface);
+  color: var(--vt-red-dark);
+}
+
 /* ---------- Notice banner ---------- */
 .notice {
   padding: clamp(0.6rem, 2vw, 1rem);

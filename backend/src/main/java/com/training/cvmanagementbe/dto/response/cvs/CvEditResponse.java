@@ -1,5 +1,7 @@
 package com.training.cvmanagementbe.dto.response.cvs;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+
 /*
  * One shape for two outcomes, because the caller does not choose which one happens - the CV
  * owner's role does.
@@ -7,6 +9,7 @@ package com.training.cvmanagementbe.dto.response.cvs;
  * - directPublish true when the edit produced a version immediately; false when it produced
  * a draft that still needs both approval levels
  */
+@Schema(name = "CvEditResponse", description = "Response body for CV edit result, either a draft or a new version")
 public record CvEditResponse(
         boolean directPublish,
         CvDraftResponse draft,
