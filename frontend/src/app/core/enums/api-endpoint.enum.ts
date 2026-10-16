@@ -66,4 +66,10 @@ export enum ApiEndpoint {
     DashboardAdmin = '/dashboard/admin',
     DashboardTechLead = '/dashboard/tech-lead',
     DashboardEmployee = '/dashboard/employee',
+
+    // System routes
+    SystemConfig = '/system-configs',
+    AuditLog = '/audit-logs',
+    AuditLogActions = '/audit-logs/actions',
+    AuditLogTargetTypes = '/audit-logs/target-types',
 }

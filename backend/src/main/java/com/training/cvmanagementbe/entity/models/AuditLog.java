@@ -8,6 +8,8 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.Immutable;
+import org.hibernate.annotations.JdbcType;
+import org.hibernate.type.descriptor.jdbc.LocalDateTimeJdbcType;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -54,6 +56,9 @@ public class AuditLog {
     @Column(name = "new_value", updatable = false, columnDefinition = "LONGTEXT")
     private String newValue;
 
+    // AuditLogger writes LocalDateTime.now() through plain JDBC, with no UTC shift. Reading it
+    // through hibernate.jdbc.time_zone=UTC would add the zone offset, so bind and read it as-is.
+    @JdbcType(LocalDateTimeJdbcType.class)
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 }

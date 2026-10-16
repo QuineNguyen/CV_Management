@@ -195,6 +195,30 @@ public class CvContentCodec {
         return objectMapper.convertValue(root, CvContent.class);
     }
 
+    /*
+     * Overwrites each linked entry's name with the catalogue name from the map; unlinked entries
+     * and ids missing from the map keep the name they were saved with.
+     */
+    public CvContent mapSkillNames(CvContent content, Map<UUID, String> namesById) {
+        if (content == null || namesById.isEmpty()) {
+            return content;
+        }
+        ObjectNode root = objectMapper.valueToTree(content);
+        JsonNode section = root.get(jsonKeyOf(CvSectionKey.SKILLS));
+        if (section == null || !section.isArray()) {
+            return content;
+        }
+
+        for (JsonNode entry : section) {
+            UUID skillId = parseUuid(entry.path(CvContentKeys.SKILL_ID).asText(null));
+            String name = skillId == null ? null : namesById.get(skillId);
+            if (name != null) {
+                ((ObjectNode) entry).put(CvContentKeys.SKILL_NAME, name);
+            }
+        }
+        return objectMapper.convertValue(root, CvContent.class);
+    }
+
     private SkillRef skillRefOf(JsonNode entry) {
         return new SkillRef(
                 parseUuid(entry.path(CvContentKeys.SKILL_ID).asText(null)),

@@ -30,4 +30,7 @@ public interface SkillService {
      * for the first time. Must run inside the caller's transaction.
      */
     CvContent linkCatalog(CvContent content);
+
+    // Catalogue names for every linked skills entry; read-only, nothing is written
+    CvContent applyCatalogNames(CvContent content);
 }

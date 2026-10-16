@@ -24,6 +24,7 @@ import com.training.cvmanagementbe.record.cvs.PdfExportTarget;
 import com.training.cvmanagementbe.record.cvs.PdfLinkClaims;
 import com.training.cvmanagementbe.repository.*;
 import com.training.cvmanagementbe.service.PdfExportService;
+import com.training.cvmanagementbe.service.SkillService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
@@ -80,6 +81,7 @@ public class PdfExportServiceImpl implements PdfExportService {
     private final AuditLogger auditLogger;
     private final ObjectMapper objectMapper;
     private final PdfLinkSigner linkSigner;
+    private final SkillService skillService;
 
     @Override
     @Transactional
@@ -469,8 +471,11 @@ public class PdfExportServiceImpl implements PdfExportService {
 
     // The file name doubles as the PDF Title, so the viewer tab matches the saved file
     private CvPdfFile render(PdfExportTarget target) {
+        // Skill names come from the catalogue, so a rename reaches PDFs of older versions too
+        CvContent content = skillService.applyCatalogNames(codec.read(target.version().getContentJson()));
+
         CvPdfContext context = toContext(
-                codec.read(target.version().getContentJson()),
+                content,
                 target.locale(),
                 avatarUrlResolver.resolve(target.version().getAvatarImageId()),
                 target.fileName()

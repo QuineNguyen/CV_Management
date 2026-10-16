@@ -1,0 +1,324 @@
+<section class="page">
+
+  <!-- Toolbar -->
+  <header class="page-toolbar">
+    <div class="page-heading">
+      <h1 class="page-title">Audit Logs</h1>
+      <p class="page-subtitle">
+        {{ pageState().total }} entr{{ pageState().total === 1 ? 'y' : 'ies' }} · read-only record of who changed what, and when
+      </p>
+    </div>
+  </header>
+
+  <!-- Filters -->
+  <div class="page-filters">
+
+    <!-- Actor -->
+    <div class="field field-grow custom-select-wrap">
+      <span class="field-label" id="actor-filter-label">Performed by</span>
+      <button
+        type="button"
+        class="field-input picker-trigger"
+        [class.is-open]="actorOpen()"
+        (click)="toggleActorPicker($event)"
+        aria-haspopup="listbox"
+        aria-labelledby="actor-filter-label"
+        [attr.aria-expanded]="actorOpen()">
+        <span class="picker-value" [class.picker-value--empty]="!actorFilter()">
+          <span class="picker-name">
+            @if (actorFilter(); as actor) {
+              {{ actor.fullName }}
+            } @else {
+              Anyone
+            }
+          </span>
+        </span>
+        <span class="material-symbols-outlined picker-caret" aria-hidden="true">expand_more</span>
+      </button>
+
+      @if (actorOpen()) {
+        <div class="picker-panel picker-panel--float" (click)="$event.stopPropagation()">
+          <div class="search-input-wrap">
+            <span class="material-symbols-outlined search-icon" aria-hidden="true">search</span>
+            <input type="search"
+                   class="field-input search-input"
+                   placeholder="Name, email or username"
+                   [formControl]="actorKeyword"
+                   aria-label="Search people"
+                   autocomplete="off" />
+          </div>
+
+          <ul class="picker-list" role="listbox" aria-labelledby="actor-filter-label">
+            <li role="option" [attr.aria-selected]="actorFilter() === null">
+              <button type="button" class="picker-option" [class.is-selected]="actorFilter() === null"
+                      (click)="selectActor(null)">
+                Anyone
+              </button>
+            </li>
+            @for (actor of actorOptions(); track actor.id) {
+              <li role="option" [attr.aria-selected]="actorFilter()?.id === actor.id">
+                <button type="button" class="picker-option" [class.is-selected]="actorFilter()?.id === actor.id"
+                        (click)="selectActor(actor)">
+                  <span class="actor-option">
+                    <span class="picker-name">{{ actor.fullName }}</span>
+                    <span class="actor-option-email">{{ actor.email }}</span>
+                  </span>
+                </button>
+              </li>
+            }
+          </ul>
+
+          @if (actorSearching()) {
+            <p class="picker-status">Searching…</p>
+          } @else if (actorOptions().length === 0) {
+            <p class="picker-status">No one matches</p>
+          }
+        </div>
+      }
+    </div>
+
+    <!-- Action -->
+    <div class="field custom-select-wrap">
+      <span class="field-label">Action</span>
+      <button
+        type="button"
+        class="field-input custom-select-trigger"
+        [class.is-open]="actionOpen()"
+        (click)="toggleActionDropdown($event)"
+        aria-haspopup="listbox"
+        [attr.aria-expanded]="actionOpen()">
+        <span class="custom-select-label">
+          {{ actionFilter() ? (actionFilter() | enumLabel) : 'All actions' }}
+        </span>
+      </button>
+
+      @if (actionOpen()) {
+        <div class="custom-select-panel" (click)="$event.stopPropagation()">
+          <ul class="custom-select-list" role="listbox">
+            <li role="option" [attr.aria-selected]="actionFilter() === null">
+              <button type="button" class="custom-select-option" [class.is-selected]="actionFilter() === null"
+                      (click)="selectAction(null)">
+                All actions
+              </button>
+            </li>
+            @for (action of actionOptions(); track action) {
+              <li role="option" [attr.aria-selected]="actionFilter() === action">
+                <button type="button" class="custom-select-option" [class.is-selected]="actionFilter() === action"
+                        (click)="selectAction(action)">
+                  {{ action | enumLabel }}
+                </button>
+              </li>
+            }
+          </ul>
+        </div>
+      }
+    </div>
+
+    <!-- Target type -->
+    <div class="field custom-select-wrap">
+      <span class="field-label">Target type</span>
+      <button
+        type="button"
+        class="field-input custom-select-trigger"
+        [class.is-open]="targetTypeOpen()"
+        (click)="toggleTargetTypeDropdown($event)"
+        aria-haspopup="listbox"
+        [attr.aria-expanded]="targetTypeOpen()">
+        <span class="custom-select-label">
+          {{ targetTypeFilter() ? (targetTypeFilter() | enumLabel) : 'All targets' }}
+        </span>
+      </button>
+
+      @if (targetTypeOpen()) {
+        <div class="custom-select-panel" (click)="$event.stopPropagation()">
+          <ul class="custom-select-list" role="listbox">
+            <li role="option" [attr.aria-selected]="targetTypeFilter() === null">
+              <button type="button" class="custom-select-option" [class.is-selected]="targetTypeFilter() === null"
+                      (click)="selectTargetType(null)">
+                All targets
+              </button>
+            </li>
+            @for (targetType of targetTypeOptions(); track targetType) {
+              <li role="option" [attr.aria-selected]="targetTypeFilter() === targetType">
+                <button type="button" class="custom-select-option" [class.is-selected]="targetTypeFilter() === targetType"
+                        (click)="selectTargetType(targetType)">
+                  {{ targetType | enumLabel }}
+                </button>
+              </li>
+            }
+          </ul>
+        </div>
+      }
+    </div>
+
+    <!-- Date range: each picker bounds the other -->
+    <label class="field field-date">
+      <span class="field-label">From</span>
+      <span class="field-date-wrap">
+        <input class="field-input field-date-input"
+               type="text"
+               [matDatepicker]="fromPicker"
+               [formControl]="fromDate"
+               [max]="toDateValue() ?? today"
+               placeholder="dd/MM/yyyy" />
+        <mat-datepicker-toggle [for]="fromPicker" class="field-date-toggle" />
+        <mat-datepicker #fromPicker />
+      </span>
+    </label>
+
+    <label class="field field-date">
+      <span class="field-label">To</span>
+      <span class="field-date-wrap">
+        <input class="field-input field-date-input"
+               type="text"
+               [matDatepicker]="toPicker"
+               [formControl]="toDate"
+               [min]="fromDateValue()"
+               [max]="today"
+               placeholder="dd/MM/yyyy" />
+        <mat-datepicker-toggle [for]="toPicker" class="field-date-toggle" />
+        <mat-datepicker #toPicker />
+      </span>
+    </label>
+
+    <button type="button" class="btn btn-ghost" (click)="clearFilters()">Clear</button>
+  </div>
+
+  <!-- Body -->
+  @if (loading()) {
+    <div class="skeleton-stack" aria-busy="true">
+      @for (row of [1, 2, 3, 4, 5]; track row) {
+        <div class="skeleton-row"></div>
+      }
+    </div>
+  } @else if (isEmpty()) {
+    <div class="empty-state">
+      @if (hasFilters()) {
+        <p class="empty-state-title">No entry matches</p>
+        <p class="empty-state-hint">Widen the date range or clear a filter</p>
+        <button type="button" class="btn btn-ghost" (click)="clearFilters()">Clear filters</button>
+      } @else {
+        <p class="empty-state-title">Nothing recorded yet</p>
+        <p class="empty-state-hint">Entries appear as soon as someone changes data outside the approval flow</p>
+      }
+    </div>
+  } @else {
+
+    <!-- Table: laptop and desktop -->
+    <div class="data-table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th scope="col" class="col-time" [attr.aria-sort]="ariaSort(sortField.CreatedAt)">
+              <button type="button" class="sort-header" (click)="toggleSort(sortField.CreatedAt)">
+                Time
+                <span class="material-symbols-outlined sort-icon" aria-hidden="true">{{ sortIcon(sortField.CreatedAt) }}</span>
+              </button>
+            </th>
+            <th scope="col" class="col-actor">Performed by</th>
+            <th scope="col" class="col-role">Role at the time</th>
+            <th scope="col" class="col-action" [attr.aria-sort]="ariaSort(sortField.Action)">
+              <button type="button" class="sort-header" (click)="toggleSort(sortField.Action)">
+                Action
+                <span class="material-symbols-outlined sort-icon" aria-hidden="true">{{ sortIcon(sortField.Action) }}</span>
+              </button>
+            </th>
+            <th scope="col" class="col-target" [attr.aria-sort]="ariaSort(sortField.TargetType)">
+              <button type="button" class="sort-header" (click)="toggleSort(sortField.TargetType)">
+                Target
+                <span class="material-symbols-outlined sort-icon" aria-hidden="true">{{ sortIcon(sortField.TargetType) }}</span>
+              </button>
+            </th>
+            <th scope="col" class="col-target-id">Target ID</th>
+            <th scope="col" class="col-actions">Details</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (log of logs(); track log.id) {
+            <tr class="audit-row" (click)="openDetail(log)">
+              <td class="col-time">
+                <span class="cell-strong">{{ log.createdAt | date:'dd/MM/yyyy' }}</span>
+                <span class="cell-muted">{{ log.createdAt | date:'HH:mm:ss' }}</span>
+              </td>
+              <td class="col-actor">
+                <span class="cell-strong">{{ log.actorName ?? 'Unknown user' }}</span>
+                <span class="cell-muted">{{ log.actorEmail ?? '—' }}</span>
+              </td>
+              <td class="col-role">{{ roleLabels[log.actorRole] }}</td>
+              <td class="col-action">
+                <span class="action-badge" [attr.data-tone]="toneOf(log.action)">{{ log.action | enumLabel }}</span>
+              </td>
+              <td class="col-target">{{ log.targetType | enumLabel }}</td>
+              <td class="col-target-id">
+                <span class="target-id">
+                  <code class="cell-username" [matTooltip]="log.targetId">{{ shortId(log.targetId) }}</code>
+                  <button type="button" class="icon-btn" matTooltip="Copy target ID"
+                          [attr.aria-label]="'Copy target ID ' + log.targetId"
+                          (click)="copyId(log.targetId, $event)">⧉</button>
+                </span>
+              </td>
+              <td class="col-actions">
+                <div class="row-actions">
+                  <button type="button" class="icon-btn" matTooltip="View old and new values"
+                          aria-label="View details"
+                          (click)="$event.stopPropagation(); openDetail(log)">👁</button>
+                </div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Cards: iPad and phone -->
+    <ul class="data-cards">
+      @for (log of logs(); track log.id) {
+        <li class="data-card">
+          <div class="data-card-head">
+            <div class="data-card-text">
+              <span class="action-badge" [attr.data-tone]="toneOf(log.action)">{{ log.action | enumLabel }}</span>
+              <p class="data-card-title audit-card-title">{{ log.actorName ?? 'Unknown user' }}</p>
+              <p class="data-card-line">{{ log.createdAt | date:'dd/MM/yyyy HH:mm:ss' }}</p>
+            </div>
+            <div class="row-actions">
+              <button type="button" class="btn btn-ghost" (click)="openDetail(log)">Details</button>
+            </div>
+          </div>
+
+          <dl class="data-card-facts">
+            <div>
+              <dt>Role at the time</dt>
+              <dd>{{ roleLabels[log.actorRole] }}</dd>
+            </div>
+            <div>
+              <dt>Target</dt>
+              <dd>{{ log.targetType | enumLabel }}</dd>
+            </div>
+            <div>
+              <dt>Target ID</dt>
+              <dd class="target-id">
+                <code class="cell-username">{{ shortId(log.targetId) }}</code>
+                <button type="button" class="icon-btn" [attr.aria-label]="'Copy target ID ' + log.targetId"
+                        (click)="copyId(log.targetId, $event)">⧉</button>
+              </dd>
+            </div>
+          </dl>
+        </li>
+      }
+    </ul>
+
+    <mat-paginator
+      class="page-paginator"
+      [length]="pageState().total"
+      [pageIndex]="pageState().index"
+      [pageSize]="pageState().size"
+      [pageSizeOptions]="pageSizeOptions"
+      showFirstLastButtons
+      (page)="onPageChange($event)" />
+  }
+</section>
+
+<!-- Old / new values of one entry -->
+@if (detailId(); as id) {
+  <app-audit-log-detail-dialog [logId]="id" (closed)="closeDetail()" />
+}

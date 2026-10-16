@@ -13,6 +13,7 @@ import com.training.cvmanagementbe.repository.ChangeLogEntryRepository;
 import com.training.cvmanagementbe.repository.CvDraftRepository;
 import com.training.cvmanagementbe.repository.CvRepository;
 import com.training.cvmanagementbe.repository.CvVersionRepository;
+import com.training.cvmanagementbe.service.SkillService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
@@ -46,6 +47,7 @@ public class VersionPublisher {
     private final ChangeLogGenerator changeLogGenerator;
     private final CvContentCodec codec;
     private final AuditLogger auditLogger;
+    private final SkillService skillService;
 
     /*
      * Publishes one immutable version.
@@ -69,11 +71,14 @@ public class VersionPublisher {
 
         Optional<CvVersion> previous = cvVersionRepository.findTopByCvIdOrderByVersionNumberDesc(cv.getId());
 
+        // Catalogue names as of now, so the snapshot and its search text match what readers see today
+        CvContent content = skillService.applyCatalogNames(command.content());
+
         CvVersion version = new CvVersion();
         version.setCvId(cv.getId());
         version.setVersionNumber(cvVersionRepository.findMaxVersionNumber(cv.getId()) + 1);
-        version.setContentJson(codec.write(command.content()));
-        version.setContentText(codec.flattenText(command.content()));
+        version.setContentJson(codec.write(content));
+        version.setContentText(codec.flattenText(content));
         version.setAvatarImageId(command.avatarImageId());
         version.setAuthoredBy(command.authoredBy());
         version.setLevel1ApproverId(command.level1ApproverId());
@@ -84,7 +89,7 @@ public class VersionPublisher {
 
         CvVersion saved = cvVersionRepository.saveAndFlush(version);
 
-        buildChangeLog(command, previous, saved);
+        buildChangeLog(command, content, previous, saved);
 
         // Creating the CV does not complete a request; publishing content does.
         cvRepository.completePendingRequestsByCvId(cv.getId(), CurrentActor.requireUserId(), saved.getPublishedAt());
@@ -100,14 +105,21 @@ public class VersionPublisher {
 
     // ---------- Private helpers ----------
 
+    /*
+     * Both sides carry today's catalogue names, so a skill renamed in the catalogue since the
+     * previous version is not logged as an edit the owner made.
+     */
     private void buildChangeLog(PublishCommand command,
+                                CvContent content,
                                 Optional<CvVersion> previous,
                                 CvVersion saved) {
-        CvContent previousContent = previous.map(version -> codec.read(version.getContentJson())).orElse(null);
+        CvContent previousContent = previous
+                .map(version -> skillService.applyCatalogNames(codec.read(version.getContentJson())))
+                .orElse(null);
 
         List<ChangeLogEntry> changes = changeLogGenerator.generate(
                 previousContent,
-                command.content(),
+                content,
                 saved.getId(),
                 previous.map(CvVersion::getAvatarImageId).orElse(null),
                 command.avatarImageId()

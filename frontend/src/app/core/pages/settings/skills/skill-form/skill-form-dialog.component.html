@@ -49,7 +49,7 @@
                  formControlName="displayOrder"
                  min="0"
                  step="10" />
-          <span class="field-hint">Lists sort by this number, then by name. Step by 10 to leave room</span>
+          <span class="field-hint">Lists sort by this number, then by name. Dragging in the list renumbers in steps of 10</span>
           @if (hasError('displayOrder', 'required')) {
             <span class="field-error">Display order is required</span>
           }
@@ -80,3 +80,41 @@
     </form>
   </div>
 </div>
+
+<!--
+  Rename confirmation. A sibling of the dialog, not a child: the dialog's entry animation leaves a
+  transform on .modal, which would trap a fixed backdrop inside the dialog box.
+-->
+@if (pendingRename(); as body) {
+  <div class="modal-backdrop rename-confirm-backdrop"
+       (mousedown)="onConfirmBackdropMouseDown($event)" (click)="onConfirmBackdropClick($event)">
+    <div class="modal modal-sm" role="alertdialog" aria-modal="true"
+         aria-labelledby="rename-confirm-title" aria-describedby="rename-confirm-body"
+         (click)="$event.stopPropagation()">
+      <h2 class="modal-title rename-confirm-title" id="rename-confirm-title">
+        <span class="material-symbols-outlined" aria-hidden="true">warning</span>
+        Published versions will change
+      </h2>
+
+      <div class="notice notice-warning rename-confirm-body" id="rename-confirm-body">
+        <p class="rename-confirm-line">
+          Renaming <strong>"{{ originalName() }}"</strong> to <strong>"{{ body.name }}"</strong> changes how
+          this skill appears in <strong>every published CV version</strong> and every PDF exported from now on,
+          including versions already sent to customers.
+        </p>
+        @if (usedBy() > 0) {
+          <p class="rename-confirm-line">
+            {{ usedBy() }} CV(s) use it in their latest published version.
+          </p>
+        }
+      </div>
+
+      <p class="modal-body rename-confirm-question">Do you want to apply this rename?</p>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-ghost" (click)="keepEditing()">Keep editing</button>
+        <button type="button" class="btn btn-danger" (click)="confirmRename()">Rename skill</button>
+      </div>
+    </div>
+  </div>
+}

@@ -7,7 +7,13 @@
   margin: 0;
 }
 
+.handle-glyph {
+  font-weight: 700;
+  color: var(--vt-ink-muted);
+}
+
 /* ---------- Column widths ---------- */
+.col-handle  { width: 3rem; }
 .col-order   { width: 7rem; }
 .col-code    { width: 22%; min-width: 10rem; }
 .col-name    { width: 30%; min-width: 12rem; }
@@ -15,6 +21,7 @@
 .col-created { width: 13rem; }
 .col-actions { width: 6rem; }
 
+.data-table td.col-handle,
 .data-table td.col-order,
 .data-table td.col-usage,
 .data-table td.col-created,
@@ -25,6 +32,56 @@
 
 .data-table td.col-actions .row-actions {
   justify-content: center;
+}
+
+/* ---------- Drag handle ---------- */
+.handle-host {
+  display: inline-block;
+}
+
+.drag-handle {
+  width: var(--vt-tap);
+  height: var(--vt-tap);
+  display: inline-grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: var(--vt-radius-sm);
+  background: transparent;
+  color: var(--vt-ink-muted);
+  font-size: var(--vt-fs-md);
+  cursor: grab;
+  touch-action: none;
+}
+
+.drag-handle:hover:not(:disabled) {
+  background: var(--vt-red-tint);
+  color: var(--vt-red);
+}
+
+.drag-handle:active:not(:disabled) {
+  cursor: grabbing;
+}
+
+.drag-handle:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+/* Waiting for the server to renumber */
+.is-busy {
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+/* The row being dragged keeps a solid background over its neighbours */
+tr.cdk-drag-preview {
+  display: table-row;
+  background: var(--vt-surface);
+}
+
+tr.cdk-drag-placeholder {
+  background: var(--vt-red-surface);
 }
 
 /* ---------- Usage count ---------- */

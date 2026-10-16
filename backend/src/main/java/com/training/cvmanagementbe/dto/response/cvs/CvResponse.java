@@ -3,6 +3,7 @@ package com.training.cvmanagementbe.dto.response.cvs;
 import com.training.cvmanagementbe.enums.cvs.DraftStatus;
 import com.training.cvmanagementbe.enums.cvs.Language;
 import com.training.cvmanagementbe.enums.cvs.LifecycleStatus;
+import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -14,6 +15,7 @@ import java.util.UUID;
  * - currentVersionNumber: Null while the CV has no published version yet.
  * - openDraftStatus: Null when no draft is open; drives the edit screen's branching.
  */
+@Schema(name = "CvResponse", description = "Response body for a CV")
 public record CvResponse(
         UUID id,
         UUID profileId,

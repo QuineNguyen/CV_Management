@@ -23,5 +23,7 @@ export enum NavIconEnum {
   BatchRequest = 'group_add',
   CvSearch = 'manage_search',
   SkillCatalog = 'psychology',
-  SettingsGroup = 'settings'
+  SettingsGroup = 'settings',
+  ReminderConfig = 'schedule',
+  AuditLogs = 'history',
 }

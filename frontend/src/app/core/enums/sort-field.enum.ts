@@ -68,6 +68,12 @@ export enum SkillSortField {
     Code = 'CODE',
 }
 
+export enum AuditLogSortField {
+    CreatedAt = 'CREATED_AT',
+    Action = 'ACTION',
+    TargetType = 'TARGET_TYPE',
+}
+
 export enum SortDirection {
     Asc = 'ASC',
     Desc = 'DESC',
