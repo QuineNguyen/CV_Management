@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, ElementRef, HostListener, inject, input, output, signal } from "@angular/core";
+import { ChangeDetectionStrategy, Component, computed, ElementRef, HostListener, inject, input, output, signal, viewChild } from "@angular/core";
 import { FormControl, ReactiveFormsModule } from "@angular/forms";
 import { SkillService } from "../../../../services/skill.service";
 import { SkillOptionResponse } from "../../../../dtos/skill.dto";
@@ -27,7 +27,9 @@ export class SkillFilterComponent {
     private static readonly MAX_SELECTED = 10;
 
     private readonly skillService = inject(SkillService);
-    private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
+    private readonly boxRef = viewChild<ElementRef<HTMLElement>>('box');
+    private readonly panelRef = viewChild<ElementRef<HTMLElement>>('panel');
+    private readonly inputRef = viewChild<ElementRef<HTMLInputElement>>('input');
 
     readonly selected = input<SkillOptionResponse[]>([]);
     readonly selectedChange = output<SkillOptionResponse[]>();
@@ -91,16 +93,31 @@ export class SkillFilterComponent {
             return;
         }
         this.selectedChange.emit([...this.selected(), skill]);
+        this.clearQuery();
     }
 
     remove(skill: SkillOptionResponse): void {
         this.selectedChange.emit(this.selected().filter(item => item.id !== skill.id));
     }
 
-    // Closes on any click outside this picker
+    private clearQuery(): void {
+        if (this.query.value) {
+            this.query.setValue('', { emitEvent: false });
+            this.immediateTerms.next('');
+        }
+        this.inputRef()?.nativeElement.focus();
+    }
+
+    // Closes on any click outside the skill box and picker panel
     @HostListener('document:click', ['$event'])
     onDocumentClick(event: MouseEvent): void {
-        if (this.open() && !this.host.nativeElement.contains(event.target as Node)) {
+        if (!this.open()) {
+            return;
+        }
+        const target = event.target as Node | null;
+        const inBox = !!(target && this.boxRef()?.nativeElement.contains(target));
+        const inPanel = !!(target && this.panelRef()?.nativeElement.contains(target));
+        if (!inBox && !inPanel) {
             this.open.set(false);
         }
     }

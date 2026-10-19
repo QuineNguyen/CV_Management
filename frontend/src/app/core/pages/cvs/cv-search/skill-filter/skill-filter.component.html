@@ -1,7 +1,7 @@
 <span class="field-label" id="skill-filter-label">Skills</span>
 
 <!-- Chips + input share one field box -->
-<div class="field-input skill-box" [class.is-open]="open()" (click)="input.focus(); openPanel()">
+<div #box class="field-input skill-box" [class.is-open]="open()" (click)="input.focus(); openPanel()">
   @for (skill of selected(); track skill.id) {
     <span class="skill-chip">
       <span class="skill-chip-name">{{ skill.name }}</span>
@@ -24,7 +24,7 @@
 </div>
 
 @if (open()) {
-  <div class="picker-panel picker-panel--float" (click)="$event.stopPropagation()">
+  <div #panel class="picker-panel picker-panel--float" (click)="$event.stopPropagation()">
     @if (atLimit()) {
       <p class="picker-status">Up to {{ maxSelected }} skills at a time</p>
     }
