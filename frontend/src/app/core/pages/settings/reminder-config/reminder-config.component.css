@@ -113,12 +113,23 @@
   padding-inline-end: 3.5rem;
 }
 
+.input-with-suffix:disabled {
+  background: var(--vt-canvas) !important;
+  color: var(--vt-ink-muted) !important;
+  cursor: not-allowed !important;
+  opacity: 0.7;
+}
+
 .input-suffix {
   position: absolute;
   inset-inline-end: calc(var(--vt-gap) * 0.75);
   font-size: var(--vt-fs-sm);
   color: var(--vt-ink-muted);
   pointer-events: none;
+}
+
+.input-with-suffix:disabled ~ .input-suffix {
+  opacity: 0.4;
 }
 
 /* ---------- Notices ---------- */

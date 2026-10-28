@@ -91,6 +91,7 @@
               <input type="number"
                      class="field-input input-with-suffix"
                      formControlName="escalationThresholdDays"
+                     [attr.disabled]="!remindersOn() ? '' : null"
                      [min]="limits.minDays"
                      [max]="limits.maxDays"
                      step="1"

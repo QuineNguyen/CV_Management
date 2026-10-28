@@ -7,6 +7,7 @@ import { ToastService } from "../../../services/toast.service";
 import { SYSTEM_CONFIG_LIMITS } from "../../../models/system-config.model";
 import { SystemConfigResponse, UpdateSystemConfigRequest } from "../../../dtos/system-config.dto";
 import { takeUntilDestroyed, toSignal } from "@angular/core/rxjs-interop";
+import { map } from "rxjs";
 
 type DayField = 'escalationThresholdDays' | 'approvalSlaDays';
 
@@ -58,7 +59,10 @@ export class ReminderConfigComponent implements OnInit {
         approvalSlaDays: [SYSTEM_CONFIG_LIMITS.minDays as number, this.dayValidators()],
     });
 
-    private readonly formValue = toSignal(this.form.valueChanges, { initialValue: this.form.getRawValue() });
+    private readonly formValue = toSignal(
+        this.form.valueChanges.pipe(map(() => this.form.getRawValue())),
+        { initialValue: this.form.getRawValue() }
+    );
 
     readonly selectedHourLabel = computed(() => {
         const current = this.formValue().reminderSendHour;
@@ -87,6 +91,10 @@ export class ReminderConfigComponent implements OnInit {
     });
 
     ngOnInit(): void {
+        this.form.controls.reminderEnabled.valueChanges
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe(enabled => this.updateEscalationThresholdState(enabled));
+
         this.load();
     }
 
@@ -186,8 +194,22 @@ export class ReminderConfigComponent implements OnInit {
             escalationThresholdDays: config.escalationThresholdDays,
             approvalSlaDays: config.approvalSlaDays,
         });
+        this.updateEscalationThresholdState(config.reminderEnabled);
         this.form.markAsPristine();
         this.form.markAsUntouched();
+    }
+
+    private updateEscalationThresholdState(enabled: boolean): void {
+        const control = this.form.controls.escalationThresholdDays;
+        if (enabled) {
+            if (control.disabled) {
+                control.enable({ emitEvent: false });
+            }
+        } else {
+            if (control.enabled) {
+                control.disable({ emitEvent: false });
+            }
+        }
     }
 
     private dayValidators() {
