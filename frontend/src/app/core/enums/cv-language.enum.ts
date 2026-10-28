@@ -12,6 +12,13 @@ export enum CvSlotState {
     Empty = 'EMPTY',
 }
 
+// Tab text for a slot; a published slot shows its version number instead.
+export const CV_SLOT_STATE_LABELS: Record<CvSlotState, string> = {
+    [CvSlotState.Published]: 'Published',
+    [CvSlotState.Drafting]: 'Draft only',
+    [CvSlotState.Empty]: 'Empty',
+};
+
 // "All languages" on the create form; the server turns it into one request per language
 export enum LanguageScope {
     All = 'ALL',

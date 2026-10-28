@@ -41,6 +41,7 @@ export interface CvResponse {
     currentVersionNumber: number | null;
     currentVersionPublishedAt: string | null;
     openDraftStatus: DraftStatus | null;
+    untranslatedItemCount: number;
     deletedBy: string | null;
     deletedByName: string | null;
     deletedAt: string | null;

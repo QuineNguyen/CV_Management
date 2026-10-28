@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.training.cvmanagementbe.constant.CvContentKeys;
 import com.training.cvmanagementbe.entity.models.User;
@@ -34,6 +35,14 @@ import java.util.stream.StreamSupport;
 public class CvContentCodec {
 
     private static final String ITEM_ID = "item_id";
+    private static final String DISPLAY_ORDER = "display_order";
+    private static final String IS_UNTRANSLATED = "is_untranslated";
+    private static final String DELETED_IN_MASTER = "deleted_in_master";
+
+    // Keys describing an entry's place and sync state, not what the owner typed.
+    private static final Set<String> STRUCTURAL_KEYS = Set.of(
+            ITEM_ID, DISPLAY_ORDER, IS_UNTRANSLATED, DELETED_IN_MASTER, CvContentKeys.SKILL_ID
+    );
 
     /*
      * Structural keys of a repeated entry. item_id is identity, not content: "the item id changed"
@@ -103,6 +112,40 @@ public class CvContentCodec {
         );
     }
 
+    /*
+     * Content for a new language CV of a profile that already has a master
+     * - personal info copied once from the master, never synced afterward;
+     * name and email re-taken from the account like every new CV;
+     * - career objective starts empty;
+     * - each repeated entry becomes a placeholder keeping item_id and display_order,
+     * flagged untranslated, with no content. Entries removed in the master are skipped.
+     * Tree-based for the same reason as normaliseItemIds.
+     */
+    public CvContent scaffoldTranslation(CvContent master, User owner) {
+        ObjectNode source = objectMapper.valueToTree(master);
+        ObjectNode root = objectMapper.createObjectNode();
+        root.set(jsonKeyOf(CvSectionKey.PERSONAL_INFO), source.get(jsonKeyOf(CvSectionKey.PERSONAL_INFO)));
+
+        for (CvSectionKey sectionKey : CvSectionKey.values()) {
+            if (!sectionKey.repeated()) {
+                continue;
+            }
+            ArrayNode placeholders = root.putArray(jsonKeyOf(sectionKey));
+
+            for (JsonNode entry : source.path(jsonKeyOf(sectionKey))) {
+                if (entry.path(DELETED_IN_MASTER).asBoolean(false)) {
+                    continue;
+                }
+                placeholders.addObject()
+                        .put(ITEM_ID, entry.path(ITEM_ID).asText(null))
+                        .put(DISPLAY_ORDER, entry.path(DISPLAY_ORDER).asInt())
+                        .put(IS_UNTRANSLATED, true)
+                        .put(DELETED_IN_MASTER, false);
+            }
+        }
+        return applyPersonalInfoSnapshot(objectMapper.convertValue(root, CvContent.class), owner);
+    }
+
     // ---------- Normalisation ----------
     /*
      * Fills in a stable item_id for every repeated entry that arrived without one and
@@ -138,6 +181,28 @@ public class CvContentCodec {
             }
         }
         return objectMapper.convertValue(root, CvContent.class);
+    }
+
+    /*
+     * Clears is_untranslated on placeholders the owner has started filling in,
+     * so untranslatedItemCount only counts entries still waiting.
+     */
+    public CvContent normaliseTranslationFlags(CvContent content) {
+        ObjectNode root = objectMapper.valueToTree(content);
+        boolean changed = false;
+
+        for (CvSectionKey sectionKey : CvSectionKey.values()) {
+            if (!sectionKey.repeated()) {
+                continue;
+            }
+            for (JsonNode entry : root.path(jsonKeyOf(sectionKey))) {
+                if (entry.path(IS_UNTRANSLATED).asBoolean(false) && hasContent(entry)) {
+                    ((ObjectNode) entry).put(IS_UNTRANSLATED, false);
+                    changed = true;
+                }
+            }
+        }
+        return changed ? objectMapper.convertValue(root, CvContent.class) : content;
     }
 
     // Every item_id present in the content, across all seven repeated sections.
@@ -361,5 +426,34 @@ public class CvContentCodec {
         }
         // Keys are structural metadata, not content: index the values only.
         node.fields().forEachRemaining(entry -> collectText(entry.getValue(), builder));
+    }
+
+    // Any field the owner could have typed; structual keys do not count.
+    private boolean hasContent(JsonNode entry) {
+        Iterator<Map.Entry<String, JsonNode>> fields = entry.fields();
+        while (fields.hasNext()) {
+            Map.Entry<String, JsonNode> field = fields.next();
+            if (!STRUCTURAL_KEYS.contains(field.getKey()) && isFilled(field.getValue())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // Blank text, empty lists, false and zero are what an untouched field serialises as.
+    private static boolean isFilled(JsonNode value) {
+        if (value == null || value.isNull() || value.isBoolean()) {
+            return false;
+        }
+        if (value.isTextual()) {
+            return !value.asText().isBlank();
+        }
+        if (value.isNumber()) {
+            return value.asDouble() != 0;
+        }
+        if (value.isContainerNode()) {
+            return StreamSupport.stream(value.spliterator(), false).anyMatch(CvContentCodec::isFilled);
+        }
+        return true;
     }
 }

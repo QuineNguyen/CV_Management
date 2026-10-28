@@ -8,6 +8,7 @@ import { PagedResponse } from "../dtos/page.dto";
 import { PendingNoteResponse } from "../dtos/update-request.dto";
 import { CvRollbackRequest, CvVersionHistoryItem, CvVersionQuery, VersionDiffResponse } from "../dtos/cv-version.dto";
 import { CvPdfLink } from "../models/cv-pdf.model";
+import { CvContent } from "../models/cv-content.model";
 
 @Injectable({ providedIn: 'root' })
 export class CvService {
@@ -23,6 +24,11 @@ export class CvService {
     listByProfile(profileId: string, includeDeleted = false): Observable<CvResponse[]> {
         const params = new HttpParams().set('includeDeleted', includeDeleted);
         return this.http.get<CvResponse[]>(this.url(`${ApiEndpoint.Profiles}/${profileId}/cvs`), { params });
+    }
+
+    // What a new CV of the profile starts from: the master's structure or the blank template
+    getScaffold(profileId: string): Observable<CvContent> {
+        return this.http.get<CvContent>(this.url(`${ApiEndpoint.Profiles}/${profileId}/cvs/scaffold`));
     }
 
     listDeleted(query: DeletedCvQuery): Observable<PagedResponse<CvResponse>> {

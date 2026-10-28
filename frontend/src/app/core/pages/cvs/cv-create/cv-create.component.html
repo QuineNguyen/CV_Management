@@ -119,6 +119,20 @@
               both approve it
             }
           </p>
+          @if (masterCv(); as master) {
+            <div class="notice notice-warning" role="status">
+              <strong>Follows the {{ languageLabel(master.language) }} master.</strong>
+              @if (placeholderCount()) {
+                {{ placeholderLabel() }} copied in the same order as untranslated placeholders —
+                translate what you can now, empty ones can be saved and filled in later
+              } @else {
+                The master has no entries yet
+              }
+              <p class="notice-detail">
+                Personal info is prefilled from the master once; later changes are not synced either way
+              </p>
+            </div>
+          }
         </div>
 
         <section class="cv-avatar-panel">

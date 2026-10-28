@@ -9,7 +9,6 @@ import { ToastService } from "../../../services/toast.service";
 import { CV_LANGUAGE_LABELS, CV_LANGUAGE_ORDER, CvLanguage } from "../../../enums/cv-language.enum";
 import { CvProfileResponse } from "../../../dtos/cv-profile.dto";
 import { CvResponse } from "../../../dtos/cv.dto";
-import { LifecycleStatus } from "../../../enums/lifecycle-status.enum";
 import { UserRole } from "../../../enums/user-role.enum";
 import { CvContent, emptyCvContent, seededCvContent } from "../../../models/cv-content.model";
 import { QueryParam } from "../../../enums/query-param.enum";
@@ -17,6 +16,10 @@ import { AppRoute } from "../../../enums/app-route.enum";
 import { HasUnsavedChanges } from "../../../services/unsaved-changes.guard";
 import { AvatarUploadComponent } from "../../avatar-upload/avatar-upload.component";
 import { AvatarChange } from "../../../models/avatar-change.model";
+import { activeMasterOf, freeLanguagesOf } from "../../../models/cv-language-slot.model";
+import { CV_SECTIONS } from "../../../models/cv-section-descriptor.model";
+import { pluralize } from "../../../utils/plural.util";
+import { map, of, switchMap } from "rxjs";
 
 /*
  * Three-step create flow: pick the profile, pick the language, fill in the content.
@@ -72,13 +75,10 @@ export class CvCreateComponent implements OnInit, HasUnsavedChanges {
         this.profiles().find(profile => profile.id === this.selectedProfileId()) ?? null);
 
     // Only languages no active CV of this profile holds.
-    readonly availableLanguages = computed(() => {
-        const taken = new Set(this.existingCvs()
-            .filter(cv => cv.lifecycleStatus === LifecycleStatus.Active)
-            .map(cv => cv.language));
+    readonly availableLanguages = computed(() => freeLanguagesOf(this.existingCvs()));
 
-        return CV_LANGUAGE_ORDER.filter(language => !taken.has(language));
-    });
+    // Set once the profile has a CV: the new one follows the master's structure.
+    readonly masterCv = computed(() => activeMasterOf(this.existingCvs()));
 
     /*
      * Admin and HR owners publish v1 the moment they save; everyone else gets a draft that still
@@ -86,8 +86,18 @@ export class CvCreateComponent implements OnInit, HasUnsavedChanges {
      */
     readonly directPublish = computed(() => this.auth.hasRole(UserRole.Admin, UserRole.HR));
 
-    // Shown pre-filled so the seeding is visible; the server re-applies it from the account.
+    // Shown pre-filled so the seeding is visible; for a later language it is the master's structure.
     readonly seedContent = signal<CvContent>(emptyCvContent());
+
+    // Entries copied from the master; all start as untranslated placeholders.
+    readonly placeholderCount = computed(() => {
+        const content = this.seedContent() as unknown as Record<string, unknown[] | undefined>;
+        return CV_SECTIONS
+            .filter(section => section.repeated)
+            .reduce((total, section) => total + (content[section.key]?.length ?? 0), 0);
+    });
+
+    readonly placeholderLabel = computed(() => pluralize(this.placeholderCount(), 'item'));
 
     /*
      * Seeded from the account photo for the same reason personal info is: someone who already
@@ -163,9 +173,17 @@ export class CvCreateComponent implements OnInit, HasUnsavedChanges {
     private loadExistingCvs(profileId: string): void {
         this.languagesLoading.set(true);
 
-        this.cvService.listByProfile(profileId).subscribe({
-            next: cvs => {
+        this.cvService.listByProfile(profileId).pipe(
+            switchMap(cvs => (activeMasterOf(cvs) ? this.cvService.getScaffold(profileId) : of(this.accountSeed()))
+                .pipe(map(content => ({ cvs, content })))),
+        ).subscribe({
+            next: ({ cvs, content }) => {
+                // A late answer for a profile the user already left must not win
+                if (this.selectedProfileId() !== profileId) {
+                    return;
+                }
                 this.existingCvs.set(cvs);
+                this.seedContent.set(content);
                 this.languagesLoading.set(false);
                 this.applyLinkParams();
                 this.loading.set(false);
@@ -280,7 +298,7 @@ export class CvCreateComponent implements OnInit, HasUnsavedChanges {
         if (!user) {
             return;
         }
-        this.seedContent.set(seededCvContent(user.fullName, user.email));
+        this.seedContent.set(this.accountSeed());
 
         // The URL is the session's own signed copy and may already have expired; a broken image
         // falls back to the placeholder and the id is what actually gets saved.
@@ -319,5 +337,11 @@ export class CvCreateComponent implements OnInit, HasUnsavedChanges {
      */
     hasUnsavedChanges(): boolean {
         return this.step() === 3 && !this.saving() && (!!this.editor()?.dirty || this.avatarDirty());
+    }
+
+    // Personal info from the account: them template for a profile's draft CV
+    private accountSeed(): CvContent {
+        const user = this.auth.user();
+        return seededCvContent(user?.fullName ?? null, user?.email ?? null);
     }
 }

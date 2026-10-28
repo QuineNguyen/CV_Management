@@ -1,11 +1,11 @@
-import { ChangeDetectionStrategy, Component, computed, HostListener, inject, OnInit, signal } from "@angular/core";
+import { ChangeDetectionStrategy, Component, computed, DestroyRef, HostListener, inject, OnInit, signal } from "@angular/core";
 import { CvContentEditorComponent } from "../cv-content-editor/cv-content-editor.component";
 import { ActivatedRoute, Router, RouterLink } from "@angular/router";
 import { DatePipe } from "@angular/common";
 import { CvService } from "../../../services/cv.service";
 import { AuthService } from "../../../services/auth.service";
 import { ToastService } from "../../../services/toast.service";
-import { CV_LANGUAGE_LABELS } from "../../../enums/cv-language.enum";
+import { CV_LANGUAGE_LABELS, CvLanguage } from "../../../enums/cv-language.enum";
 import { DRAFT_STATUS_LABELS, DraftStatus } from "../../../enums/draft-status.enum";
 import { VERSION_SOURCE_LABELS } from "../../../enums/version-source.enum";
 import { CvDetailResponse, CvResponse } from "../../../dtos/cv.dto";
@@ -21,6 +21,9 @@ import { leaveIfAccessDenied } from "../../../utils/access-denied.util";
 import { PendingNoteResponse } from "../../../dtos/update-request.dto";
 import { CvPdfPreviewDialogComponent } from "../cv-pdf-preview-dialog/cv-pdf-preview-dialog.component";
 import { CvPdfTarget } from "../../../models/cv-pdf.model";
+import { freeLanguagesOf, languageTabsOf } from "../../../models/cv-language-slot.model";
+import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
+import { MatMenuModule } from "@angular/material/menu";
 
 /*
  * Read-only view of a CV's current version, plus the actions available on it.
@@ -28,11 +31,12 @@ import { CvPdfTarget } from "../../../models/cv-pdf.model";
  * the localisation chain has to keep an anchor - so the delete dialog turns into a picker in that
  * case rather than failing with an error after the fact.
  * - Export PDF prints the current version; older versions are exported from the history.
+ * - Language tabs move between CVs of one profile on this same route, so the page follows the URL id.
  */
 @Component({
     selector: 'app-cv-detail',
     standalone: true,
-    imports: [CvContentEditorComponent, RouterLink, MatTooltipModule, DatePipe, CreateUpdateRequestDialogComponent, CvPdfPreviewDialogComponent],
+    imports: [CvContentEditorComponent, RouterLink, MatTooltipModule, MatMenuModule, DatePipe, CreateUpdateRequestDialogComponent, CvPdfPreviewDialogComponent],
     templateUrl: './cv-detail.component.html',
     styleUrl: './cv-detail.component.css',
     changeDetection: ChangeDetectionStrategy.OnPush,
@@ -52,6 +56,23 @@ export class CvDetailComponent implements OnInit {
 
     readonly detail = signal<CvDetailResponse | null>(null);
     readonly siblings = signal<CvResponse[]>([]);
+    private readonly destroyRef = inject(DestroyRef);
+
+    // Tabs wait for the siblings so no language flashes as missing
+    readonly siblingsLoaded = signal(false);
+
+    readonly languageTabs = computed(() => languageTabsOf(this.siblings(), this.detail()?.cv ?? null));
+
+    // Same rule as the create wizard
+    readonly addableLanguages = computed(() => freeLanguagesOf(this.siblings()));
+
+    // Only the owner creates CVs, from an active CV once its siblings are known
+    readonly canAddLanguage = computed(() =>
+        this.canEdit()
+        && this.siblingsLoaded()
+        && this.detail()?.cv.lifecycleStatus === LifecycleStatus.Active
+        && this.addableLanguages().length > 0);
+
     readonly loading = signal(true);
 
     readonly deleteOpen = signal(false);
@@ -116,10 +137,15 @@ export class CvDetailComponent implements OnInit {
     readonly pendingNotes = signal<PendingNoteResponse[]>([]);
 
     ngOnInit(): void {
-        const id = this.route.snapshot.paramMap.get('id');
-        if (id) {
-            this.load(id);
-        }
+        // Tabs navigate within this route and the component is reused, so follow the id
+        this.route.paramMap
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe(params => {
+                const id = params.get('id');
+                if (id) {
+                    this.load(id);
+                }
+            });
     }
 
     openHistory(): void {
@@ -132,6 +158,10 @@ export class CvDetailComponent implements OnInit {
     private load(id: string): void {
         this.cvService.getById(id).subscribe({
             next: detail => {
+                // Tabs stay within one profile; only a different profile invalidates the siblings
+                if (this.detail()?.cv.profileId !== detail.cv.profileId) {
+                    this.siblingsLoaded.set(false);
+                }
                 this.detail.set(detail);
                 this.loading.set(false);
                 this.loadSiblings(detail.cv.profileId);
@@ -148,7 +178,10 @@ export class CvDetailComponent implements OnInit {
 
     private loadSiblings(profileId: string): void {
         this.cvService.listByProfile(profileId).subscribe({
-            next: cvs => this.siblings.set(cvs),
+            next: cvs => {
+                this.siblings.set(cvs);
+                this.siblingsLoaded.set(true);
+            },
         });
     }
 
@@ -163,6 +196,28 @@ export class CvDetailComponent implements OnInit {
         if (id) {
             void this.router.navigate(['/' + AppRoute.Cvs, id, 'edit']);
         }
+    }
+
+    // ---------- Languages ----------
+
+    switchLanguage(cvId: string): void {
+        if (cvId !== this.detail()?.cv.id) {
+            void this.router.navigate(['/' + AppRoute.Cvs, cvId]);
+        }
+    }
+
+    // The wizard skips to the content step with the master's structure scaffolded
+    addLanguage(language: CvLanguage): void {
+        const profileId = this.detail()?.cv.profileId;
+        if (!profileId) {
+            return;
+        }
+        void this.router.navigate(['/' + AppRoute.CvsNew], {
+            queryParams: {
+                [QueryParam.ProfileId]: profileId,
+                [QueryParam.Language]: language,
+            },
+        });
     }
 
     // ---------- Export PDF ----------

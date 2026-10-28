@@ -112,6 +112,10 @@
   color: var(--vt-ink-muted);
 }
 
+.wizard-panel .notice {
+  margin-block-start: var(--vt-gap);
+}
+
 /* ---------- Choice list ---------- */
 .choice-list {
   list-style: none;
