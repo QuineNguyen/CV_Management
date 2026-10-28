@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, effect, inject, input, output } from "@angular/core";
-import { FormArray, FormBuilder, FormGroup, ReactiveFormsModule, Validators } from "@angular/forms";
+import { AbstractControl, FormArray, FormBuilder, FormGroup, ReactiveFormsModule, ValidationErrors, ValidatorFn, Validators } from "@angular/forms";
 import { CvSectionEditorComponent } from "./cv-section-editor/cv-section-editor.component";
 import { CV_SECTIONS, FieldKind, SectionDescriptor } from "../../../models/cv-section-descriptor.model";
 import { CvContent, emptyCvContent } from "../../../models/cv-content.model";
@@ -38,6 +38,8 @@ export class CvContentEditorComponent {
 
     // Section whose entries reference the skill catalogue
     private static readonly SKILLS_SECTION_KEY = 'skills';
+    // Sync flag on a repeated entry
+    private static readonly UNTRANSLATED_KEY = 'is_untranslated';
 
     private readonly fb = inject(FormBuilder);
     private readonly commentStore = inject(InlineCommentStore);
@@ -159,13 +161,18 @@ export class CvContentEditorComponent {
         return this.fb.group(group);
     }
 
-    private buildFieldGroup(section: SectionDescriptor): FormGroup {
+    // Items pass placeholderAware so an untouched sync placeholder does not block saving.
+
+    private buildFieldGroup(section: SectionDescriptor, placeholderAware = false): FormGroup {
         const controls: Record<string, unknown> = {};
 
         for (const field of section.fields) {
-            const validators = [];
+            const validators: ValidatorFn[] = [];
             if (field.required) {
-                validators.push(Validators.required);
+                validators.push(placeholderAware
+                    ? CvContentEditorComponent.requiredUnlessPlaceholder(section)
+                    : Validators.required
+                );
             }
             if (field.maxLength) {
                 validators.push(Validators.maxLength(field.maxLength));
@@ -181,7 +188,7 @@ export class CvContentEditorComponent {
         // Structual keys ride along untouched so a round-trip never loses sync state.
         group.addControl('item_id', this.fb.control(this.newItemId()));
         group.addControl('display_order', this.fb.control(0));
-        group.addControl('is_untranslated', this.fb.control(false));
+        group.addControl(CvContentEditorComponent.UNTRANSLATED_KEY, this.fb.control(false));
         group.addControl('deleted_in_master', this.fb.control(false));
 
         // skill_id points at the catalogue; kept as-is so re-editing never breaks the reference.
@@ -197,6 +204,9 @@ export class CvContentEditorComponent {
             group.get(section.titleField)?.valueChanges
                 .subscribe(() => skillId?.setValue(null, { emitEvent: false }));
         }
+
+        // "Untouched" depends on every field, so typing in one re-checks them all.
+        group.valueChanges.subscribe(() => this.revalidateFields(section, group));
 
         return group;
     }
@@ -222,6 +232,7 @@ export class CvContentEditorComponent {
             for (const item of items) {
                 const group = this.buildItemGroup(section);
                 group.patchValue(this.writeItem(section, item), { emitEvent: false });
+                this.revalidateFields(section, group);
                 array.push(group, { emitEvent: false });
             }
         }
@@ -345,5 +356,40 @@ export class CvContentEditorComponent {
         }
         const pad = (n: number) => String(n).padStart(2, '0');
         return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+    }
+
+    /*
+     * Required, except on a sync placeholder nobody has started: translation spans several
+     * drafts. Once any field is typed, every required field applies again.
+     */
+    private static requiredUnlessPlaceholder(section: SectionDescriptor): ValidatorFn {
+        return (control: AbstractControl): ValidationErrors | null => {
+            const group = control.parent;
+            return group && CvContentEditorComponent.isUntouchedPlaceholder(section, group)
+                ? null
+                : Validators.required(control);
+        }
+    }
+
+    private static isUntouchedPlaceholder(section: SectionDescriptor, group: AbstractControl): boolean {
+        return group.get(CvContentEditorComponent.UNTRANSLATED_KEY)?.value === true
+            && section.fields.every(field => CvContentEditorComponent.isBlank(group.get(field.key)?.value));
+    }
+
+    private static isBlank(value: unknown): boolean {
+        if (value === null || value === undefined) {
+            return true;
+        }
+        if (typeof value === 'string') {
+            return value.trim().length === 0;
+        }
+        return Array.isArray(value) && value.length === 0;
+    }
+
+    // Re-runs field validators without emitting, so it cannot loop through valueChanges.
+    private revalidateFields(section: SectionDescriptor, group: FormGroup): void {
+        for (const field of section.fields) {
+            group.get(field.key)?.updateValueAndValidity({ emitEvent: false });
+        }
     }
 }

@@ -36,6 +36,25 @@
         @if (canEdit()) {
           <button type="button" class="btn btn-primary" (click)="edit()">Edit</button>
         }
+        @if (canAddLanguage()) {
+          @if (addableLanguages().length === 1) {
+            <button type="button" class="btn btn-ghost" (click)="addLanguage(addableLanguages()[0])">
+              Add {{ languageLabels[addableLanguages()[0]] }}
+            </button>
+          } @else {
+            <button type="button" class="btn btn-primary" [matMenuTriggerFor]="languageMenu">
+              Add language
+            </button>
+            <mat-menu #languageMenu="matMenu" xPosition="before">
+              @for (language of addableLanguages(); track language) {
+                <button type="button" mat-menu-item (click)="addLanguage(language)">
+                  <span class="code-chip is-primary">{{ language }}</span>
+                  {{ languageLabels[language] }}
+                </button>
+              }
+            </mat-menu>
+          }
+        }
         @if (canRequestUpdate()) {
           <button type="button" class="btn btn-primary" (click)="openRequestUpdate()">Request Update</button>
         }
@@ -47,6 +66,43 @@
         }
       </div>
     </header>
+
+    <!-- Language versions of this profile -->
+    @if (siblingsLoaded()) {
+      <nav class="language-tabs" aria-label="Language versions">
+        @for (tab of languageTabs(); track tab.language) {
+          @if (tab.cv; as cv) {
+            <button type="button" class="language-tab"
+                    [class.is-active]="tab.active"
+                    [attr.aria-current]="tab.active ? 'page' : null"
+                    (click)="switchLanguage(cv.id)">
+              <span class="language-tab-head">
+                <span class="language-tab-code">{{ tab.language }}</span>
+                <span class="language-tab-label">{{ languageLabels[tab.language] }}</span>
+                @if (cv.master) {
+                  <span class="status-badge">Master</span>
+                }
+              </span>
+              <span class="language-tab-meta">
+                {{ tab.stateLabel }}
+                @if (tab.untranslatedLabel; as label) {
+                  <span class="tab-warning">{{ label }}</span>
+                }
+              </span>
+            </button>
+          } @else {
+            <span class="language-tab is-disabled" tabindex="0"
+                  [matTooltip]="'No ' + languageLabels[tab.language] + ' CV yet'">
+              <span class="language-tab-head">
+                <span class="language-tab-code">{{ tab.language }}</span>
+                <span class="language-tab-label">{{ languageLabels[tab.language] }}</span>
+              </span>
+              <span class="language-tab-meta">Not created</span>
+            </span>
+          }
+        }
+      </nav>
+    }
 
     <!-- Version metadata -->
     <dl class="version-facts">

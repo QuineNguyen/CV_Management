@@ -11,6 +11,7 @@ import com.training.cvmanagementbe.dto.response.cvs.pdf.CvPdfLinkResponse;
 import com.training.cvmanagementbe.enums.cvs.CvSearchSortField;
 import com.training.cvmanagementbe.enums.cvs.CvSortField;
 import com.training.cvmanagementbe.enums.cvs.CvVersionSortField;
+import com.training.cvmanagementbe.record.cvs.CvContent;
 import com.training.cvmanagementbe.service.CvSearchService;
 import com.training.cvmanagementbe.service.CvService;
 import com.training.cvmanagementbe.service.PdfExportService;
@@ -67,6 +68,12 @@ public class CvController {
             @RequestParam(defaultValue = "false") boolean includeDeleted
     ) {
         return ResponseEntity.ok(cvService.listByProfile(profileId, includeDeleted));
+    }
+
+    @GetMapping(ApiPath.PROFILES + ApiPath.CVS_SCAFFOLD)
+    @Operation(summary = "Starting content for a new CV: master structure as untranslated placeholders or the template for the first CV")
+    public ResponseEntity<CvContent> getScaffold(@PathVariable UUID profileId) {
+        return ResponseEntity.ok(cvService.getScaffold(profileId));
     }
 
     // Scope by role, organization + content criteria, paged on the server

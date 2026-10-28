@@ -14,6 +14,8 @@ import java.util.UUID;
  * - master: Derived from master_cv_id being null.
  * - currentVersionNumber: Null while the CV has no published version yet.
  * - openDraftStatus: Null when no draft is open; drives the edit screen's branching.
+ * - untranslatedItemCount: Placeholders still waiting, read from the open draft if any,
+ * else from the current version. Feeds the language tabs.
  */
 @Schema(name = "CvResponse", description = "Response body for a CV")
 public record CvResponse(
@@ -29,6 +31,7 @@ public record CvResponse(
         Integer currentVersionNumber,
         LocalDateTime currentVersionPublishedAt,
         DraftStatus openDraftStatus,
+        long untranslatedItemCount,
         UUID deletedBy,
         String deletedByName,
         LocalDateTime deletedAt,

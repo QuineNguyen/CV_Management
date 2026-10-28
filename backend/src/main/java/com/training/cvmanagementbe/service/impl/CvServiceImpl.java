@@ -119,6 +119,14 @@ public class CvServiceImpl implements CvService {
     }
 
     @Override
+    public CvContent getScaffold(UUID profileId) {
+        CvProfile profile = requireActiveProfile(profileId);
+        requireOwner(profile.getEmployeeId());
+
+        return newCvContent(findActiveMaster(profileId).orElse(null), requireUser(profile.getEmployeeId()));
+    }
+
+    @Override
     public PagedResponse<CvResponse> listDeleted(Pageable pageable) {
         requireAdminOrHr();
 
@@ -241,23 +249,23 @@ public class CvServiceImpl implements CvService {
 
         User owner = requireUser(profile.getEmployeeId());
 
+        // Read before the new row exists: The first CV of a profile becomes its master.
+        Cv master = findActiveMaster(profileId).orElse(null);
+
         Cv cv = new Cv();
         cv.setProfileId(profileId);
         cv.setLanguage(request.language());
         cv.setLifecycleStatus(LifecycleStatus.ACTIVE);
         // First CV of a profile is its master; every later one hangs off the current master.
-        cv.setMasterCvId(cvRepository
-                .findByProfileIdAndMasterCvIdIsNullAndLifecycleStatus(profileId, LifecycleStatus.ACTIVE)
-                .map(Cv::getId)
-                .orElse(null));
+        cv.setMasterCvId(master == null ? null : master.getId());
 
         Cv saved = cvRepository.saveAndFlush(cv);
 
         // Identity fields always come from the account, whatever the client sent.
         // Item ids are filled in before anything downstream tries to match on them.
-        CvContent content = codec.normaliseItemIds(request.content() == null
-                ? codec.seedFrom(owner)
-                : codec.applyPersonalInfoSnapshot(request.content(), owner));
+        CvContent content = normalise(request.content() == null
+                ? newCvContent(master, owner)
+                : codec.normaliseItemIds(request.content()));
 
         // Checked after ids are filled in, so a generated id is validated like any other.
         itemIdGuard.requireOwnedOrNew(profileId, content);
@@ -299,7 +307,7 @@ public class CvServiceImpl implements CvService {
         }
 
         if (publishedDirectly()) {
-            CvContent content = codec.normaliseItemIds(request.content());
+            CvContent content = normalise(request.content());
             itemIdGuard.requireOwnedOrNew(profile.getId(), content);
             content = skillService.linkCatalog(content);
 
@@ -569,7 +577,7 @@ public class CvServiceImpl implements CvService {
             throw new ApiException.BusinessRuleException(ErrorCode.DRAFT_CONTENT_LOCKED);
         }
 
-        CvContent normalised = codec.normaliseItemIds(request.content());
+        CvContent normalised = normalise(request.content());
 
         /*
          * A CV whose first draft was cancelled before anything was published has no source left for
@@ -607,6 +615,34 @@ public class CvServiceImpl implements CvService {
                 .orElseGet(() -> codec.write(codec.seedFrom(requireUser(profile.getEmployeeId())))));
         draft.setAvatarImageId(current.map(CvVersion::getAvatarImageId).orElse(null));
         return draft;
+    }
+
+    // ---------- New CV content ----------
+
+    private Optional<Cv> findActiveMaster(UUID profileId) {
+        return cvRepository.findByProfileIdAndMasterCvIdIsNullAndLifecycleStatus(profileId, LifecycleStatus.ACTIVE);
+    }
+
+    // The first CV starts from the template; a later language from the master's structure.
+    private CvContent newCvContent(Cv master, User owner) {
+        return master == null
+                ? codec.seedFrom(owner)
+                : codec.scaffoldTranslation(structureOf(master), owner);
+    }
+
+    // Master's current version; an unpublished master lends its open draft, an empty one the template.
+    private CvContent structureOf(Cv master) {
+        return cvVersionRepository.findTopByCvIdOrderByVersionNumberDesc(master.getId())
+                .map(CvVersion::getContentJson)
+                .or(() -> cvDraftRepository.findByCvIdAndStatusIn(master.getId(), CvDraft.OPEN_STATUSES)
+                        .map(CvDraft::getContentJson))
+                .map(codec::read)
+                .orElseGet(CvContent::empty);
+    }
+
+    // Every content write: Ids filled in first, then started placeholders lose their untranslated flag.
+    private CvContent normalise(CvContent content) {
+        return codec.normaliseTranslationFlags(codec.normaliseItemIds(content));
     }
 
     // ---------- Access control ----------
@@ -768,9 +804,8 @@ public class CvServiceImpl implements CvService {
     }
 
     private CvResponse toResponse(Cv cv, CvProfile profile, String employeeName, CvVersion current) {
-        DraftStatus draftStatus = cvDraftRepository
+        CvDraft openDraft = cvDraftRepository
                 .findByCvIdAndStatusIn(cv.getId(), CvDraft.OPEN_STATUSES)
-                .map(CvDraft::getStatus)
                 .orElse(null);
 
         return new CvResponse(
@@ -785,13 +820,22 @@ public class CvServiceImpl implements CvService {
                 cv.getLifecycleStatus(),
                 current == null ? null : current.getVersionNumber(),
                 current == null ? null : current.getPublishedAt(),
-                draftStatus,
+                openDraft == null ? null : openDraft.getStatus(),
+                untranslatedItemCountOf(openDraft, current),
                 cv.getDeletedBy(),
                 cv.getDeletedBy() == null ? null : resolveEmployeeName(cv.getDeletedBy()),
                 cv.getDeletedAt(),
                 cv.getCreatedAt(),
                 cv.getUpdatedAt()
         );
+    }
+
+    // Open draft first, current version second; one parse per row, rows are few.
+    private long untranslatedItemCountOf(CvDraft openDraft, CvVersion current) {
+        String contentJson = openDraft != null
+                ? openDraft.getContentJson()
+                : current == null ? null : current.getContentJson();
+        return contentJson == null ? 0 : codec.read(contentJson).untranslatedItemCount();
     }
 
     // ---------- Version helpers ----------

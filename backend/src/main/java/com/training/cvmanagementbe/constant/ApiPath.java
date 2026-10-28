@@ -39,6 +39,7 @@ public final class ApiPath {
     public static final String SKILLS = "/skills";
     public static final String OPTIONS = "/options";
     public static final String SEARCH_FILTERS = "/search-filters";
+    public static final String CVS_SCAFFOLD = "/{profileId}/cvs/scaffold";
 
     // Skill catalogue: drag and drop target
     public static final String SKILL_POSITION = "/{id}/position";

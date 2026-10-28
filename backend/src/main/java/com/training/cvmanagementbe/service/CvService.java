@@ -6,6 +6,7 @@ import com.training.cvmanagementbe.dto.request.cvs.CvEditRequest;
 import com.training.cvmanagementbe.dto.request.cvs.CvRollbackRequest;
 import com.training.cvmanagementbe.dto.response.configs.PagedResponse;
 import com.training.cvmanagementbe.dto.response.cvs.*;
+import com.training.cvmanagementbe.record.cvs.CvContent;
 import org.springframework.data.domain.Pageable;
 
 import java.util.List;
@@ -46,6 +47,9 @@ public interface CvService {
     CvVersionHistoryItem rollback(UUID cvId, CvRollbackRequest request);
 
     List<CvResponse> listByProfile(UUID profileId, boolean includeDeleted);
+
+    // Content a new CV of the profile starts from; the creation wizard previews it. Owner only.
+    CvContent getScaffold(UUID profileId);
 
     PagedResponse<CvResponse> listDeleted(Pageable pageable);
 
