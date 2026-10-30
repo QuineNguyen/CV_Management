@@ -36,6 +36,15 @@
           your decision applies to exactly what is on this page
         </div>
 
+        <!-- Placeholders come from the master's structure: not the employee's own writing -->
+        @if (structureSummary(); as summary) {
+          <div class="notice notice-warning" role="status">
+            <strong>Structure synced from the master CV.</strong>
+            In this draft, {{ summary }}. They come from the master CV's structure, not from content
+            the employee wrote
+          </div>
+        }
+
         @if (review.avatarUrl) {
           <div class="review-photo">
             <img [src]="review.avatarUrl" alt="CV photo" class="review-photo-img" />

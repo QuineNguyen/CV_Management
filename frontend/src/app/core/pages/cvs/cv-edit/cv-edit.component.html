@@ -88,6 +88,20 @@
       </div>
     }
 
+    <!-- Structure from the master CV: placeholders to translate and entries the master dropped -->
+    @if (structureSummary(); as summary) {
+      <div class="notice notice-warning" role="status">
+        <strong>Structure synced from the master CV.</strong>
+        {{ summary }}.
+        @if (locked()) {
+          You can translate them once the draft is returned to you or the review finishes
+        } @else {
+          Untranslated entries keep their badge until you fill them in. For an entry removed in the
+          master, use "Delete or keep?" on its header to decide whether this language keeps it
+        }
+      </div>
+    }
+
     <!-- Pending update request: tell the owner where its feedback sits -->
     @if (pendingNotes().length; as count) {
       <div class="notice notice-warning" role="status">

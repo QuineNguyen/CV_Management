@@ -27,6 +27,16 @@ export function slotStateOf(cv: CvResponse): CvSlotState {
     return cv.openDraftStatus ? CvSlotState.Drafting : CvSlotState.Empty;
 }
 
+/*
+ * "2 items untranslated", read from the open draft first and the current version second (the
+ * server picks). Shared by the detail tabs, the profile's language slots and the search results.
+ */
+export function untranslatedLabelOf(cv: Pick<CvResponse, 'untranslatedItemCount'> | null): string | null {
+    return cv && cv.untranslatedItemCount > 0
+        ? `${pluralize(cv.untranslatedItemCount, 'item')} untranslated`
+        : null;
+}
+
 // Only ACTIVE CVs hold a language slot; a deleted one frees it.
 export function activeCvsOf(cvs: readonly CvResponse[]): CvResponse[] {
     return cvs.filter(cv => cv.lifecycleStatus === LifecycleStatus.Active);
@@ -58,9 +68,7 @@ export function languageTabsOf(cvs: readonly CvResponse[], current: CvResponse |
             state,
             active: !!cv && cv.id === current?.id,
             stateLabel: cv && state ? stateLabelOf(cv, state) : null,
-            untranslatedLabel: cv && cv.untranslatedItemCount > 0
-                ? `${pluralize(cv.untranslatedItemCount, 'item')} untranslated`
-                : null,
+            untranslatedLabel: untranslatedLabelOf(cv),
         };
     });
 }

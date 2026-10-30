@@ -1,3 +1,5 @@
+import { HttpContextToken } from "@angular/common/http";
+
 export type ErrorCode =
   // Identity and organisation
   | 'DUPLICATE_EMAIL'
@@ -122,3 +124,10 @@ export type ErrorCode =
   | 'PROFILE_UPDATE_NO_PENDING_REQUEST';
   
 export type ClientErrorCode = ErrorCode | 'NETWORK_ERROR';
+
+/*
+ * Error codes the caller reacts to itself (a reload prompt, say). The error interceptor shows no
+ * toast for them but still handles every other failure of the same request as usual - unlike
+ * SKIP_ERROR_TOAST, which silences the request completely.
+ */
+export const HANDLED_ERROR_CODES = new HttpContextToken<readonly string[]>(() => []);

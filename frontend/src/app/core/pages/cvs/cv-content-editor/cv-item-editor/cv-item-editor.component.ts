@@ -1,5 +1,5 @@
 import { CdkDrag, CdkDragHandle } from "@angular/cdk/drag-drop";
-import { ChangeDetectionStrategy, Component, computed, HostListener, inject, input, output, signal } from "@angular/core";
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, computed, HostListener, inject, input, output, signal } from "@angular/core";
 import { FormGroup, ReactiveFormsModule } from "@angular/forms";
 import { MatToolbarModule } from "@angular/material/toolbar";
 import { MatDatepickerModule } from "@angular/material/datepicker";
@@ -15,6 +15,8 @@ import { PendingNoteBadgeComponent } from "../pending-note-badge/pending-note-ba
 import { PendingNoteListComponent } from "../pending-note-list/pending-note-list.component";
 import { PendingNoteStore } from "../../../../services/pending-note-store.service";
 import { PendingNoteResponse } from "../../../../dtos/update-request.dto";
+import { ConfirmService } from "../../../../services/confirm.service";
+import { syncPlaceholderLabelOf } from "../../../../enums/sync-placeholder-label.enum";
 
 /*
  * One entry of a REPEATED section, rendered from its section descriptor rather than a bespoke
@@ -22,6 +24,8 @@ import { PendingNoteResponse } from "../../../../dtos/update-request.dto";
  * 
  * - Collapsed by default so a CV with twenty entries is still navigable; the header shows the
  * two fields that identify the entry.
+ * - Structure sync marks: an untranslated placeholder shows a label in the CV's language as its
+ * title; an entry removed in the master offers "Delete here" or "Keep", asked per entry on click.
  */
 @Component({
     selector: 'app-cv-item-editor',
@@ -50,6 +54,8 @@ export class CvItemEditorComponent {
 
     private readonly commentStore = inject(InlineCommentStore);
     private readonly noteStore = inject(PendingNoteStore);
+    private readonly confirm = inject(ConfirmService);
+    private readonly changeDetector = inject(ChangeDetectorRef);
 
     // item_id never changes for a given group
     private readonly itemId = computed<string | null>(() => this.group().get('item_id')?.value ?? null);
@@ -96,11 +102,19 @@ export class CvItemEditorComponent {
         return id ? this.noteStore.countForItem(this.section().key, id) : 0;
     })
 
-    // Falls back to a positional label so a brand-new entry is still identifiable.
+    /*
+     * The typed title first; an untranslated placeholder then shows the label of its CV language
+     * (never saved); anything else falls back to a positional label.
+     */
     title(): string {
-        const key = this.section().titleField;
-        const value = key ? this.group().get(key)?.value : null;
-        return this.text(value) ?? `New ${this.section().itemNoun ?? 'entry'}`;
+        return this.typedTitle()
+            ?? (this.untranslated ? syncPlaceholderLabelOf(this.language(), this.section().key) : null)
+            ?? `New ${this.section().itemNoun ?? 'entry'}`;
+    }
+
+    // Styled apart so a system label is never mistaken for what the owner wrote
+    showsPlaceholderTitle(): boolean {
+        return this.untranslated && !this.typedTitle();
     }
 
     subtitle(): string | null {
@@ -190,6 +204,53 @@ export class CvItemEditorComponent {
         this.openSelectKey.set(null);
         event.stopPropagation();
         this.removed.emit(this.index());
+    }
+
+    /*
+     * The master dropped this entry; this language decides. Asked on click, never in bulk when the
+     * page opens - ConfirmService holds one question at a time and a second would cancel the first.
+     * Any answer other than "Delete here" keeps the entry, the side that loses nothing.
+     */
+    async reviewRemovedInMaster(event: MouseEvent): Promise<void> {
+        event.stopPropagation();
+        this.openSelectKey.set(null);
+        if (this.readOnly()) {
+            return;
+        }
+
+        const deleteHere = await this.confirm.ask({
+            title: 'Removed in the master CV',
+            message: 'This entry was removed from the master CV. Delete it from this language too?',
+            confirmLabel: 'Delete here',
+            cancelLabel: 'Keep',
+            danger: true,
+        });
+
+        if (deleteHere) {
+            // Same path as the remove button: saved like any other edit
+            this.removed.emit(this.index());
+            return;
+        }
+        this.keepEntry();
+    }
+
+    // The entry becomes this language's own; the next sync leaves it where it is
+    private keepEntry(): void {
+        const flag = this.group().get('deleted_in_master');
+        if (!flag) {
+            return;
+        }
+        // Dirty first, so the editor reports unsaved changes when the value change fires
+        flag.markAsDirty();
+        flag.setValue(false);
+        // The answer arrives after the click's change detection; the badge must update now
+        this.changeDetector.markForCheck();
+    }
+
+    private typedTitle(): string | null {
+        const key = this.section().titleField;
+        const value = key ? this.group().get(key)?.value : null;
+        return this.text(value);
     }
 
     private text(value: unknown): string | null {

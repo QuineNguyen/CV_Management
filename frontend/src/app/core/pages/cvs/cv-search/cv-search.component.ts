@@ -21,6 +21,7 @@ import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 import { AppRoute } from "../../../enums/app-route.enum";
 import { AvatarView } from "../../../models/user-page.model";
 import { SkillFilterComponent } from "./skill-filter/skill-filter.component";
+import { untranslatedLabelOf } from "../../../models/cv-language-slot.model";
 
 /*
  * CV search.
@@ -28,6 +29,7 @@ import { SkillFilterComponent } from "./skill-filter/skill-filter.component";
  * skills and content read the latest published version only, so those CVs drop out.
  * - Role scope and every filter are applied by the server. This page never trims the rows it
  * receives - it only renders them.
+ * - A row whose CV still has placeholders to translate says how many, under its language.
  */
 @Component({
     selector: 'app-cv-search',
@@ -61,6 +63,7 @@ export class CvSearchComponent implements OnInit {
     readonly dropdown = CvSearchDropdown;
     readonly profileScope = ProfileScope;
     readonly sortField = CvSearchSortField;
+    readonly untranslatedLabelOf = untranslatedLabelOf;
 
     readonly results = signal<CvSearchItemResponse[]>([]);
     readonly loading = signal(false);

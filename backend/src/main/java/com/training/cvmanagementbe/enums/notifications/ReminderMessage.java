@@ -27,7 +27,7 @@ public enum ReminderMessage {
     // 1 = CV owner, 2 = CV label, 3 = review level, 4 = overdue text
     APPROVAL_SLA_OVERDUE(
             "CV review overdue - %1$s",
-            "Your %3$s of $1$s's CV %2$s is %4$s past its deadline"
+            "Your %3$s of %1$s's CV %2$s is %4$s past its deadline"
     ),
 
     // 1 = overdue count, 2 = oldest overdue text

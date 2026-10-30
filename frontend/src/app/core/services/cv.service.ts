@@ -1,4 +1,4 @@
-import { HttpClient, HttpParams } from "@angular/common/http";
+import { HttpClient, HttpContext, HttpParams } from "@angular/common/http";
 import { inject, Injectable } from "@angular/core";
 import { environment } from "../../../environments/environment";
 import { map, Observable } from "rxjs";
@@ -9,6 +9,7 @@ import { PendingNoteResponse } from "../dtos/update-request.dto";
 import { CvRollbackRequest, CvVersionHistoryItem, CvVersionQuery, VersionDiffResponse } from "../dtos/cv-version.dto";
 import { CvPdfLink } from "../models/cv-pdf.model";
 import { CvContent } from "../models/cv-content.model";
+import { HANDLED_ERROR_CODES } from "../models/error-code.model";
 
 @Injectable({ providedIn: 'root' })
 export class CvService {
@@ -106,8 +107,12 @@ export class CvService {
         return this.http.post<CvResponse>(this.url(`${ApiEndpoint.Profiles}/${profileId}/cvs`), body);
     }
 
-    edit(id: string, body: CvEditRequest): Observable<CvEditResponse> {
-        return this.http.put<CvEditResponse>(this.url(`${ApiEndpoint.Cvs}/${id}/content`), body);
+    // handledCodes: error codes the caller answers itself, so the interceptor shows no toast for them
+    edit(id: string, body: CvEditRequest, handledCodes: readonly string[] = []): Observable<CvEditResponse> {
+        return this.http.put<CvEditResponse>(this.url(`${ApiEndpoint.Cvs}/${id}/content`), body,
+        {
+            context: new HttpContext().set(HANDLED_ERROR_CODES, handledCodes),
+        });
     }
 
     // A body is sent only when a successor master must be named; the server rejects a missing one.

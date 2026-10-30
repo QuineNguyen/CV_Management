@@ -11,6 +11,7 @@ import { AppRoute } from '../enums/app-route.enum';
 import { QueryParam } from '../enums/query-param.enum';
 import { SKIP_ERROR_TOAST } from './skip-error-toast.token';
 import { MediaType } from '../enums/cv-pdf.enum';
+import { HANDLED_ERROR_CODES } from '../models/error-code.model';
 
 /**
  * Turns every failed request into one visible, consistent outcome.
@@ -36,6 +37,10 @@ import { MediaType } from '../enums/cv-pdf.enum';
  * user did not start them and cannot act on them. The 401 notice is kept because it explains
  * the redirect that follows.
  * 
+ * - Codes listed in HANDLED_ERROR_CODES get no notice either: the screen that sent the request
+ * answers them itself (the CV editor turns a stale-draft 409 into a reload prompt). Every other
+ * failure of that request is still announced here.
+ * 
  * - A request made with responseType 'blob' (PDF export) receives its JSON error envelope as a
  * Blob too. It is read back to JSON first, so those errors show the server's message like any
  * other call.
@@ -49,6 +54,7 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
   const router = inject(Router);
 
   const silent = req.context.get(SKIP_ERROR_TOAST);
+  const handledCodes = req.context.get(HANDLED_ERROR_CODES);
   const notify = (message: string) => {
     if (!silent) {
       toast.error(message);
@@ -65,6 +71,11 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
     const envelope = error.error as ApiErrorResponse | null;
     const code = envelope?.code ?? '';
     const message = messageFor(code, envelope?.message);
+
+    // The caller answers this code itself; a toast on top would say the same thing twice
+    if (code && handledCodes.includes(code)) {
+      return throwError(() => error);
+    }
 
     switch (error.status) {
       case 401: {
