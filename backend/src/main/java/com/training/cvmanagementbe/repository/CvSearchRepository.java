@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.training.cvmanagementbe.common.LikePatterns;
 import com.training.cvmanagementbe.constant.CvContentKeys;
 import com.training.cvmanagementbe.dto.response.cvs.CvSearchTeamTag;
+import com.training.cvmanagementbe.entity.models.CvDraft;
 import com.training.cvmanagementbe.enums.cvs.*;
 import com.training.cvmanagementbe.record.cvs.CvSearchCriteria;
 import com.training.cvmanagementbe.repository.projection.CvSearchRow;
@@ -117,6 +118,38 @@ public class CvSearchRepository {
                 .add(new CvSearchTeamTag(rs.getString("code"), rs.getString("name"), rs.getBoolean("is_primary_team")));
 
         jdbc.query(sql, new MapSqlParameterSource("userIds", strings(userIds)), collect);
+        return result;
+    }
+
+    /*
+     * cvId -> The content the untranslated counter reads: The open draft when there is one,
+     * the latest published version otherwise. One query for the page; uk_cv_drafts_open keeps it to
+     * one row per CV and only the chosen content leaves the database. A CV with neither is absent.
+     */
+    public Map<UUID, String> untranslatedSourcesOf(Collection<UUID> cvIds) {
+        Map<UUID, String> result = new HashMap<>();
+        if (cvIds.isEmpty()) {
+            return result;
+        }
+        String sql = """
+                SELECT c.id AS cv_id,
+                                       COALESCE(od.content_json, lv.content_json) AS content_json
+                                FROM cvs c
+                                LEFT JOIN cv_drafts od ON od.cv_id = c.id AND od.status IN (:openStatuses)
+                                LEFT JOIN cv_versions lv ON lv.cv_id = c.id
+                                     AND lv.version_number = (SELECT MAX(v2.version_number) FROM cv_versions v2 WHERE v2.cv_id = c.id)
+                                WHERE c.id IN (:cvIds)
+                """;
+        MapSqlParameterSource params = new MapSqlParameterSource()
+                .addValue("cvIds", strings(cvIds))
+                .addValue("openStatuses", CvDraft.OPEN_STATUSES.stream().map(Enum::name).toList());
+
+        jdbc.query(sql, params, (RowCallbackHandler) rs -> {
+            String contentJson = rs.getString("content_json");
+            if (contentJson != null) {
+                result.putIfAbsent(uuid(rs.getString("cv_id")), contentJson);
+            }
+        });
         return result;
     }
 

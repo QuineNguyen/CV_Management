@@ -30,6 +30,7 @@ import com.training.cvmanagementbe.repository.projection.CvVersionRef;
 import com.training.cvmanagementbe.service.CvService;
 import com.training.cvmanagementbe.service.DiffService;
 import com.training.cvmanagementbe.service.SkillService;
+import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
@@ -66,6 +67,7 @@ public class CvServiceImpl implements CvService {
     private final ApplicationEventPublisher eventPublisher;
     private final DiffService diffService;
     private final SkillService skillService;
+    private final EntityManager entityManager;
 
     // ---------- Queries ----------
 
@@ -298,7 +300,8 @@ public class CvServiceImpl implements CvService {
     @Override
     @Transactional
     public CvEditResponse edit(UUID cvId, CvEditRequest request) {
-        Cv cv = requireActiveCv(cvId);
+        // Locked first: Structure sync takes this row before it touches this CV's draft
+        Cv cv = requireActiveCvForUpdate(cvId);
         CvProfile profile = requireActiveProfile(cv.getProfileId());
 
         // No path exists for anyone but the owner to write CV content.
@@ -306,16 +309,27 @@ public class CvServiceImpl implements CvService {
             throw new ApiException.ForbiddenException(ErrorCode.NOT_CV_OWNER);
         }
 
+        // Locking read, so a draft that sync committed while this request waited is seen here
+        Optional<CvDraft> open = cvDraftRepository.findByCvIdAndStatusInForUpdate(cv.getId(), CvDraft.OPEN_STATUSES);
+        verifyDraftToken(open.orElse(null), request.expectedDraftUpdatedAt());
+
+        // Frozen for review whichever branch the owner's role takes
+        if (open.filter(CvDraft::isContentLocked).isPresent()) {
+            throw new ApiException.BusinessRuleException(ErrorCode.DRAFT_CONTENT_LOCKED);
+        }
+
         if (publishedDirectly()) {
             CvContent content = normalise(request.content());
             itemIdGuard.requireOwnedOrNew(profile.getId(), content);
             content = skillService.linkCatalog(content);
 
+            // An open draft - for Admin/HR, one that structure sync created - closes with this version
             CvVersion version = versionPublisher.publish(PublishCommand.directEdit(
                     cv.getId(),
                     content,
                     request.avatarImageId(),
-                    profile.getEmployeeId()
+                    profile.getEmployeeId(),
+                    open.map(CvDraft::getId).orElse(null)
             ));
 
             // Skipping the approval flow is exactly the case that must leave a trail.
@@ -325,7 +339,7 @@ public class CvServiceImpl implements CvService {
             return CvEditResponse.ofVersion(toSummary(version));
         }
 
-        return CvEditResponse.ofDraft(writeDraft(cv, profile, request));
+        return CvEditResponse.ofDraft(writeDraft(cv, profile, open, request));
     }
 
     @Override
@@ -480,6 +494,23 @@ public class CvServiceImpl implements CvService {
         }
     }
 
+    /*
+     * The editor sends updatedAt of the draft it loaded, null when none was open. The request
+     * carries the whole content, so saving over a draft that changed meanwhile would drop the
+     * change. Both directions count: An open draft that moved on and a draft that appeared
+     * since the page loaded (structure sync created it).
+     *
+     * Compared on the row just locked, read back from the database, so seconds-only DATETIME
+     * precision is on both sides. A sync landing in the same second the page loaded is not
+     * caught - the same limit the department CAS accepts.
+     */
+    private void verifyDraftToken(CvDraft open, LocalDateTime expected) {
+        LocalDateTime actual = open == null ? null : open.getUpdatedAt();
+        if (!Objects.equals(actual, expected)) {
+            throw new ApiException.ConflictException(ErrorCode.STALE_STATE);
+        }
+    }
+
     // ---------- Master handover ----------
 
     /*
@@ -569,14 +600,9 @@ public class CvServiceImpl implements CvService {
         cvDraftRepository.save(draft);
     }
 
-    private CvDraftResponse writeDraft(Cv cv, CvProfile profile, CvEditRequest request) {
-        Optional<CvDraft> open = cvDraftRepository.findByCvIdAndStatusIn(cv.getId(), CvDraft.OPEN_STATUSES);
-        CvDraft draft = open.orElseGet(() -> newDraftFromCurrentVersion(cv, profile));
-
-        if (draft.isContentLocked()) {
-            throw new ApiException.BusinessRuleException(ErrorCode.DRAFT_CONTENT_LOCKED);
-        }
-
+    // The open draft was locked, token-checked and lock-checked by edit()
+    private CvDraftResponse writeDraft(Cv cv, CvProfile profile, Optional<CvDraft> open, CvEditRequest request) {
+        CvDraft draft = open.orElseGet(() -> fromCurrentVersion(cv, profile.getEmployeeId()));
         CvContent normalised = normalise(request.content());
 
         /*
@@ -595,26 +621,40 @@ public class CvServiceImpl implements CvService {
 
         draft.setContentJson(codec.write(normalised));
         draft.setAvatarImageId(request.avatarImageId());
-        CvDraft saved = cvDraftRepository.save(draft);
+        CvDraft saved = persist(draft);
 
         auditLogger.record(Action.UPDATE_CV_DRAFT, TargetType.CV_DRAFT, saved.getId(), null, saved.getStatus());
         return toDraftResponse(saved);
     }
 
-    // A fresh draft starts from the published content or the black template if none exists.
-    private CvDraft newDraftFromCurrentVersion(Cv cv, CvProfile profile) {
+    /*
+     * Unsaved. Content and avatar from the current version; a CV with no version yet starts from
+     * the template with name and email taken from the account.
+     */
+    private CvDraft fromCurrentVersion(Cv cv, UUID ownerId) {
         Optional<CvVersion> current = cvVersionRepository.findTopByCvIdOrderByVersionNumberDesc(cv.getId());
 
         CvDraft draft = new CvDraft();
         draft.setCvId(cv.getId());
-        draft.setOwnerId(profile.getEmployeeId());
+        draft.setOwnerId(ownerId);
         draft.setStatus(DraftStatus.DRAFT);
         draft.setReviewRound(0);
         draft.setContentJson(current
                 .map(CvVersion::getContentJson)
-                .orElseGet(() -> codec.write(codec.seedFrom(requireUser(profile.getEmployeeId())))));
+                .orElseGet(() -> codec.write(codec.seedFrom(requireUser(ownerId)))));
         draft.setAvatarImageId(current.map(CvVersion::getAvatarImageId).orElse(null));
         return draft;
+    }
+
+    /*
+     * updated_at is stamped at flush and DATETIME keeps whole seconds, so the in-memory value
+     * differs from the stored one. Re-reading returns the exact token the next save must send -
+     * the same trap DepartmentServiceImpl.persist avoids.
+     */
+    private CvDraft persist(CvDraft draft) {
+        CvDraft saved = cvDraftRepository.saveAndFlush(draft);
+        entityManager.refresh(saved);
+        return saved;
     }
 
     // ---------- New CV content ----------
@@ -959,6 +999,7 @@ public class CvServiceImpl implements CvService {
                 draft.getLastRejectionReason(),
                 content.submittable(),
                 content.untranslatedItemCount(),
+                content.deletedInMasterCount(),
                 draft.getSubmittedAt(),
                 draft.getUpdatedAt(),
                 forDraft(draft.getId())

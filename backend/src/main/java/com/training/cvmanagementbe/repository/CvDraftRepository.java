@@ -2,9 +2,11 @@ package com.training.cvmanagementbe.repository;
 
 import com.training.cvmanagementbe.entity.models.CvDraft;
 import com.training.cvmanagementbe.enums.cvs.DraftStatus;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -97,4 +99,9 @@ public interface CvDraftRepository extends JpaRepository<CvDraft, UUID> {
     Optional<CvDraft> findTopByCvIdOrderByCreatedAtDesc(UUID cvId);
 
     long countByOwnerIdAndStatusIn(UUID ownerId, Collection<DraftStatus> statuses);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT d FROM CvDraft d WHERE d.cvId = :cvId AND d.status IN :statuses")
+    Optional<CvDraft> findByCvIdAndStatusInForUpdate(@Param("cvId") UUID cvId,
+                                                     @Param("statuses") Collection<DraftStatus> statuses);
 }

@@ -8,6 +8,7 @@ import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 /*
@@ -85,9 +86,18 @@ public record CvContent(
 
     // Count of placeholders still awaiting translation; feeds untranslatedItemCount.
     public long untranslatedItemCount() {
+        return countEntries(RepeatedEntry::untranslated);
+    }
+
+    // Entries flagged as removed in the master and still waiting for the owner's answer.
+    public long deletedInMasterCount() {
+        return countEntries(RepeatedEntry::deletedInMaster);
+    }
+
+    private long countEntries(Predicate<RepeatedEntry> condition) {
         return repeatedSections().values().stream()
                 .flatMap(List::stream)
-                .filter(RepeatedEntry::untranslated)
+                .filter(condition)
                 .count();
     }
 
