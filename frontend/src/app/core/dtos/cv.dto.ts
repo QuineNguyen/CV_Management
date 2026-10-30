@@ -15,6 +15,7 @@ export interface CvCreateRequest {
 export interface CvEditRequest {
     content: CvContent;
     avatarImageId: string | null;
+    expectedDraftUpdatedAt: string | null;
 }
 
 export interface CvDeleteRequest {
@@ -70,6 +71,7 @@ export interface CvDetailResponse {
     lastCancellation: DraftCancellation | null;
 }
 
+// The two counts drive the structure-sync notice; updatedAt is the token sent back on save. 
 export interface CvDraftResponse {
     id: string;
     cvId: string;
@@ -81,6 +83,7 @@ export interface CvDraftResponse {
     lastRejectionReason: string | null;
     submittable: boolean;
     untranslatedItemCount: number;
+    deletedInMasterCount: number;
     submittedAt: string | null;
     updatedAt: string;
     inlineComments: InlineCommentResponse[];
@@ -127,6 +130,7 @@ export interface CvSearchSkillTag {
 }
 
 // hasPublishedVersion = false is a CV that only matched organization criteria
+// untranslatedItemCount reads the open draft first, the current version second
 export interface CvSearchItemResponse {
     cvId: string;
     employeeId: string;
@@ -143,6 +147,7 @@ export interface CvSearchItemResponse {
     currentVersionNumber: number | null;
     publishedAt: string | null;
     skills: CvSearchSkillTag[];
+    untranslatedItemCount: number;
 }
 
 // depth indents departments so the dropdown reads as the tree

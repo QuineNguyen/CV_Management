@@ -8,7 +8,7 @@ import { DRAFT_STATUS_LABELS } from "../../../enums/draft-status.enum";
 import { AppRoute } from "../../../enums/app-route.enum";
 import { LifecycleStatus } from "../../../enums/lifecycle-status.enum";
 import { QueryParam } from "../../../enums/query-param.enum";
-import { LanguageSlot, slotStateOf } from "../../../models/cv-language-slot.model";
+import { LanguageSlot, slotStateOf, untranslatedLabelOf } from "../../../models/cv-language-slot.model";
 
 /*
  * The three language slots of one profile: which are filled and a way into the empty ones.
@@ -17,6 +17,8 @@ import { LanguageSlot, slotStateOf } from "../../../models/cv-language-slot.mode
  * English CV yet" is the fact the page is there to convey and a list of what exists cannot say it.
  * - A CV whose first draft was cancelled still occupies its slot, so "Create" cannot be offered
  * there. Without its own state and action it would look like a draft in progress with no way in.
+ * - Each filled slot also says how many entries still wait for translation, the same label as
+ * the language tabs of the CV detail page.
  */
 @Component({
     selector: 'app-cv-language-slots',
@@ -39,6 +41,7 @@ export class CvLanguageSlotsComponent implements OnInit {
     readonly languageLabels = CV_LANGUAGE_LABELS;
     readonly draftStatusLabels = DRAFT_STATUS_LABELS;
     readonly cvsRoute = '/' + AppRoute.Cvs;
+    readonly untranslatedLabelOf = untranslatedLabelOf;
 
     readonly slots = signal<LanguageSlot[]>([]);
     readonly loading = signal(true);

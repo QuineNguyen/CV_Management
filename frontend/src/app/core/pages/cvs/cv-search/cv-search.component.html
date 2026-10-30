@@ -314,6 +314,10 @@
                   <span class="code-chip is-primary">{{ item.language }}</span>
                   <span class="language-name">{{ languageName(item.language) }}</span>
                 </div>
+                <!-- Placeholders from the master's structure still waiting for this language -->
+                @if (untranslatedLabelOf(item); as label) {
+                  <span class="status-badge untranslated-badge">{{ label }}</span>
+                }
               </td>
 
               <td class="col-version">
@@ -456,6 +460,9 @@
                   <span class="code-chip is-primary">{{ item.language }}</span>
                   <span class="language-name">{{ languageName(item.language) }}</span>
                 </div>
+                @if (untranslatedLabelOf(item); as label) {
+                  <span class="status-badge untranslated-badge is-start">{{ label }}</span>
+                }
               </dd>
             </div>
             <div>

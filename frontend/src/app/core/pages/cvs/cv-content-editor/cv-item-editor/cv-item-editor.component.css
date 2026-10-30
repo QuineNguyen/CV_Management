@@ -63,11 +63,26 @@
   text-overflow: ellipsis;
 }
 
+/* System label of an untranslated placeholder: never read as the owner's own words */
+.cv-item-title.is-placeholder {
+  font-weight: 600;
+  font-style: italic;
+  color: var(--vt-ink-muted);
+}
+
 .cv-item-subtitle {
   font-size: var(--vt-fs-sm);
   color: var(--vt-ink-muted);
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+/* "Delete or keep?" next to the removed-in-master badge; a full tap target on touch screens */
+.cv-item-decide {
+  font-size: var(--vt-fs-sm);
+  min-height: var(--vt-tap);
+  padding-inline: clamp(0.25rem, 1vw, 0.5rem);
+  white-space: nowrap;
 }
 
 .cv-item-actions {

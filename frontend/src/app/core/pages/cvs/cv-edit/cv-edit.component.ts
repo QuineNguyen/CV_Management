@@ -6,7 +6,7 @@ import { ActivatedRoute, Router } from "@angular/router";
 import { ToastService } from "../../../services/toast.service";
 import { CV_LANGUAGE_LABELS } from "../../../enums/cv-language.enum";
 import { DRAFT_STATUS_LABELS, DraftStatus, LOCKED_DRAFT_STATUSES } from "../../../enums/draft-status.enum";
-import { CvDetailResponse } from "../../../dtos/cv.dto";
+import { CvDetailResponse, CvEditRequest } from "../../../dtos/cv.dto";
 import { UserRole } from "../../../enums/user-role.enum";
 import { CvContent, emptyCvContent, seededCvContent } from "../../../models/cv-content.model";
 import { AppRoute } from "../../../enums/app-route.enum";
@@ -19,9 +19,13 @@ import { CV_SECTION_LABELS } from "../../../enums/cv-section-key.enum";
 import { InlineCommentStatus } from "../../../enums/inline-comment-status.enum";
 import { DraftSubmitResponse } from "../../../dtos/approval.dto";
 import { DatePipe } from "@angular/common";
-import { messageFor } from "../../../models/error-messages.model";
+import { ERROR_MESSAGES, messageFor } from "../../../models/error-messages.model";
 import { leaveIfAccessDenied } from "../../../utils/access-denied.util";
 import { PendingNoteResponse } from "../../../dtos/update-request.dto";
+import { ConfirmService } from "../../../services/confirm.service";
+import { pluralize } from "../../../utils/plural.util";
+import { HttpErrorResponse, HttpStatusCode } from "@angular/common/http";
+import { ApiErrorResponse } from "../../../dtos/api-error.dto";
 
 /*
  * Edit CV content. The screen branches on the owner's role, not on anything the user picks:
@@ -30,6 +34,10 @@ import { PendingNoteResponse } from "../../../dtos/update-request.dto";
  *    why that path asks for confirmation and says plainly that no one will review it.
  * A draft under review is read-only for everyone including its owner, so reviewers decide on
  * exactly the content they read.
+ * 
+ * Structure sync can write into the open draft while this page is open. Every save carries the
+ * draft's updatedAt; a mismatch comes back as a 409, answered here with a reload prompt rather
+ * than the generic toast and never by reloading on its own - what was typed stays on screen.
  */
 @Component({
     selector: 'app-cv-edit',
@@ -41,12 +49,16 @@ import { PendingNoteResponse } from "../../../dtos/update-request.dto";
 })
 export class CvEditComponent implements OnInit, HasUnsavedChanges {
 
+    // The draft changed after this page loaded it (usually structure sync)
+    private static readonly STALE_STATE: keyof typeof ERROR_MESSAGES = 'STALE_STATE';
+
     private readonly cvService = inject(CvService);
     private readonly auth = inject(AuthService);
     private readonly route = inject(ActivatedRoute);
     private readonly router = inject(Router);
     private readonly toast = inject(ToastService);
     private readonly approvalService = inject(ApprovalService);
+    private readonly confirm = inject(ConfirmService);
 
     private readonly editor = viewChild(CvContentEditorComponent);
 
@@ -110,6 +122,25 @@ export class CvEditComponent implements OnInit, HasUnsavedChanges {
     readonly openCommentCount = computed(() => this.inlineComments()
         .filter(comment => !comment.parentCommentId && comment.status === InlineCommentStatus.Open)
         .length);
+
+    /*
+     * "3 items awaiting translation, 1 item removed in the master" - derived from the draft's
+     * counts, since nothing records when a sync happened. Null when there is nothing to say.
+     */
+    readonly structureSummary = computed(() => {
+        const draft = this.openDraft();
+        if (!draft) {
+            return null;
+        }
+        const parts: string[] = [];
+        if (draft.untranslatedItemCount > 0) {
+            parts.push(`${pluralize(draft.untranslatedItemCount, 'item')} awaiting translation`);
+        }
+        if (draft.deletedInMasterCount > 0) {
+            parts.push(`${pluralize(draft.deletedInMasterCount, 'item')} removed in the master`);
+        }
+        return parts.length ? parts.join(', ') : null;
+    });
 
     // Draft first, published version second, empty skeleton last.
     readonly editorContent = computed<CvContent>(() =>
@@ -215,6 +246,9 @@ export class CvEditComponent implements OnInit, HasUnsavedChanges {
         this.save();
     }
 
+    /*
+     * The page leaves on success, so the token is only ever used once; a later visit loads a fresh one.
+     */
     private save(): void {
         const detail = this.detail();
         const editor = this.editor();
@@ -223,7 +257,13 @@ export class CvEditComponent implements OnInit, HasUnsavedChanges {
         }
         this.saving.set(true);
 
-        this.cvService.edit(detail.cv.id, { content: editor.toContent(), avatarImageId: this.avatarImageId(), }).subscribe({
+        const request: CvEditRequest = {
+            content: editor.toContent(),
+            avatarImageId: this.avatarImageId(),
+            expectedDraftUpdatedAt: this.openDraft()?.updatedAt ?? null,
+        };
+
+        this.cvService.edit(detail.cv.id, request, [CvEditComponent.STALE_STATE]).subscribe({
             next: result => {
                 this.toast.success(result.directPublish
                     ? `Published as v${result.publishedVersion?.versionNumber}`
@@ -232,8 +272,41 @@ export class CvEditComponent implements OnInit, HasUnsavedChanges {
 
                 void this.router.navigate(['/' + AppRoute.Cvs, detail.cv.id]);
             },
-            error: () => this.saving.set(false),
+            error: (error: HttpErrorResponse) => {
+                this.saving.set(false);
+                if (this.isStaleDraft(error)) {
+                    void this.offerReload(detail.cv.id);
+                }
+            },
         });
+    }
+
+    private isStaleDraft(error: HttpErrorResponse): boolean {
+        const envelope = error.error as ApiErrorResponse | null;
+        return error.status === HttpStatusCode.Conflict && envelope?.code === CvEditComponent.STALE_STATE;
+    }
+
+    // Asks first: reloading discards what is in the form, which the owner may want to copy out
+    private async offerReload(cvId: string): Promise<void> {
+        const reload = await this.confirm.ask({
+            title: 'This draft changed while you were editing',
+            message: 'It was updated after you opened it, usually because the master CV\'s structure '
+                + 'was synced into it. Reload to see the new entries? Your unsaved changes on this page will be lost.',
+            confirmLabel: 'Reload draft',
+            cancelLabel: 'Keep editing',
+            danger: true,
+        });
+        if (reload) {
+            this.reload(cvId);
+        }
+    }
+
+    // Rebuilds the editor from the server; the skeleton swap discards the old form state
+    private reload(cvId: string): void {
+        this.editorDirty.set(false);
+        this.avatarDirty.set(false);
+        this.loading.set(true);
+        this.load(cvId);
     }
 
     // ---------- Confirm dialog ----------

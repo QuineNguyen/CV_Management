@@ -9,7 +9,7 @@
     }
 
     <div class="cv-item-summary">
-      <span class="cv-item-title">{{ title() }}</span>
+      <span class="cv-item-title" [class.is-placeholder]="showsPlaceholderTitle()">{{ title() }}</span>
       @if (subtitle(); as sub) {
         <span class="cv-item-subtitle">{{ sub }}</span>
       }
@@ -18,6 +18,13 @@
       }
       @if (deletedInMaster) {
         <span class="status-badge is-danger">Removed in master</span>
+        <!-- Under review the content is frozen: the badge alone, no decision -->
+        @if (!readOnly()) {
+          <button type="button" class="link-btn cv-item-decide"
+                  (click)="reviewRemovedInMaster($event)">
+            Delete or keep?
+          </button>
+        }
       }
       @if (openThreadCount(); as count) {
         <span class="status-badge is-comment">{{ count }} {{ count === 1 ? 'comment' : 'comments' }}</span>

@@ -27,6 +27,10 @@
           @if (cv.openDraftStatus) {
             <span class="status-badge is-warning">{{ draftStatusLabels[cv.openDraftStatus] }}</span>
           }
+          <!-- Entries from the master's structure still waiting for this language -->
+          @if (untranslatedLabelOf(cv); as label) {
+            <span class="status-badge is-untranslated">{{ label }}</span>
+          }
           <!-- Slot is taken, so "Create" cannot apply: the owner needs another way back in -->
           @if (slot.state === SlotState.Empty && canCreate()) {
             <button type="button" class="link-btn slot-action"

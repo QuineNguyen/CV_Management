@@ -62,10 +62,24 @@
   color: #8a5210;
 }
 
+/* Same amber family as the editor's "Untranslated" badge, outlined to read apart from the draft status */
+.status-badge.is-untranslated {
+  background: transparent;
+  color: #8a5210;
+  box-shadow: inset 0 0 0 0.0625rem #e8c48f;
+}
+
 .slot .link-btn {
   font-size: var(--vt-fs-sm);
 }
 
 .slot-action {
   margin-inline-start: auto;
+}
+
+/* Phones: one slot per row, so a filled slot's badges are not squeezed into a third of the width */
+@media (max-width: 47.99rem) {
+  .slot-list {
+    flex-direction: column;
+  }
 }

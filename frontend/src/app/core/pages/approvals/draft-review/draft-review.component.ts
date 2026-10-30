@@ -14,6 +14,7 @@ import { ToastService } from "../../../services/toast.service";
 import { AnchorPickerComponent } from "../anchor-picker/anchor-picker.component";
 import { ReviewDecisionMode } from "../../../enums/review-decision-mode.enum";
 import { INLINE_COMMENT_MAX_LENGTH, PendingInlineComment } from "../../../models/inline-comment.model";
+import { pluralize } from "../../../utils/plural.util";
 
 /*
  * Two-column review screen.
@@ -79,6 +80,27 @@ export class DraftReviewComponent implements OnInit {
     readonly decisions = computed(() => this.review()?.previousDecisions ?? []);
     readonly inlineComments = computed(() => this.review()?.draft.inlineComments ?? []);
     readonly earlierThreadCount = computed(() => this.inlineComments().filter(c => !c.parentCommentId).length);
+
+    /*
+     * What structure sync left in this draft, so empty placeholders are not judged as the
+     * employee's work. Null when the draft has neither placeholders nor removed-in-master flags.
+     */
+    readonly structureSummary = computed(() => {
+        const draft = this.review()?.draft;
+        if (!draft) {
+            return null;
+        }
+        const parts: string[] = [];
+        const untranslated = draft.untranslatedItemCount;
+        const removed = draft.deletedInMasterCount;
+        if (untranslated > 0) {
+            parts.push(`${pluralize(untranslated, 'item')} ${untranslated === 1 ? 'is an empty placeholder' : 'are empty placeholders'} awaiting translation`);
+        }
+        if (removed > 0) {
+            parts.push(`${pluralize(removed, 'item')} ${removed === 1 ? 'is' : 'are'} flagged as removed in the master`);
+        }
+        return parts.length ? parts.join('; ') : null;
+    });
 
     // Level 2 is the last step: approving it publishes a new version
     readonly isFinalLevel = computed(() => this.assignment()?.level === ApprovalLevel.Level2);
