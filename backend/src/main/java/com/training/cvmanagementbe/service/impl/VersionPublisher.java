@@ -13,6 +13,7 @@ import com.training.cvmanagementbe.repository.ChangeLogEntryRepository;
 import com.training.cvmanagementbe.repository.CvDraftRepository;
 import com.training.cvmanagementbe.repository.CvRepository;
 import com.training.cvmanagementbe.repository.CvVersionRepository;
+import com.training.cvmanagementbe.service.MasterSyncService;
 import com.training.cvmanagementbe.service.SkillService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -48,6 +49,7 @@ public class VersionPublisher {
     private final CvContentCodec codec;
     private final AuditLogger auditLogger;
     private final SkillService skillService;
+    private final MasterSyncService masterSyncService;
 
     /*
      * Publishes one immutable version.
@@ -58,7 +60,8 @@ public class VersionPublisher {
      *    * Insert cv_versions row; UNIQUE(cv_id, version_number) is the final safety net
      *    * Generate change_log_entries by diffing against the previous version
      *    * Close every PENDING update request of this CV as COMPLETED
-     *    * If a draft produced it: mark PUBLISHED and record published_version_id
+     *    * If a draft produced it: Mark PUBLISHED and record published_version_id
+     *    * If this CV is the master: Sync its structure into the other languages' drafts
      *    * Audit log
      */
     public CvVersion publish(PublishCommand command) {
@@ -73,6 +76,11 @@ public class VersionPublisher {
 
         // Catalogue names as of now, so the snapshot and its search text match what readers see today
         CvContent content = skillService.applyCatalogNames(command.content());
+
+        // Parsed once for both the change log and structure sync
+        CvContent previousContent = previous
+                .map(version -> skillService.applyCatalogNames(codec.read(version.getContentJson())))
+                .orElse(null);
 
         CvVersion version = new CvVersion();
         version.setCvId(cv.getId());
@@ -89,14 +97,18 @@ public class VersionPublisher {
 
         CvVersion saved = cvVersionRepository.saveAndFlush(version);
 
-        buildChangeLog(command, content, previous, saved);
+        buildChangeLog(command, content, previousContent, previous, saved);
 
         // Creating the CV does not complete a request; publishing content does.
         cvRepository.completePendingRequestsByCvId(cv.getId(), CurrentActor.requireUserId(), saved.getPublishedAt());
 
         closeDraft(command, saved);
 
-        // TODO [Phase 7]: Trigger MasterSyncService when the published CV is the profile master.
+        // The one place sync starts, so approval, direct edit and rollback of a master all trigger it
+        if (cv.isMaster()) {
+            masterSyncService.onMasterPublished(cv, previousContent, content);
+        }
+
         auditLogger.record(Action.PUBLISH_CV_VERSION, TargetType.CV_VERSION, saved.getId(),
                 previous.map(CvVersion::getVersionNumber).orElse(null), saved.getVersionNumber());
 
@@ -111,12 +123,9 @@ public class VersionPublisher {
      */
     private void buildChangeLog(PublishCommand command,
                                 CvContent content,
+                                CvContent previousContent,
                                 Optional<CvVersion> previous,
                                 CvVersion saved) {
-        CvContent previousContent = previous
-                .map(version -> skillService.applyCatalogNames(codec.read(version.getContentJson())))
-                .orElse(null);
-
         List<ChangeLogEntry> changes = changeLogGenerator.generate(
                 previousContent,
                 content,

@@ -46,11 +46,6 @@ public interface ApprovalAssignmentRepository extends JpaRepository<ApprovalAssi
             """)
     List<Object[]> lastAssignedAtByAssigneeIn(@Param("assigneeIds") Collection<UUID> assigneeIds);
 
-    // The open assignment of a draft at one level.
-    Optional<ApprovalAssignment> findByDraftIdAndLevelAndStatus(UUID draftId,
-                                                                int level,
-                                                                AssignmentStatus status);
-
     // The open assignment of a draft, whichever level it currently sits at.
     Optional<ApprovalAssignment> findByDraftIdAndStatus(UUID draftId, AssignmentStatus status);
 
@@ -60,9 +55,6 @@ public interface ApprovalAssignmentRepository extends JpaRepository<ApprovalAssi
                                                        Pageable pageable);
 
     long countByAssigneeIdAndStatus(UUID assigneeId, AssignmentStatus status);
-
-    // History of a draft, newest first - shown beside the content when a reviewer opens it.
-    List<ApprovalAssignment> findByDraftIdOrderByAssignedAtDesc(UUID draftId);
 
     /**
      * Closes the open assignment without naming an assignee: the admin acts on the row, not as

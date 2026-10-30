@@ -24,6 +24,8 @@ import com.training.cvmanagementbe.repository.*;
 import com.training.cvmanagementbe.service.ApprovalService;
 import com.training.cvmanagementbe.service.SkillService;
 import com.training.cvmanagementbe.service.SystemConfigService;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.LockModeType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
@@ -106,6 +108,7 @@ public class ApprovalServiceImpl implements ApprovalService {
     private final ApplicationEventPublisher eventPublisher;
     private final SystemConfigService systemConfigService;
     private final SkillService skillService;
+    private final EntityManager entityManager;
     // Same zone-pinned clock as the reminder job, so due_at and "overdue" agree
     private final Clock clock;
 
@@ -335,9 +338,18 @@ public class ApprovalServiceImpl implements ApprovalService {
     /*
      * Level 2: PENDING_HR -> PUBLISHED and publish in the same transaction.
      * The CAS row lock serializes two HR clicks, so at most one version is created.
+     * - The CV row is locked before the content is read. Structure sync writes into a PENDING_HR
+     * draft too, and it takes this same row first: either its placeholders are already in what we
+     * read, or it waits and then finds the draft PUBLISHED and builds a new draft from this version.
+     * Reading first and locking later would publish content without the placeholders.
      */
     private DraftApproveResponse approveFormatReviewAndPublish(CvDraft draft, ApprovalAssignment assignment,
                                                                UUID approverId) {
+        cvRepository.findByIdForUpdate(draft.getCvId())
+                .orElseThrow(() -> new ApiException.NotFoundException("cv", draft.getCvId()));
+        // Locking read: A plain refresh could return the snapshot taken before the sync committed
+        entityManager.refresh(draft, LockModeType.PESSIMISTIC_WRITE);
+
         LocalDateTime now = LocalDateTime.now(clock);
         int reviewRound = assignment.getReviewRound();
 
@@ -349,6 +361,7 @@ public class ApprovalServiceImpl implements ApprovalService {
         recordDecision(assignment, approverId, DecisionResult.APPROVED, null, now);
 
         // Creates the version and change log, completes pending update requests, links the draft.
+        // For a master, syncs its structure into the other languages.
         CvVersion version = versionPublisher.publish(PublishCommand.approval(
                 draft.getCvId(),
                 content,
@@ -358,9 +371,6 @@ public class ApprovalServiceImpl implements ApprovalService {
                 approverId,
                 draft.getId()
         ));
-
-        // TODO [Phase-7]: trigger multilingual structure sync when the published CV is not the
-        // only language of its profile.
 
         auditLogger.record(Action.APPROVE_CV_DRAFT, TargetType.CV_DRAFT, draft.getId(),
                 DraftStatus.PENDING_HR, DraftStatus.PUBLISHED);
@@ -1039,6 +1049,7 @@ public class ApprovalServiceImpl implements ApprovalService {
                 draft.getLastRejectionReason(),
                 content.submittable(),
                 content.untranslatedItemCount(),
+                content.deletedInMasterCount(),
                 draft.getSubmittedAt(),
                 draft.getUpdatedAt(),
                 forDraft(draft.getId())

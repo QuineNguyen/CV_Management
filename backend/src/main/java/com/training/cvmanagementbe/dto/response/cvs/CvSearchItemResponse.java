@@ -29,6 +29,7 @@ public record CvSearchItemResponse(
         Integer currentVersionNumber,
         LocalDateTime publishedAt,
         // Catalogue skills of the latest published version, in CV order
-        List<CvSearchSkillTag> skills
+        List<CvSearchSkillTag> skills,
+        long untranslatedItemCount
 ) {
 }

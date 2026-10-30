@@ -46,6 +46,7 @@ public class NotificationListener {
     private static final DateTimeFormatter DEADLINE_FORMAT = DateTimeFormatter.ofPattern("dd/MM/yyyy");
     private static final String ACTION_UPDATE = "update";
     private static final String ACTION_CREATE = "create";
+    private static final String UNIT_ITEM = "item";
 
     private final NotificationDispatcher dispatcher;
     private final CvDraftRepository cvDraftRepository;
@@ -266,6 +267,49 @@ public class NotificationListener {
             }
             dispatcher.dispatchAll(commands);
         });
+    }
+
+    // ---------- Structure sync ----------
+
+    /*
+     * In-app only. The owner, who has entries to translate, always; the reviewer holding
+     * a PENDING_* draft too, since the content they are reading just gained empty placeholders.
+     * actorId stays null: The system made the change, so neither the person who published the
+     * master nor an HR who is also this draft's reviewer is filtered out.
+     */
+    @Async
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void onCvStructureSynced(CvStructureSyncedEvent event) {
+        Optional<Cv> cv = cvRepository.findById(event.cvId());
+        if (cv.isEmpty()) {
+            log.warn("CV {} is gone; structure sync notification skipped", event.cvId());
+            return;
+        }
+        String profileName = profileNameOf(cv.get().getProfileId());
+        String language = event.language().name();
+        String changes = syncChangesOf(event);
+
+        dispatcher.dispatchInApp(new NotificationCommand(
+                event.ownerId(), null, NotificationEventType.CV_STRUCTURE_SYNCED,
+                "The structure of your CV %s (%s) was updated to match the master CV: %s"
+                        .formatted(profileName, language, changes),
+                NotificationLink.CV_EDIT.path(event.cvId()),
+                "CV structure updated - %s (%s)".formatted(profileName, language),
+                vars().build()
+        ));
+
+        if (event.assigneeId() != null) {
+            String owner = nameOf(event.ownerId());
+            dispatcher.dispatchInApp(new NotificationCommand(
+                    event.assigneeId(), null, NotificationEventType.CV_STRUCTURE_SYNCED,
+                    ("The structure of %s's CV %s (%s) under your review was updated to match the master CV: %s."
+                        + "Added entries are empty placeholders awaiting translation, not content the employee wrote")
+                            .formatted(owner, profileName, language, changes),
+                    NotificationLink.DRAFT_REVIEW.path(event.draftId()),
+                    "CV under your review changed structure - %s".formatted(owner),
+                    vars().build()
+            ));
+        }
     }
 
     // ---------- CV and profile lifecycle ----------
@@ -594,6 +638,18 @@ public class NotificationListener {
 
     private static String withReason(String sentence, String reason) {
         return reason == null || reason.isBlank() ? sentence : sentence + ". Reason: " + reason;
+    }
+
+    // "3 items to translate, 1 item removed in the master"; the second part only when there is one
+    private static String syncChangesOf(CvStructureSyncedEvent event) {
+        String changes = countOf(event.untranslatedCount(), UNIT_ITEM) + " to translate";
+        return event.deletedInMasterCount() > 0
+                ? changes + ", " + countOf(event.deletedInMasterCount(), UNIT_ITEM) + " removed in the master"
+                : changes;
+    }
+
+    private static String countOf(long count, String unit) {
+        return count + " " + unit + (count == 1 ? "" : "s");
     }
 
     // Only fields that were really proposed; the request stores genuine differences only.

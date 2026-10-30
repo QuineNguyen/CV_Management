@@ -31,6 +31,7 @@ import java.util.Collection;
  * - Each recipient is isolated: one failure never costs the others their notification.
  * - Failures come back as an outcome, never thrown: a batch counts an email that never reached
  * the broker as failed right away.
+ * - Events with no email at all (structure sync) go through dispatchInApp: In-app row only.
  */
 @Slf4j
 @Component
@@ -90,10 +91,29 @@ public class NotificationDispatcher {
         return publish(message) ? DispatchOutcome.QUEUED : DispatchOutcome.FAILED;
     }
 
+    /*
+     * In-app row only: No email_logs row and nothing on the broker. For event types that have no
+     * email template, so the template is never looked up.
+     */
+    public void dispatchInApp(NotificationCommand command) {
+        if (command.notifiesActor()) {
+            return;
+        }
+        try {
+            requiresNew.executeWithoutResult(status -> {
+                User recipient = findRecipient(command);
+                if (recipient != null) {
+                    saveInApp(recipient, command, LocalDateTime.now());
+                }
+            });
+        } catch (RuntimeException ex) {
+            log.error("Could not store {} notification for {}", command.type(), command.recipientId(), ex);
+        }
+    }
+
     private EmailMessage persist(NotificationCommand command, DispatchOptions options) {
-        User recipient = userRepository.findById(command.recipientId()).orElse(null);
+        User recipient = findRecipient(command);
         if (recipient == null) {
-            log.warn("Recipient {} of {} not found; notification skipped", command.recipientId(), command.type());
             return null;
         }
 
@@ -101,14 +121,7 @@ public class NotificationDispatcher {
 
         // A resend is email only: the in-app row from the first send still stands
         if (!options.emailOnly()) {
-            notificationRepository.save(InAppNotification.builder()
-                    .recipientId(recipient.getId())
-                    .type(command.type())
-                    .content(command.content())
-                    .link(command.link())
-                    .read(false)
-                    .createdAt(now)
-                    .build());
+            saveInApp(recipient, command, now);
         }
 
         String subject = truncate(subjectPrefix + " " + command.subject(), MAX_SUBJECT_LENGTH);
@@ -135,6 +148,25 @@ public class NotificationDispatcher {
                 command.templateVars(),
                 options.correlationId() == null ? null : options.correlationId().toString()
         );
+    }
+
+    private User findRecipient(NotificationCommand command) {
+        User recipient = userRepository.findById(command.recipientId()).orElse(null);
+        if (recipient == null) {
+            log.warn("Recipient {} of {} not found; notification skipped", command.recipientId(), command.type());
+        }
+        return recipient;
+    }
+
+    private void saveInApp(User recipient, NotificationCommand command, LocalDateTime now) {
+        notificationRepository.save(InAppNotification.builder()
+                .recipientId(recipient.getId())
+                .type(command.type())
+                .content(command.content())
+                .link(command.link())
+                .read(false)
+                .createdAt(now)
+                .build());
     }
 
     // The in-app row already stands; a broker outage only costs the email.

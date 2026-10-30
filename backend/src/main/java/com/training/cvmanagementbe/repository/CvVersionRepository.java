@@ -18,19 +18,6 @@ public interface CvVersionRepository extends JpaRepository<CvVersion, UUID> {
     @Query("SELECT COALESCE(MAX(v.versionNumber), 0) FROM CvVersion v WHERE v.cvId = :cvId")
     int findMaxVersionNumber(@Param("cvId") UUID cvId);
 
-    List<CvVersion> findByCvIdOrderByVersionNumberDesc(UUID cvId);
-
-    boolean existsByCvId(UUID cvId);
-
-    // One query for a whole page of CVs instead of one per row.
-    @Query("""
-            SELECT v.cvId AS cvId, MAX(v.versionNumber) AS versionNumber
-              FROM CvVersion v
-             WHERE v.cvId IN :cvIds
-             GROUP BY v.cvId
-            """)
-    List<Map<String, Object>> findLatestVersionNumbers(@Param("cvIds") List<UUID> cvIds);
-
     // ---------- Version history & diff ----------
 
     // Timeline page without the LONGTEXT snapshot columns.

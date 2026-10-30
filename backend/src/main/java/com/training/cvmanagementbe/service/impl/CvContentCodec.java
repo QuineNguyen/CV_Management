@@ -11,10 +11,7 @@ import com.training.cvmanagementbe.entity.models.User;
 import com.training.cvmanagementbe.enums.cvs.CvSectionKey;
 import com.training.cvmanagementbe.enums.configs.ErrorCode;
 import com.training.cvmanagementbe.exception.ApiException;
-import com.training.cvmanagementbe.record.cvs.CvContent;
-import com.training.cvmanagementbe.record.cvs.PersonalInfo;
-import com.training.cvmanagementbe.record.cvs.RepeatedEntry;
-import com.training.cvmanagementbe.record.cvs.SkillRef;
+import com.training.cvmanagementbe.record.cvs.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -133,17 +130,136 @@ public class CvContentCodec {
             ArrayNode placeholders = root.putArray(jsonKeyOf(sectionKey));
 
             for (JsonNode entry : source.path(jsonKeyOf(sectionKey))) {
-                if (entry.path(DELETED_IN_MASTER).asBoolean(false)) {
+                if (isFlaggedRemoved(entry)) {
                     continue;
                 }
-                placeholders.addObject()
-                        .put(ITEM_ID, entry.path(ITEM_ID).asText(null))
-                        .put(DISPLAY_ORDER, entry.path(DISPLAY_ORDER).asInt())
-                        .put(IS_UNTRANSLATED, true)
-                        .put(DELETED_IN_MASTER, false);
+                placeholders.add(placeholderNode(
+                        entry.path(ITEM_ID).asText(null),
+                        entry.path(DISPLAY_ORDER).asInt()
+                ));
             }
         }
         return applyPersonalInfoSnapshot(objectMapper.convertValue(root, CvContent.class), owner);
+    }
+
+    // ---------- Structure sync ----------
+    /*
+     * Compares the structure of two versions of the master: The item_ids of each REPEATED section,
+     * in array order. Field values are ignored, so a spelling fix in the master yields an empty diff.
+     * - previous is null for v1: Every id counts as added; applyStructureSync filters out the ones a
+     * target already has, which is what makes v1 a no-op for a CV scaffolded from the master's draft.
+     * - Entries the master itself carries as removed in master are skipped on both sides. A master
+     * promoted from a localisation can still hold such flags; scaffoldTranslation skips them too.
+     * - Reorder is judged on the ids both versions share only: An insert or a deleted shifts the
+     * other entries, but that is not a reorder.
+     */
+    public MasterStructureDiff structureDiff(CvContent previous, CvContent current) {
+        Map<CvSectionKey, List<String>> added = new EnumMap<>(CvSectionKey.class);
+        Map<CvSectionKey, Set<String>> removed = new EnumMap<>(CvSectionKey.class);
+        Set<CvSectionKey> reordered = EnumSet.noneOf(CvSectionKey.class);
+        Map<CvSectionKey, List<String>> masterOrder = new EnumMap<>(CvSectionKey.class);
+
+        for (CvSectionKey sectionKey : CvSectionKey.values()) {
+            if (!sectionKey.repeated()) {
+                continue;
+            }
+            List<String> before = structureOf(previous, sectionKey);
+            List<String> after = structureOf(current, sectionKey);
+            Set<String> beforeIds = new HashSet<>(before);
+            Set<String> afterIds = new HashSet<>(after);
+
+            masterOrder.put(sectionKey, after);
+
+            List<String> newIds = after.stream().filter(id -> !beforeIds.contains(id)).toList();
+            if (!newIds.isEmpty()) {
+                added.put(sectionKey, newIds);
+            }
+
+            Set<String> goneIds = before.stream()
+                    .filter(id -> !afterIds.contains(id))
+                    .collect(Collectors.toCollection(LinkedHashSet::new));
+            if (!goneIds.isEmpty()) {
+                removed.put(sectionKey, goneIds);
+            }
+
+            List<String> sharedBefore = before.stream().filter(afterIds::contains).toList();
+            List<String> sharedAfter = after.stream().filter(beforeIds::contains).toList();
+            if (!sharedBefore.equals(sharedAfter)) {
+                reordered.add(sectionKey);
+            }
+        }
+        return new MasterStructureDiff(added, removed, reordered, masterOrder);
+    }
+
+    /*
+     * Applies a master's structure change to one target CV. Structure only:
+     * personal info and career objective are never read and an existing entry only ever changes
+     * display_order and deleted_in_master.
+     *
+     * - Added in master, missing here: An empty placeholder flagged untranslated, right after the
+     * closest entry that precedes it in the master and exists here; at the top when there is none.
+     * - Added in master, present but flagged removed: The flag is cleared (a rollback brought it back).
+     * - Added in master, present and unflagged: Nothing (master v1 against a scaffolded target).
+     * - Removed in master: Flagged, never deleted - the owner decides.
+     * - Order: Slots holding a master id are refilled in master order; entries only this CV has
+     * (added by the owner or kept after a removal) stay where they are.
+     * - Touched sections get display_order = array position, the same rule the editor saves with.
+     */
+    public StructureSyncResult applyStructureSync(CvContent target, MasterStructureDiff diff) {
+        ObjectNode root = objectMapper.valueToTree(target);
+        int addedCount = 0;
+        int restoredCount = 0;
+        int flaggedCount = 0;
+        int reorderedSectionCount = 0;
+
+        for (CvSectionKey sectionKey : CvSectionKey.values()) {
+            if (!sectionKey.repeated()) {
+                continue;
+            }
+            ArrayNode section = arrayOf(root, sectionKey);
+            List<String> masterOrder = diff.masterOrderOf(sectionKey);
+            boolean touched = false;
+            boolean structureGrew = false;
+
+            for (String itemId : diff.removedIn(sectionKey)) {
+                ObjectNode entry = findEntry(section, itemId);
+                if (entry != null && !isFlaggedRemoved(entry)) {
+                    entry.put(DELETED_IN_MASTER, true);
+                    flaggedCount++;
+                    touched = true;
+                }
+            }
+
+            for (String itemId : diff.addedIn(sectionKey)) {
+                ObjectNode entry = findEntry(section, itemId);
+                if (entry == null) {
+                    section.insert(insertIndexOf(section, masterOrder, itemId), placeholderNode(itemId, 0));
+                    addedCount++;
+                    structureGrew = true;
+                } else if (isFlaggedRemoved(entry)) {
+                    entry.put(DELETED_IN_MASTER, false);
+                    restoredCount++;
+                    structureGrew = true;
+                }
+            }
+
+            // Only when something really moved or arrived, so master v1 leaves a custom order alone
+            if (diff.reordered().contains(sectionKey) || structureGrew) {
+                if (alignToMaster(section, masterOrder)) {
+                    reorderedSectionCount++;
+                }
+                touched = true;
+            }
+
+            if (touched) {
+                renumber(section);
+            }
+        }
+
+        boolean changed = addedCount + restoredCount + flaggedCount + reorderedSectionCount > 0;
+        CvContent content = changed ? objectMapper.convertValue(root, CvContent.class) : target;
+
+        return new StructureSyncResult(content, addedCount, restoredCount, flaggedCount, reorderedSectionCount);
     }
 
     // ---------- Normalisation ----------
@@ -396,6 +512,101 @@ public class CvContentCodec {
 
     // ---------- Private helpers ----------
 
+    // item_ids of one section in array order, without entries the master itself flags as removed
+    private List<String> structureOf(CvContent content, CvSectionKey sectionKey) {
+        return itemsById(content, sectionKey).values().stream()
+                .filter(entry -> !entry.deletedInMaster())
+                .map(RepeatedEntry::itemId)
+                .toList();
+    }
+
+    /*
+     * An empty entry that only holds a place: Shared by "Add language" and structure sync.
+     * No default title is written into it - that label is display-only on the client, so the
+     * untranslated counter and the PDF never see system text.
+     */
+    private ObjectNode placeholderNode(String itemId, int displayOrder) {
+        return objectMapper.createObjectNode()
+                .put(ITEM_ID, itemId)
+                .put(DISPLAY_ORDER, displayOrder)
+                .put(IS_UNTRANSLATED, true)
+                .put(DELETED_IN_MASTER, false);
+    }
+
+    private ArrayNode arrayOf(ObjectNode root, CvSectionKey sectionKey) {
+        JsonNode node = root.get(jsonKeyOf(sectionKey));
+        return node instanceof ArrayNode array ? array : root.putArray(jsonKeyOf(sectionKey));
+    }
+
+    private static boolean isFlaggedRemoved(JsonNode entry) {
+        return entry.path(DELETED_IN_MASTER).asBoolean(false);
+    }
+
+    private static ObjectNode findEntry(ArrayNode section, String itemId) {
+        int index = indexOf(section, itemId);
+        return index < 0 ? null : (ObjectNode) section.get(index);
+    }
+
+    private static int indexOf(ArrayNode section, String itemId) {
+        for (int i = 0; i < section.size(); i++) {
+            if (itemId.equals(section.get(i).path(ITEM_ID).asText(null))) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    // Right after the closest master predecessor this CV has; the top of the section otherwise.
+    private static int insertIndexOf(ArrayNode section, List<String> masterOrder, String itemId) {
+        int position = masterOrder.indexOf(itemId);
+        for (int i = position - 1; i >= 0; i--) {
+            int index = indexOf(section, masterOrder.get(i));
+            if (index >= 0) {
+                return index + 1;
+            }
+        }
+        return 0;
+    }
+
+    /*
+     * Keeps the slots: Positions holding an id the master has are refilled in master order, the
+     * rest stay put. Returns whether anything moved.
+     */
+    private static boolean alignToMaster(ArrayNode section, List<String> masterOrder) {
+        Set<String> masterIds = new HashSet<>(masterOrder);
+        List<Integer> slots = new ArrayList<>();
+        Map<String, JsonNode> byId = new HashMap<>();
+
+        for (int i = 0; i < section.size(); i++) {
+            String itemId = section.get(i).path(ITEM_ID).asText(null);
+            if (itemId != null && masterIds.contains(itemId)) {
+                slots.add(i);
+                byId.put(itemId, section.get(i));
+            }
+        }
+
+        List<JsonNode> ordered = masterOrder.stream()
+                .filter(byId::containsKey)
+                .map(byId::get)
+                .toList();
+
+        boolean moved = false;
+        for (int k = 0; k < slots.size(); k++) {
+            int slot = slots.get(k);
+            if (section.get(slot) != ordered.get(k)) {
+                section.set(slot, ordered.get(k));
+                moved = true;
+            }
+        }
+        return moved;
+    }
+
+    private static void renumber(ArrayNode section) {
+        for (int i = 0; i < section.size(); i++) {
+            ((ObjectNode) section.get(i)).put(DISPLAY_ORDER, i);
+        }
+    }
+
     private String readable(Object value) {
         if (value == null) {
             return null;
@@ -428,7 +639,7 @@ public class CvContentCodec {
         node.fields().forEachRemaining(entry -> collectText(entry.getValue(), builder));
     }
 
-    // Any field the owner could have typed; structual keys do not count.
+    // Any field the owner could have typed; structural keys do not count.
     private boolean hasContent(JsonNode entry) {
         Iterator<Map.Entry<String, JsonNode>> fields = entry.fields();
         while (fields.hasNext()) {

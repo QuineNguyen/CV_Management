@@ -73,4 +73,16 @@ public class CvDraft extends BaseEntity {
     public boolean isContentLocked() {
         return LOCKED_STATUSES.contains(status);
     }
+
+    /*
+     * The only write allowed past the content lock. Structure sync adds empty
+     * placeholders, flags entries and reorders them - it never edits what the owner wrote, so a
+     * reviewer still decides on the owner's own words. Status, round and assignment stay as they are.
+     *
+     * Called by MasterSyncServiceImpl only; every other content write goes through
+     * CvServiceImpl, which refuses a locked draft.
+     */
+    public void applyStructureSync(String syncedContentJson) {
+        this.contentJson = syncedContentJson;
+    }
 }

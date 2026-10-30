@@ -26,6 +26,8 @@ import java.util.stream.Collectors;
  * - Organization (name, profile, department, team, language): Read from organization
  * data, so a never-published CV still appears - the version column labels it.
  * - Content (skills, full text): Read the latest published version only, so such a CV drops out.
+ * The untranslated counter is not a criterion: It reads the open draft first and the current
+ * version second, the same number the profile page and the CV tabs show.
  */
 @Service
 @RequiredArgsConstructor
@@ -37,6 +39,7 @@ public class CvSearchServiceImpl implements CvSearchService {
 
     private final CvSearchRepository cvSearchRepository;
     private final SkillRepository skillRepository;
+    private final CvContentCodec codec;
     private final AvatarUrlResolver avatarUrlResolver;
 
     @Override
@@ -49,9 +52,10 @@ public class CvSearchServiceImpl implements CvSearchService {
                 rows.stream().map(CvSearchRow::employeeId).collect(Collectors.toSet())
         );
         Map<UUID, String> skillNames = loadSkillNames(rows);
+        Map<UUID, Long> untranslatedCounts = loadUntranslatedCounts(rows);
 
         List<CvSearchItemResponse> content = rows.stream()
-                .map(row -> toItem(row, teams, skillNames))
+                .map(row -> toItem(row, teams, skillNames, untranslatedCounts))
                 .toList();
         return PagedResponse.of(page, content);
     }
@@ -173,9 +177,21 @@ public class CvSearchServiceImpl implements CvSearchService {
         return names;
     }
 
+    /*
+     * cvId -> placeholders still awaiting translation. Counted by the codec, not in SQL, so the
+     * search, the profile page and the CV tabs share one definition of "untranslated".
+     */
+    private Map<UUID, Long> loadUntranslatedCounts(List<CvSearchRow> rows) {
+        Map<UUID, Long> counts = new HashMap<>();
+        cvSearchRepository.untranslatedSourcesOf(rows.stream().map(CvSearchRow::cvId).collect(Collectors.toSet()))
+                .forEach((cvId, contentJson) -> counts.put(cvId, codec.read(contentJson).untranslatedItemCount()));
+        return counts;
+    }
+
     private CvSearchItemResponse toItem(CvSearchRow row,
                                         Map<UUID, List<CvSearchTeamTag>> teams,
-                                        Map<UUID, String> skillNames) {
+                                        Map<UUID, String> skillNames,
+                                        Map<UUID, Long> untranslatedCounts) {
         List<CvSearchSkillTag> skills = row.skillIds().stream()
                 .filter(skillNames::containsKey)
                 .map(id -> new CvSearchSkillTag(id, skillNames.get(id)))
@@ -196,7 +212,8 @@ public class CvSearchServiceImpl implements CvSearchService {
                 row.versionNumber() != null,
                 row.versionNumber(),
                 row.publishedAt(),
-                skills
+                skills,
+                untranslatedCounts.getOrDefault(row.cvId(), 0L)
         );
     }
 
