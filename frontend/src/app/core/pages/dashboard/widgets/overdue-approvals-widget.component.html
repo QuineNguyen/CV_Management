@@ -2,15 +2,15 @@
 
   <!-- Header -->
   <header class="widget-head">
-    <div>
+    <div class="widget-title-row">
       <h2 id="sla-widget-title" class="widget-title">Reviews past their SLA</h2>
-      <p class="widget-hint">
-        Drafts waiting longer than the review deadline · {{ data().overdueCount }} in total
-      </p>
+      @if (data().overdueCount > 0) {
+        <a class="link-btn view-all" [routerLink]="viewAllRoute()">View all ({{ data().overdueCount }})</a>
+      }
     </div>
-    @if (data().overdueCount > 0) {
-      <a class="link-btn view-all" [routerLink]="viewAllRoute()">View all ({{ data().overdueCount }})</a>
-    }
+    <p class="widget-hint">
+      Drafts waiting longer than the review deadline · {{ data().overdueCount }} in total
+    </p>
   </header>
 
   @if (!data().items.length) {
@@ -61,11 +61,11 @@
           </div>
 
           <dl class="data-card-facts">
-            <div>
+            <div class="fact-col fact-col--level">
               <dt>Level</dt>
               <dd>{{ levelLabel(item.level) }}</dd>
             </div>
-            <div>
+            <div class="fact-col fact-col--due">
               <dt>Due</dt>
               <dd>{{ item.dueAt | date:'dd/MM/yyyy HH:mm' }}</dd>
             </div>

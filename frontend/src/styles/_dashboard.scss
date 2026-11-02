@@ -117,10 +117,16 @@ a.kpi-card:focus-visible {
 
 .widget-head {
   display: flex;
-  flex-wrap: wrap;
-  align-items: flex-start;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.widget-title-row {
+  display: flex;
+  align-items: center;
   justify-content: space-between;
   gap: var(--vt-gap);
+  width: 100%;
 }
 
 .widget-title {
@@ -130,7 +136,7 @@ a.kpi-card:focus-visible {
 }
 
 .widget-hint {
-  margin: 0.25rem 0 0;
+  margin: 0;
   font-size: var(--vt-fs-sm);
   color: var(--vt-ink-muted);
 }
@@ -148,6 +154,47 @@ a.kpi-card:focus-visible {
 
 .widget .data-card {
   background: var(--vt-canvas);
+}
+
+.widget .data-card-head {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: calc(var(--vt-gap) * 0.5);
+}
+
+.widget .data-card-head .urgency-badge {
+  flex-shrink: 0;
+}
+
+/* ---------- Fact columns (Balanced spacing) ---------- */
+@media (min-width: 600px) {
+  .widget .data-card-facts {
+    display: flex;
+    align-items: flex-start;
+    gap: clamp(2rem, 5vw, 4rem);
+  }
+
+  .widget .data-card-facts > div:first-child {
+    flex: 0 0 clamp(12rem, 25vw, 16rem);
+    width: clamp(12rem, 25vw, 16rem);
+  }
+
+  .widget .data-card-facts > div:last-child {
+    flex: 0 0 auto;
+  }
+}
+
+@media (max-width: 599px) {
+  .widget .data-card-facts > div:first-child {
+    flex: 0 0 7.25rem;
+    width: 7.25rem;
+  }
+
+  .widget .data-card-facts > div:last-child {
+    flex: 0 0 auto;
+  }
 }
 
 .widget .empty-state {
@@ -208,8 +255,48 @@ a.kpi-card:focus-visible {
   white-space: nowrap;
 }
 
+/* ---------- Tablet / iPad (<= 64rem) ---------- */
+@media (max-width: 64rem) {
+  .page-toolbar {
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .page-toolbar > div:first-child {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .page-toolbar-actions {
+    flex: 0 0 auto;
+    width: auto;
+    justify-content: flex-end;
+    white-space: nowrap;
+  }
+
+  /* 2 cards per row on iPad */
+  .kpi-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
 /* ---------- Phone ---------- */
 @media (max-width: 40rem) {
+  /* Toolbar action buttons: compact, not stretching */
+  .page-toolbar-actions {
+    width: auto;
+    justify-content: flex-start;
+    gap: calc(var(--vt-gap) * 0.5);
+  }
+
+  .page-toolbar-actions .btn {
+    flex: 0 0 auto;
+    width: auto;
+    white-space: nowrap;
+  }
+
   /* Two tiles per row, icon stacked above the number */
   .kpi-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));

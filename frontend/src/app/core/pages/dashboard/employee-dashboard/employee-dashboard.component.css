@@ -9,4 +9,20 @@ a.btn {
   align-items: center;
   justify-content: center;
   text-decoration: none;
+  white-space: nowrap;
+}
+
+/* ---------- Phone (<= 599px): Action buttons ---------- */
+@media (max-width: 599px) {
+  :host ::ng-deep .page-toolbar-actions {
+    width: auto;
+    justify-content: flex-start;
+    gap: calc(var(--vt-gap) * 0.5);
+  }
+
+  :host ::ng-deep .page-toolbar-actions .btn {
+    flex: 0 0 auto;
+    width: auto;
+    white-space: nowrap;
+  }
 }
