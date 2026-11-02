@@ -38,6 +38,11 @@
   border-block-end: 0.0625rem solid var(--vt-line);
 }
 
+.page-toolbar > div:first-child {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
 .page-title {
   margin: 0;
   font-size: var(--vt-fs-lg);
@@ -1352,12 +1357,21 @@ th[aria-sort]:not([aria-sort='none']) .sort-icon {
 /* ---------- iPad ---------- */
 @media (max-width: 64rem) {
   .page-toolbar {
-    align-items: flex-start;
+    flex-wrap: nowrap;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .page-toolbar > div:first-child {
+    flex: 1 1 auto;
+    min-width: 0;
   }
 
   .page-toolbar-actions {
-    width: 100%;
+    flex: 0 0 auto;
+    width: auto;
     justify-content: flex-end;
+    white-space: nowrap;
   }
 
   .data-table-wrap {
@@ -1386,7 +1400,17 @@ th[aria-sort]:not([aria-sort='none']) .sort-icon {
     display: none;
   }
 
-  .page-toolbar-actions .btn,
+  .page-toolbar-actions {
+    width: auto;
+    justify-content: flex-start;
+  }
+
+  .page-toolbar-actions .btn {
+    flex: 0 0 auto;
+    width: auto;
+    white-space: nowrap;
+  }
+
   .page-filters .btn {
     flex: 1 1 100%;
   }
@@ -1396,8 +1420,42 @@ th[aria-sort]:not([aria-sort='none']) .sort-icon {
   }
 
   /* Global stylesheet, so no ::ng-deep is required here. */
+  .page-paginator .mat-mdc-paginator-container {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 clamp(0.25rem, 1vw, 0.5rem);
+    min-height: 3rem;
+  }
+
+  .page-paginator .mat-mdc-paginator-page-size {
+    display: flex;
+    align-items: center;
+    margin-right: 0;
+    flex-shrink: 0;
+  }
+
   .page-paginator .mat-mdc-paginator-page-size-label {
     display: none;
+  }
+
+  .page-paginator .mat-mdc-paginator-range-label {
+    margin: 0 clamp(0.25rem, 1vw, 0.5rem);
+    white-space: nowrap;
+  }
+
+  .page-paginator .mat-mdc-paginator-range-actions {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+  }
+
+  .page-paginator .mat-mdc-paginator-range-actions .mat-mdc-icon-button {
+    width: 2rem;
+    height: 2rem;
+    padding: 0;
   }
 
   .modal-backdrop {
@@ -1422,7 +1480,7 @@ th[aria-sort]:not([aria-sort='none']) .sort-icon {
   }
 
   .modal-footer .btn {
-    width: 1 1 50%;
+    flex: 1 1 50%;
   }
 }
 

@@ -114,3 +114,113 @@ tr.cdk-drag-placeholder {
   display: block;
   margin-inline: auto;
 }
+
+
+/* ---------- Cards ---------- */
+.data-card-head {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: calc(var(--vt-gap) * 0.5);
+}
+
+.data-card-identity {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--vt-gap) * 0.5);
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.data-card-head .row-actions {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+/* ---------- Phone (<= 599px): iPhone SE ---------- */
+@media (max-width: 599px) {
+  .page-filters {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    align-items: flex-end;
+    gap: calc(var(--vt-gap) * 0.5);
+    width: 100%;
+  }
+
+  .page-filters .field {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .page-filters .btn {
+    flex: 0 0 auto !important;
+    width: auto !important;
+    white-space: nowrap;
+    align-self: flex-end;
+  }
+
+  .data-card-head {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: calc(var(--vt-gap) * 0.5);
+  }
+
+  .data-card-identity {
+    display: flex;
+    align-items: center;
+    gap: calc(var(--vt-gap) * 0.5);
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .data-card-head .row-actions {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+  }
+
+  :host ::ng-deep .page-paginator .mat-mdc-paginator-container {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 clamp(0.25rem, 1vw, 0.5rem);
+    min-height: 3rem;
+  }
+
+  :host ::ng-deep .page-paginator .mat-mdc-paginator-page-size {
+    display: flex;
+    align-items: center;
+    margin-right: 0;
+    flex-shrink: 0;
+  }
+
+  :host ::ng-deep .page-paginator .mat-mdc-paginator-page-size-label {
+    display: none;
+  }
+
+  :host ::ng-deep .page-paginator .mat-mdc-paginator-range-label {
+    margin: 0 clamp(0.25rem, 1vw, 0.5rem);
+    white-space: nowrap;
+  }
+
+  :host ::ng-deep .page-paginator .mat-mdc-paginator-range-actions {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+  }
+
+  :host ::ng-deep .page-paginator .mat-mdc-paginator-range-actions .mat-mdc-icon-button {
+    width: 2rem;
+    height: 2rem;
+    padding: 0;
+  }
+}

@@ -22,14 +22,114 @@
   color: var(--vt-ink);
 }
 
-/* ---------- Header link ---------- */
+/* ---------- Header & View all ---------- */
+.widget-head {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.widget-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--vt-gap);
+  width: 100%;
+}
+
+.widget-hint {
+  margin: 0;
+  font-size: var(--vt-fs-sm);
+  color: var(--vt-ink-muted);
+}
+
 .view-all {
   display: inline-flex;
   align-items: center;
   text-decoration: none;
   white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* ---------- Cards ---------- */
+.data-card-head {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: calc(var(--vt-gap) * 0.5);
+}
+
+.data-card-text {
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
 .data-card-title {
+  margin: 0;
   overflow-wrap: anywhere;
+}
+
+.data-card-head .urgency-badge {
+  flex-shrink: 0;
+}
+
+.data-card-facts {
+  display: flex;
+  align-items: flex-start;
+  margin: 0;
+}
+
+.fact-col dd {
+  white-space: nowrap;
+}
+
+/* ---------- Tablet (<= 64rem): iPad Mini ---------- */
+@media (max-width: 64rem) {
+  .data-card-head .urgency-badge {
+    padding: 0.0625rem 0;
+  }
+
+  .data-card-facts {
+    gap: clamp(2rem, 6vw, 4rem);
+  }
+
+  .fact-col--level,
+  .data-card-facts > div:first-child {
+    flex: 0 0 clamp(12rem, 25vw, 16rem);
+    width: clamp(12rem, 25vw, 16rem);
+  }
+
+  .fact-col--due,
+  .data-card-facts > div:last-child {
+    flex: 0 0 auto;
+  }
+}
+
+/* ---------- Phone (<= 599px): Vertically aligned deadlines ---------- */
+@media (max-width: 599px) {
+  .data-card-head {
+    flex-direction: row;
+    align-items: flex-start;
+    justify-content: space-between;
+  }
+
+  .data-card-head .urgency-badge {
+    padding: 0.0625rem 0;
+  }
+
+  .data-card-facts {
+    gap: clamp(0.75rem, 2.5vw, 1.25rem);
+  }
+
+  .fact-col--level,
+  .data-card-facts > div:first-child {
+    flex: 0 0 7.25rem;
+    width: 7.25rem;
+  }
+
+  .fact-col--due,
+  .data-card-facts > div:last-child {
+    flex: 0 0 auto;
+  }
 }

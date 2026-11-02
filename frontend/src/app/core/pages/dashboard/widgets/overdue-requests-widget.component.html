@@ -2,17 +2,17 @@
 
   <!-- Header -->
   <header class="widget-head">
-    <div>
+    <div class="widget-title-row">
       <h2 id="deadline-widget-title" class="widget-title">{{ heading() }}</h2>
-      <p class="widget-hint">
-        Pending update requests due within {{ data().approachingDays }} days or already past their deadline
-      </p>
+      @if (total() > 0) {
+        <a class="link-btn view-all" [routerLink]="viewAllRoute()" [queryParams]="viewAllParams()">
+          View all ({{ total() }})
+        </a>
+      }
     </div>
-    @if (total() > 0) {
-      <a class="link-btn view-all" [routerLink]="viewAllRoute()" [queryParams]="viewAllParams()">
-        View all ({{ total() }})
-      </a>
-    }
+    <p class="widget-hint">
+      Pending update requests due within {{ data().approachingDays }} days or already past their deadline
+    </p>
   </header>
 
   <!-- Tallies -->
@@ -98,24 +98,26 @@
             <span class="urgency-badge" [attr.data-urgency]="item.urgency">{{ timingLabel(item) }}</span>
           </div>
 
-          <dl class="data-card-facts">
-            <div>
-              <dt>Language</dt>
-              <dd>
-                <div class="language-cell">
-                  <span class="code-chip is-primary">{{ item.language }}</span>
-                  <span class="language-name">{{ languageLabels[item.language] }}</span>
-                </div>
-              </dd>
-            </div>
-            <div>
-              <dt>Deadline</dt>
-              <dd>{{ item.deadline | date:'dd/MM/yyyy' }}</dd>
-            </div>
-          </dl>
+          <div class="data-card-body">
+            <dl class="data-card-facts">
+              <div class="fact-col fact-col--language">
+                <dt>Language</dt>
+                <dd>
+                  <div class="language-cell">
+                    <span class="code-chip is-primary">{{ item.language }}</span>
+                    <span class="language-name">{{ languageLabels[item.language] }}</span>
+                  </div>
+                </dd>
+              </div>
+              <div class="fact-col fact-col--deadline">
+                <dt>Deadline</dt>
+                <dd>{{ item.deadline | date:'dd/MM/yyyy' }}</dd>
+              </div>
+            </dl>
 
-          <div class="row-actions">
-            <ng-container [ngTemplateOutlet]="rowAction" [ngTemplateOutletContext]="{ $implicit: item }"></ng-container>
+            <div class="row-actions">
+              <ng-container [ngTemplateOutlet]="rowAction" [ngTemplateOutletContext]="{ $implicit: item }"></ng-container>
+            </div>
           </div>
         </li>
       }

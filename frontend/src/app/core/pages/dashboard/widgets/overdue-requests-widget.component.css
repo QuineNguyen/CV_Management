@@ -54,23 +54,152 @@
   color: var(--vt-ink-muted);
 }
 
-/* ---------- Header link ---------- */
+/* ---------- Header & View all ---------- */
+.widget-head {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.widget-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--vt-gap);
+  width: 100%;
+}
+
+.widget-hint {
+  margin: 0;
+  font-size: var(--vt-fs-sm);
+  color: var(--vt-ink-muted);
+}
+
 .view-all {
   display: inline-flex;
   align-items: center;
   text-decoration: none;
   white-space: nowrap;
+  flex-shrink: 0;
 }
 
 /* ---------- Cards ---------- */
+.data-card-head {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: calc(var(--vt-gap) * 0.5);
+}
+
+.data-card-text {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
 .data-card-title {
+  margin: 0;
   overflow-wrap: anywhere;
 }
 
-.data-card .row-actions {
+.data-card-head .urgency-badge {
+  flex-shrink: 0;
+}
+
+.data-card-body {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--vt-gap);
+}
+
+.data-card-body .data-card-facts {
+  display: flex;
+  align-items: flex-start;
+  flex: 1 1 auto;
+  margin: 0;
+}
+
+.fact-col dd {
+  white-space: nowrap;
+}
+
+.data-card-body .row-actions {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
   justify-content: flex-end;
+  padding-bottom: 0.125rem;
+}
+
+.row-actions .cell-muted {
+  font-size: var(--vt-fs-sm);
+  color: var(--vt-ink-muted);
+  white-space: nowrap;
 }
 
 .data-card .link-btn {
   text-decoration: none;
+}
+
+/* ---------- Tablet (<= 64rem): iPad Mini ---------- */
+@media (max-width: 64rem) {
+  .data-card-head .urgency-badge {
+    padding: 0.0625rem 0;
+  }
+
+  .data-card-body .data-card-facts {
+    gap: clamp(2rem, 5vw, 4rem);
+  }
+
+  .fact-col--language,
+  .data-card-body .data-card-facts > div:first-child {
+    flex: 0 0 clamp(10rem, 22vw, 14rem);
+    width: clamp(10rem, 22vw, 14rem);
+  }
+
+  .fact-col--deadline,
+  .data-card-body .data-card-facts > div:last-child {
+    flex: 0 0 auto;
+  }
+}
+
+/* ---------- Phone (<= 599px): Vertically aligned deadlines ---------- */
+@media (max-width: 599px) {
+  .data-card-head {
+    flex-direction: row;
+    align-items: flex-start;
+    justify-content: space-between;
+  }
+
+  .data-card-head .urgency-badge {
+    padding: 0.0625rem 0;
+  }
+
+  .data-card-body {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+  }
+
+  .data-card-body .data-card-facts {
+    gap: clamp(0.75rem, 2.5vw, 1.25rem);
+  }
+
+  .fact-col--language,
+  .data-card-body .data-card-facts > div:first-child {
+    flex: 0 0 7.25rem;
+    width: 7.25rem;
+  }
+
+  .fact-col--deadline,
+  .data-card-body .data-card-facts > div:last-child {
+    flex: 0 0 auto;
+  }
+}
+
+@media (max-width: 340px) {
+  .data-card-body {
+    flex-wrap: wrap;
+  }
 }

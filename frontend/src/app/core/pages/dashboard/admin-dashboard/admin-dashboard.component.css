@@ -2,3 +2,18 @@
   display: block;
   color: var(--vt-ink);
 }
+
+/* ---------- Phone (<= 599px): Action buttons ---------- */
+@media (max-width: 599px) {
+  :host ::ng-deep .page-toolbar-actions {
+    width: auto;
+    justify-content: flex-start;
+    gap: calc(var(--vt-gap) * 0.5);
+  }
+
+  :host ::ng-deep .page-toolbar-actions .btn {
+    flex: 0 0 auto;
+    width: auto;
+    white-space: nowrap;
+  }
+}
